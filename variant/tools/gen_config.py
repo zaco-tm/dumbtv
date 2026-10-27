@@ -4,12 +4,16 @@
     gen_config.py --generic OUT.java
     gen_config.py config.properties OUT.java
 
-Upstream builds the same class from shell; this is the same rules in one place, so the
-repo's unit tests can check them without a device. The rules are upstream's:
+Upstream builds the same class from shell; this puts upstream's rules in one place, so the
+repo's unit tests can check them without a device. There is one deliberate difference from
+upstream, the empty-value rule, which the bullets below explain.
   - a value is the last "key = value" line, trimmed, with quotes and backslashes removed
+  - a UTF-8 byte order mark at the start of the file is ignored
   - a key that is not in the file keeps the default; a key that is in the file but empty
     stays empty. The app reads an empty place, region or currency as "the TV's time zone
-    guesses" (Place.java), so an empty value is an answer, not a missing one.
+    guesses" (Place.java), so an empty value is an answer, not a missing one. This is the
+    one deliberate difference from upstream: upstream's shell gives an empty value the
+    default.
   - latitude and longitude must be a plain number: an optional minus sign, digits and an
     optional fraction, and nothing else
   - disable_assistant and hide_animation are true only for exactly "true"
@@ -78,18 +82,25 @@ def read_properties(path):
 
     A key that is not in the file is not in the result, so the default is used for it. A
     key that is in the file is in the result with the value it has there, empty or not.
+
+    utf-8-sig drops a byte order mark if the file has one. Without it the first key
+    would be read as a byte order mark followed by "tmdb_key": not a known key, and
+    dropped without a word.
     """
     values = {}
-    with open(path, encoding='utf-8') as handle:
-        for line in handle:
-            line = line.strip()
-            if not line or line.startswith('#') or '=' not in line:
-                continue
-            key, _, value = line.partition('=')
-            key = key.strip()
-            if key not in DEFAULTS:
-                continue
-            values[key] = value.strip().replace('"', '').replace('\\', '')
+    try:
+        with open(path, encoding='utf-8-sig') as handle:
+            for line in handle:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                key, _, value = line.partition('=')
+                key = key.strip()
+                if key not in DEFAULTS:
+                    continue
+                values[key] = value.strip().replace('"', '').replace('\\', '')
+    except OSError as error:
+        raise SystemExit(f'{path}: cannot be read: {error.strerror or error}')
     return values
 
 
@@ -143,8 +154,14 @@ def main(argv):
             raise SystemExit('usage: gen_config.py <config.properties> <Config.java>')
         source, target = args
     properties = {} if generic else read_properties(source)
-    with open(target, 'w', encoding='utf-8') as handle:
-        handle.write(build(properties, generic))
+    # The text is built before the target is opened: a refused value must leave an
+    # earlier Config.java alone, not leave an empty one behind.
+    text = build(properties, generic)
+    try:
+        with open(target, 'w', encoding='utf-8') as handle:
+            handle.write(text)
+    except OSError as error:
+        raise SystemExit(f'{target}: cannot be written: {error.strerror or error}')
     return 0
 
 
