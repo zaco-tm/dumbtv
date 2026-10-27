@@ -17,7 +17,10 @@
 - The APK declares exactly upstream's eight permissions, in upstream's order. `variant/permissions.txt` is that list.
 - No Gradle, no libraries, no network in the build. Python 3 standard library only, and only for `variant/tools/gen_config.py` and the tests.
 - `variant/config.properties`, `variant/release.keystore` and `variant/build/` are git-ignored. CI builds `--generic`, so no TMDB key is ever baked by CI.
-- The existing `launcher/` tree is untouched in stage 1.
+- The existing `launcher/` tree is untouched in stage 1, with one documented exception:
+  `launcher/build.sh` (commit `5ad39da`) now asks the javac to *run* rather than merely to
+  exist, because macOS ships `/usr/bin/javac`, a stub that fails. The change is in the JDK
+  probe only; the launcher's manifest, its code and its release are unchanged.
 - The variant's build must not carry `launcher/build.sh`'s `-Werror`: upstream's code is not warning-clean.
 - Every script this plan adds must pass `bash -n`, and these must stay green: `python3 -m unittest discover -s tests`, `python3 catalog/validate.py`, `./launcher/release-check.sh --manifest`.
 - No private addresses, hardware ids or the TMDB key in anything committed.
@@ -33,15 +36,18 @@
 | `variant/tools/photos.py` | Upstream's photo pusher, adapted to our provider authority. |
 | `variant/tools/gen_config.py` | **Ours.** Reads `config.properties`, writes `io/freemytv/Config.java`. |
 | `variant/AndroidManifest.xml` | **Ours.** Upstream's manifest with our label, our version and our provider authority. |
+| `variant/upstream/AndroidManifest.xml` | Upstream's manifest, byte for byte: the record of what our own manifest was made from. |
 | `variant/build.sh` | **Ours.** Builds `variant/build/variant.apk`. |
 | `variant/check-apk.sh` | **Ours.** Asserts the built APK is what this repo expects. |
 | `variant/verify-vendor.sh` | **Ours.** Proves the vendored tree is upstream's, byte for byte. |
-| `variant/permissions.txt` | The eight permissions, in order. |
+| `variant/permissions.txt` | The eight permissions, in order, as the whole line aapt2 prints. |
 | `variant/local-changes.txt` | Upstream paths allowed to differ from upstream (the two adapted tools). |
 | `variant/our-files.txt` | Paths in a vendored tree that are ours, not upstream's (`tools/gen_config.py`). |
 | `variant/UPSTREAM.md` | Provenance: upstream commit, licence, what we changed and why. |
 | `variant/README.md` | How to build and install the variant. |
 | `tests/test_variant_config.py` | **Ours.** Unit tests for the config generator. |
+| `tests/test_variant_manifest.py` | **Ours.** The manifest, the permissions list, and the differences from upstream's manifest. |
+| `tests/test_variant_tools.py` | **Ours.** The hand-adapted tools, run in a copy of the tree. |
 
 ---
 
@@ -52,6 +58,7 @@
 - Create: `variant/tools/translate.py`, `variant/tools/photos.py`
 - Create: `variant/verify-vendor.sh`, `variant/local-changes.txt`, `variant/our-files.txt`, `variant/UPSTREAM.md`
 - Create: `variant/LICENSE.free-my-tv`
+- Create: `variant/upstream/AndroidManifest.xml` (upstream's manifest, byte for byte)
 - Create: `NOTICE`
 
 **Interfaces:**
@@ -81,6 +88,10 @@ cp -R "$UP/app/res"    variant/res
 cp -R "$UP/app/assets" variant/assets
 cp "$UP/tools/translate.py" "$UP/tools/photos.py" variant/tools/
 cp "$UP/LICENSE" variant/LICENSE.free-my-tv
+# Upstream's manifest comes too, byte for byte: it is the record of what our own
+# manifest was made from, and the verifier compares it like the other vendored files.
+mkdir -p variant/upstream
+cp "$UP/app/AndroidManifest.xml" variant/upstream/AndroidManifest.xml
 ls variant/src/io/freemytv/*.java | wc -l
 ```
 
@@ -156,6 +167,14 @@ exit "$rc"
 
 ```bash
 chmod +x variant/verify-vendor.sh
+```
+
+The verifier as shipped also compares upstream's `app/AndroidManifest.xml` with our
+`variant/upstream/AndroidManifest.xml` (byte for byte), so the record of what our own
+manifest was made from cannot drift from upstream's:
+
+```bash
+compare_file "$UP/app/AndroidManifest.xml" upstream/AndroidManifest.xml
 ```
 
 - [ ] **Step 5: Write `variant/local-changes.txt` and `variant/UPSTREAM.md`**
@@ -460,10 +479,20 @@ class VariantConfigTests(unittest.TestCase):
         self.assertIn('static final String LATITUDE = "";', java)
         self.assertIn('static final String LONGITUDE = "";', java)
 
-    def test_a_latitude_that_is_not_in_the_file_keeps_the_default(self):
+    def test_an_absent_latitude_stays_empty(self):
+        # An absent key and an empty one mean the same thing: the app then guesses the
+        # place from the TV's time zone (Place.java). Upstream's shell would put New
+        # York here, and a config that sets only a key and a city would pin the TV to
+        # New York without saying so.
         java = generate('city=Amsterdam\n')
-        self.assertIn('static final String LATITUDE = "40.7128";', java)
-        self.assertIn('static final String LONGITUDE = "-74.0060";', java)
+        self.assertIn('static final String LATITUDE = "";', java)
+        self.assertIn('static final String LONGITUDE = "";', java)
+
+    def test_an_absent_region_and_currency_stay_empty(self):
+        # The same for the region and the currency: empty means the TV's country.
+        java = generate('city=Amsterdam\n')
+        self.assertIn('static final String TMDB_REGION = "";', java)
+        self.assertIn('static final String CURRENCY = "";', java)
 
     def test_a_latitude_is_read(self):
         java = generate('latitude=52.37\n')
@@ -601,7 +630,9 @@ upstream, the empty-value rule, which the bullets below explain.
     stays empty. The app reads an empty place, region or currency as "the TV's time zone
     guesses" (Place.java), so an empty value is an answer, not a missing one. This is the
     one deliberate difference from upstream: upstream's shell gives an empty value the
-    default.
+    default. The four place fields default to empty here, not to upstream's New York:
+    an absent key and an empty one mean the same thing.
+  - an unknown key is dropped, with a warning that names it
   - latitude and longitude must be a plain number: an optional minus sign, digits and an
     optional fraction, and nothing else
   - disable_assistant and hide_animation are true only for exactly "true"
@@ -617,12 +648,15 @@ import sys
 DEFAULTS = {
     'tmdb_key': '',
     'watchmode_key': '',
-    'tmdb_region': 'US',
-    'latitude': '40.7128',
-    'longitude': '-74.0060',
+    # The place fields default to empty, not to upstream's New York: the app reads an
+    # empty place, region or currency as "the TV's time zone guesses" (Place.java), so
+    # an absent key and an empty one mean the same thing.
+    'tmdb_region': '',
+    'latitude': '',
+    'longitude': '',
     'city': '',
     'language': 'auto',
-    'currency': 'USD',
+    'currency': '',
     'temperature': 'auto',
     'hide_services': '',
     'theme': 'auto',
@@ -674,8 +708,12 @@ def read_properties(path):
     utf-8-sig drops a byte order mark if the file has one. Without it the first key
     would be read as a byte order mark followed by "tmdb_key": not a known key, and
     dropped without a word.
+
+    A key that is not one of ours is dropped with a warning that names it: a typo
+    like "tmdb_keey" would otherwise build an APK without a key and say nothing.
     """
     values = {}
+    warned = set()
     try:
         with open(path, encoding='utf-8-sig') as handle:
             for line in handle:
@@ -685,8 +723,16 @@ def read_properties(path):
                 key, _, value = line.partition('=')
                 key = key.strip()
                 if key not in DEFAULTS:
+                    if key not in warned:
+                        warned.add(key)
+                        print(f'{path}: unknown key "{key}" (ignored)', file=sys.stderr)
                     continue
                 values[key] = value.strip().replace('"', '').replace('\\', '')
+    except UnicodeDecodeError:
+        # Notepad's "Unicode" saves UTF-16, which is not UTF-8. Upstream's own build
+        # script says so in one line instead of reading no settings at all.
+        raise SystemExit(f'{path}: is saved as UTF-16 (Notepad\'s "Unicode"). '
+                         'Save it as UTF-8 and build again.')
     except OSError as error:
         raise SystemExit(f'{path}: cannot be read: {error.strerror or error}')
     return values
@@ -708,15 +754,15 @@ def number(value, name):
 
 def build(properties, generic):
     values = dict(DEFAULTS)
-    if generic:
-        values.update({'tmdb_region': '', 'latitude': '', 'longitude': '', 'currency': ''})
-    else:
+    if not generic:
         for key, value in properties.items():
             if key in SWITCHES and value == '':
                 continue          # an empty switch is a switch that was not set
             values[key] = value
         values['latitude'] = number(values['latitude'], 'latitude')
         values['longitude'] = number(values['longitude'], 'longitude')
+    # --generic leaves the place, the region and the currency empty: the TV's time zone
+    # guesses them, which is what the defaults say too.
     values['disable_assistant'] = 'true' if values['disable_assistant'] == 'true' else 'false'
     values['show_crypto'] = 'true' if values['show_crypto'] == 'true' else 'false'
     values['hide_animation'] = 'true' if values['hide_animation'] == 'true' else 'false'
@@ -787,9 +833,11 @@ city=
 latitude=
 longitude=
 
-# Where the picks come from (TMDB region) and what the prices are in.
-tmdb_region=US
-currency=USD
+# Where the picks come from (TMDB region) and what the prices are in. Leave them empty
+# and the TV's country decides. A region is two letters (US, NL, GB); a currency is
+# three (USD, EUR).
+tmdb_region=
+currency=
 
 # What the home screen speaks and how it looks.
 language=auto
@@ -837,26 +885,37 @@ marks the build that leaves the place to the TV's time zone)."
 
 - [ ] **Step 1: Write `variant/permissions.txt`**
 
-Upstream's eight permissions, in their order:
+Upstream's eight permissions, in their order, as the whole line `aapt2 dump permissions`
+prints it — the attribute on `SCHEDULE_EXACT_ALARM` is part of the record:
 
 ```
-android.permission.INTERNET
-android.permission.ACCESS_NETWORK_STATE
-android.permission.RECEIVE_BOOT_COMPLETED
-android.permission.SYSTEM_ALERT_WINDOW
-android.permission.FOREGROUND_SERVICE
-android.permission.SCHEDULE_EXACT_ALARM
-android.permission.USE_EXACT_ALARM
-android.permission.REQUEST_INSTALL_PACKAGES
+uses-permission: name='android.permission.INTERNET'
+uses-permission: name='android.permission.ACCESS_NETWORK_STATE'
+uses-permission: name='android.permission.RECEIVE_BOOT_COMPLETED'
+uses-permission: name='android.permission.SYSTEM_ALERT_WINDOW'
+uses-permission: name='android.permission.FOREGROUND_SERVICE'
+uses-permission: name='android.permission.SCHEDULE_EXACT_ALARM' maxSdkVersion='32'
+uses-permission: name='android.permission.USE_EXACT_ALARM'
+uses-permission: name='android.permission.REQUEST_INSTALL_PACKAGES'
 ```
 
 - [ ] **Step 2: Write `variant/AndroidManifest.xml`**
 
-Upstream's manifest, with five changes: the label, the version, the provider authority, the
-task affinity (twice) and the fully-qualified component names. The manifest package stays
+Upstream's manifest, with six changes: the label, the version, the provider authority, the
+task affinity (twice), the fully-qualified component names, and the dropped HOME category.
+The manifest package stays
 `io.freemytv`, but `aapt2 link --rename-manifest-package` makes that `tv.dumbtv.variant` in
 the APK, where our classes are not — so the relative names upstream used are written out in
 full here.
+
+The HOME category is dropped on purpose: on this Fire OS `tv.dumbtv.home` is the home
+screen (through the Guard, an accessibility service that stage 2 adds), and a home-app
+candidate could take the HOME key away from the launcher that works. The app is still in the
+launcher through `SettingsActivity`'s LEANBACK_LAUNCHER and LAUNCHER filters.
+
+Upstream's own manifest is vendored byte for byte at `variant/upstream/AndroidManifest.xml`,
+and `tests/test_variant_manifest.py` asserts that the two differ in exactly these six
+things.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -990,8 +1049,8 @@ full here.
             android:theme="@style/FreeMyTV.Home">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.HOME" />
-                <category android:name="android.intent.category.DEFAULT" />
+                <!-- Upstream declares HOME (and DEFAULT) here. We do not: the variant
+                     must not be able to take the HOME key from tv.dumbtv.home. -->
             </intent-filter>
         </activity>
 
@@ -1110,7 +1169,14 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 GENERIC=false
-for arg in "$@"; do [ "$arg" = "--generic" ] && GENERIC=true; done
+for arg in "$@"; do
+  case "$arg" in
+    --generic) GENERIC=true ;;
+    # An unknown argument is refused, not ignored: "--generic" typed as "--generik"
+    # would silently build the keyed APK instead of the generic one.
+    *) echo "unknown argument: $arg" >&2; echo "usage: ./build.sh [--generic]" >&2; exit 2 ;;
+  esac
+done
 
 SDK=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}
 if [ -z "$SDK" ]; then
@@ -1120,11 +1186,24 @@ if [ -z "$SDK" ]; then
   done
 fi
 [ -n "$SDK" ] && [ -d "$SDK/build-tools" ] || { echo "Android SDK not found. Set ANDROID_HOME."; exit 1; }
-# The newest build-tools directory, and only a directory: a stray file must not be picked.
-BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
+# The build-tools version is pinned, so the build does not drift when the SDK is
+# updated: today's ubuntu-latest image ships build-tools 34.0.0 and 35, 36 and 37,
+# and "the newest one" would make CI build with a different toolchain than this
+# machine does. BUILD_TOOLS says which version; the pinned one is used when the SDK
+# has it, and the newest one otherwise, so a machine with only another version still
+# builds.
+BUILD_TOOLS=${BUILD_TOOLS:-34.0.0}
+BT=""
+if [ -n "$BUILD_TOOLS" ] && [ -d "$SDK/build-tools/$BUILD_TOOLS" ]; then
+  BT="$SDK/build-tools/$BUILD_TOOLS"
+else
+  # The newest build-tools directory, and only a directory: a stray file must not be picked.
+  BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
+fi
 AJ="$SDK/platforms/android-34/android.jar"
 [ -f "$AJ" ] || { echo "$AJ missing - sdkmanager \"platforms;android-34\""; exit 1; }
 [ -x "$BT/aapt2" ] || { echo "no aapt2 in $BT - sdkmanager \"build-tools;34.0.0\""; exit 1; }
+echo "build-tools: $(basename "$BT")"
 
 # --- JDK: one that works, and not one that breaks d8.
 # A javac that exists is not a javac that works: macOS ships /usr/bin/javac, a stub that
@@ -1193,6 +1272,14 @@ else
   fi
   python3 tools/gen_config.py config.properties "$WORK/gen/io/freemytv/Config.java"
 fi
+# The log says whether a key was baked into the APK: a keyed build and a generic one
+# are otherwise indistinguishable, and only one of them carries the owner's key.
+# The key itself is never printed.
+if grep -q 'static final String TMDB_KEY = "";' "$WORK/gen/io/freemytv/Config.java"; then
+  echo "TMDB key: none"
+else
+  echo "TMDB key: baked"
+fi
 
 # --- Build: aapt2 -> javac -> d8 -> zipalign -> apksigner
 "$BT/aapt2" compile --dir res -o "$WORK/res.zip"
@@ -1248,8 +1335,17 @@ if [ -z "$SDK" ]; then
   done
 fi
 [ -n "$SDK" ] && [ -d "$SDK/build-tools" ] || { echo "Android SDK not found. Set ANDROID_HOME."; exit 1; }
-# The newest build-tools directory, and only a directory: a stray file must not be picked.
-BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
+# The build-tools version is pinned, so the check runs with the toolchain the build
+# used: the same rule as build.sh (BUILD_TOOLS, the pinned one when the SDK has it,
+# the newest one otherwise).
+BUILD_TOOLS=${BUILD_TOOLS:-34.0.0}
+BT=""
+if [ -n "$BUILD_TOOLS" ] && [ -d "$SDK/build-tools/$BUILD_TOOLS" ]; then
+  BT="$SDK/build-tools/$BUILD_TOOLS"
+else
+  # The newest build-tools directory, and only a directory: a stray file must not be picked.
+  BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
+fi
 [ -x "$BT/aapt2" ] || { echo "no aapt2 in $BT - sdkmanager \"build-tools;34.0.0\""; exit 1; }
 APK=build/variant.apk
 [ -f "$APK" ] || { echo "no $APK - run ./build.sh --generic"; exit 1; }
@@ -1262,14 +1358,24 @@ min=$(printf '%s\n' "$badging" | sed -nE "s/^(minSdkVersion|sdkVersion):'([0-9]+
 [ "$min" = 26 ] || { echo "expected minSdkVersion 26, found $min"; exit 1; }
 target=$(printf '%s\n' "$badging" | sed -nE "s/^targetSdkVersion:'([0-9]+)'.*/\1/p")
 [ "$target" = 33 ] || { echo "expected targetSdkVersion 33, found $target"; exit 1; }
+# The label is ours, not upstream's: the TV shows our name.
+label=$(printf '%s\n' "$badging" | sed -nE "s/^application-label:'(.*)'$/\1/p" | head -1)
+[ "$label" = "dumbtv home (variant)" ] || { echo "expected the label 'dumbtv home (variant)', found '$label'"; exit 1; }
+# The provider authority is ours too, and it is inside the APK: a manifest that says
+# io.freemytv.photos would make the photos tool write to an authority nobody owns.
+xmltree=$("$BT/aapt2" dump xmltree "$APK" --file AndroidManifest.xml)
+grep -q 'authorities.*="tv.dumbtv.variant.photos"' <<< "$xmltree" \
+  || { echo "the provider authority in the APK is not tv.dumbtv.variant.photos"; exit 1; }
 
-# The permissions are upstream's, unchanged, in upstream's order.
+# The permissions are upstream's, unchanged, in upstream's order. The whole line is
+# compared, not just the name: SCHEDULE_EXACT_ALARM carries android:maxSdkVersion="32",
+# and a manifest without it would ask for the exact alarm on every Android version.
 dump=$("$BT/aapt2" dump permissions "$APK")
 printf '%s\n' "$dump"
-want=$(sed "s/^/uses-permission: name='/" permissions.txt | sed "s/$/'/")
-got=$(printf '%s\n' "$dump" | grep uses-permission | sed -E "s/.*name='([^']+)'.*/\1/" | sed "s/^/uses-permission: name='/" | sed "s/$/'/" || true)
+want=$(cat permissions.txt)
+got=$(printf '%s\n' "$dump" | grep uses-permission || true)
 [ "$want" = "$got" ] || {
-  echo "the permissions are not upstream's eight, in upstream's order"
+  echo "the permissions are not upstream's eight, in upstream's order, with upstream's attributes"
   diff <(printf '%s\n' "$want") <(printf '%s\n' "$got") || true
   exit 1
 }
@@ -1286,9 +1392,11 @@ grep -qx "Lio/freemytv/HomeView;" <<< "$dex" \
   || { echo "io.freemytv.HomeView is not in the dex"; exit 1; }
 grep -qx "Lio/freemytv/R;" <<< "$dex" \
   || { echo "io.freemytv.R is not in the dex"; exit 1; }
+grep -qx "Lio/freemytv/HomeActivity;" <<< "$dex" \
+  || { echo "io.freemytv.HomeActivity is not in the dex"; exit 1; }
 
 "$BT/apksigner" verify "$APK" >/dev/null || { echo "the APK is not signed"; exit 1; }
-echo "variant APK ok: $pkg, minSdk $min, targetSdk $target, 8 permissions, signed"
+echo "variant APK ok: $pkg, label '$label', minSdk $min, targetSdk $target, 8 permissions, signed"
 ```
 
 ```bash
@@ -1391,6 +1499,11 @@ Add to `.github/workflows/validate.yml`, after the `launcher` job:
 ```yaml
   variant:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # The build-tools version is pinned, so the CI build and the local build use the
+      # same aapt2/d8: the newest one in the image changes when GitHub updates it.
+      BUILD_TOOLS: "34.0.0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -1424,6 +1537,36 @@ to:
 ```yaml
       - name: syntax
         run: for f in scripts/*.sh launcher/*.sh variant/*.sh; do bash -n "$f" || exit 1; done
+```
+
+- [ ] **Step 2b: Widen the secret scan to the files this branch adds**
+
+The `scripts` job greps for private addresses and hardware ids, but only over `*.md`,
+`*.sh`, `*.txt`, `*.yaml`, `*.yml`, `*.json` and `*.py`. This branch adds a tracked
+`variant/AndroidManifest.xml` and a tracked `variant/config.example.properties`, and
+neither extension is scanned — so add both:
+
+```yaml
+               --include='*.xml' --include='*.properties' .
+```
+
+And add a check for the TMDB key itself, which nothing scanned for:
+
+```yaml
+      - name: no TMDB key in anything committed
+        run: |
+          # A key with a value: the key's name, an "=" and something that is not a
+          # space. The pattern is put together in two parts, so that this file does
+          # not match itself. Only the file names are printed: the key itself must
+          # not end up in the log either.
+          # The generator's own tests and the plan that quotes them carry a deliberate
+          # fake ("abc123"), so those two files are excluded; nothing else may match.
+          key='tmdb_key'
+          if git grep -lE "$key=[^[:space:]]" -- . \
+               ':!tests/test_variant_config.py' \
+               ':!docs/superpowers/plans/2026-10-26-variant-launcher-stage1.md'; then
+            echo "remove the TMDB key: it belongs in variant/config.properties, not the repo"; exit 1
+          fi
 ```
 
 - [ ] **Step 3: Run the same checks locally**
@@ -1483,10 +1626,15 @@ Expected: the device listed as `device`.
 adb shell dumpsys package tv.dumbtv.home | grep -E "versionName|versionCode" | head -3
 adb shell settings get secure enabled_accessibility_services
 adb shell settings get system screen_off_timeout
+adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
 ```
 
-Expected: `versionName=1.5`, the Guard bound, and `300000`. Write these down: the checks in
+Expected: `versionName=1.5`, the Guard bound, `300000`, and `tv.dumbtv.home` as the
+activity that answers HOME. Write these down: the checks in
 Step 6 compare against them.
+
+The last command is the one that answers "is `tv.dumbtv.home` still HOME?". `mCurrentFocus`
+does not: it reports the window in front, not the default home app.
 
 - [ ] **Step 3: Install the variant beside it**
 
@@ -1529,10 +1677,12 @@ adb shell dumpsys package tv.dumbtv.home | grep -E "versionName" | head -1
 adb shell settings get secure enabled_accessibility_services
 adb shell settings get system screen_off_timeout
 adb shell dumpsys window | grep -i "mCurrentFocus" | head -2
+adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
 ```
 
-Expected: `1.5`, the Guard still bound, `300000`, and the old launcher still the focus when
-the variant is closed.
+Expected: `1.5`, the Guard still bound, `300000`, the old launcher still the focus when
+the variant is closed, and — the one that matters — `tv.dumbtv.home` still answering HOME.
+The variant declares no HOME category, so it must not have taken the key.
 
 - [ ] **Step 7: Run the repo's own check on the TV**
 

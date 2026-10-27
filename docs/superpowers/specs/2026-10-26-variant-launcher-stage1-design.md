@@ -50,10 +50,10 @@ passthrough input is. That part stays ours, and it is the part that makes the TV
 ### In
 
 1. Vendor free-my-tv's Android app into `variant/`:
-   - `variant/src/io/freemytv/*.java` — 37 files, verbatim, upstream `io.freemytv` package
-   - `variant/assets/**` — Inter variable font, ~30 symbol PNGs, 28 `i18n/*.json` catalogues, `zones.json`
+   - `variant/src/io/freemytv/*.java` — 40 files, verbatim, upstream `io.freemytv` package
+   - `variant/assets/**` — Inter variable font, ~30 symbol PNGs, 26 `i18n/*.json` catalogues, `zones.json`
    - `variant/res/**` — merged with nothing; this is a separate app, so no resource collisions
-   - `variant/tools/` — `translate.py`, `photos.py`, `make_art.py`, `make_symbols.py`, `make_zones.py`, `check.sh`
+   - `variant/tools/` — `translate.py` and `photos.py` (upstream's other tools are not vendored)
 2. A `variant/build.sh` derived from upstream's, adapted to this repo:
    - `config.properties` → generated `io.freemytv.Config` (TMDB key, city, lat/lon, region, currency, toggles)
    - `--generic` builds with no key, as upstream's release APK
@@ -77,7 +77,7 @@ passthrough input is. That part stays ours, and it is the part that makes the TV
 - Stripping free-my-tv's control plane, the contract/CI/docs rewrite, attribution finalisation,
   `verify.sh` for the variant, the release flow — **stage 3**
 - The my-kids-tv kids face (parent PIN, age bands, curated catalog, hero, night sky) — **stage 4**
-- In-app rebranding of upstream's 28 language catalogues — **stage 3** (stage 1 changes only the
+- In-app rebranding of upstream's 26 language catalogues — **stage 3** (stage 1 changes only the
   Android app label)
 
 ## 5. Architecture
@@ -87,11 +87,12 @@ passthrough input is. That part stays ours, and it is the part that makes the TV
 ```
 variant/
   AndroidManifest.xml        application id tv.dumbtv.variant (provisional)
+  upstream/AndroidManifest.xml  upstream's manifest, byte for byte: the record ours was made from
   build.sh                   aapt2 -> javac -> d8 -> zipalign -> apksigner, no Gradle
   config.example.properties  committed
   config.properties          git-ignored, holds the TMDB key
   release.keystore           git-ignored, created on demand
-  src/io/freemytv/*.java     37 upstream files, verbatim
+  src/io/freemytv/*.java     40 upstream files, verbatim
   res/**                     upstream resources
   assets/**                  upstream assets
   tools/**                   upstream python tools
@@ -159,21 +160,50 @@ keep resolving — not an enforcement list, so the content hosts work unchanged.
 `api.themoviedb.org` and `api.open-meteo.com` to that check list, and `www.netflix.com` if
 the owner keeps Netflix installed.
 
+### 5.5 The manifest
+
+Upstream's `app/AndroidManifest.xml` is vendored byte for byte at
+`variant/upstream/AndroidManifest.xml`, and the vendor verifier compares it with upstream's,
+like the other vendored files. Our own `variant/AndroidManifest.xml` is upstream's with six
+documented changes:
+
+1. **The label** — `Free My TV` → `dumbtv home (variant)`, on the application and on every
+   component that carries a label.
+2. **The version** — `versionCode 3`, `versionName 1.2` → `versionCode 1`, `versionName 1.0`.
+   Ours is a different app with its own key.
+3. **The provider authority** — `io.freemytv.photos` → `tv.dumbtv.variant.photos`.
+4. **The task affinity, twice** — `io.freemytv.settings` → `tv.dumbtv.variant.settings`, on
+   `SettingsActivity` and on `FireHomeActivity`.
+5. **The fully-qualified component names** — `.App` and the rest → `io.freemytv.App` and the
+   rest, because `aapt2 link --rename-manifest-package` makes the manifest's package
+   `tv.dumbtv.variant`, where our classes are not.
+6. **The HOME category** — upstream's `HomeActivity` declares `android.intent.category.HOME`
+   and `DEFAULT`; we drop both. On this Fire OS `tv.dumbtv.home` is the home screen through
+   the Guard (an accessibility service, stage 2), and a home-app candidate could take the
+   HOME key away from the launcher that works today. The app is still in the launcher
+   through `SettingsActivity`'s LEANBACK_LAUNCHER and LAUNCHER filters.
+
+`tests/test_variant_manifest.py` parses both manifests and asserts that the differences
+between them are exactly these six, naming any difference that is not one of them.
+
 ## 6. Testing
 
 **In CI**
-- `variant/build.sh --generic` succeeds on a clean checkout (JDK 17, platform android-26,
-  build-tools 34).
+- `variant/build.sh --generic` succeeds on a clean checkout (JDK 17, platform android-34,
+  build-tools 34.0.0 — pinned, so the CI build and the local build use the same aapt2/d8).
 - The built APK declares exactly upstream's eight `uses-permission` entries, no more and no
-  fewer, in the order recorded in `variant/permissions.txt`.
+  fewer, in the order recorded in `variant/permissions.txt`, with their attributes.
 - The APK is signed and verifies.
 - The APK contains `io.freemytv.HomeActivity` and `io.freemytv.HomeView`.
-- The existing checks still pass: 108 unit tests, `catalog/validate.py`, `bash -n` over every
+- The existing checks still pass: 176 unit tests, `catalog/validate.py`, `bash -n` over every
   script, `launcher/release-check.sh --manifest`.
 
 **On the TV (manual, on the Ember 55)**
 - `adb install variant/build/variant.apk` succeeds and `tv.dumbtv.home` 1.5 stays installed,
-  still HOME, still keeping the panel awake on a picture.
+  still HOME, still keeping the panel awake on a picture. The check that answers that is
+  `adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c
+  android.intent.category.HOME`, before and after: it must name `tv.dumbtv.home` both times.
+  (`mCurrentFocus` reports the window in front, not the default home app.)
 - The variant opens from the app row: shelf, clock, day/night theme, and the app row.
 - The picks load with the owner's TMDB key; the weather card loads without one.
 - The owner then installs Netflix (and any other streaming apps they want) and signs in, so
@@ -198,8 +228,10 @@ the owner keeps Netflix installed.
 ## 8. Later stages (outline)
 
 - **Stage 2 — Own.** Vendor our `Guard`, `Config` and the `Catalog` input discovery into the
-  variant; point the Guard at the variant's home activity so it takes the HOME key; add the
-  INPUTS row to the new shelf; add `FLAG_KEEP_SCREEN_ON` while a picture shows. The variant
+  variant; point the Guard at the variant's home activity so it takes the HOME key (it needs
+  no HOME category: the variant declares none in stage 1, so it cannot be a home-app
+  candidate); add the INPUTS row to the new shelf; add `FLAG_KEEP_SCREEN_ON` while a picture
+  shows. The variant
   becomes the home screen; upstream's 1.5 stays installed but is no longer HOME.
 - **Stage 3 — Clean.** Remove the app-side control plane (`HomeMode`'s mode switch, `Adb`,
   `ModeJob`, `Capabilities`, `Watchdog`, `home-state.json`, `Updates`' self-updater, and
