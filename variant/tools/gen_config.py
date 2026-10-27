@@ -13,7 +13,9 @@ upstream, the empty-value rule, which the bullets below explain.
     stays empty. The app reads an empty place, region or currency as "the TV's time zone
     guesses" (Place.java), so an empty value is an answer, not a missing one. This is the
     one deliberate difference from upstream: upstream's shell gives an empty value the
-    default.
+    default. The four place fields default to empty here, not to upstream's New York:
+    an absent key and an empty one mean the same thing.
+  - an unknown key is dropped, with a warning that names it
   - latitude and longitude must be a plain number: an optional minus sign, digits and an
     optional fraction, and nothing else
   - disable_assistant and hide_animation are true only for exactly "true"
@@ -29,12 +31,15 @@ import sys
 DEFAULTS = {
     'tmdb_key': '',
     'watchmode_key': '',
-    'tmdb_region': 'US',
-    'latitude': '40.7128',
-    'longitude': '-74.0060',
+    # The place fields default to empty, not to upstream's New York: the app reads an
+    # empty place, region or currency as "the TV's time zone guesses" (Place.java), so
+    # an absent key and an empty one mean the same thing.
+    'tmdb_region': '',
+    'latitude': '',
+    'longitude': '',
     'city': '',
     'language': 'auto',
-    'currency': 'USD',
+    'currency': '',
     'temperature': 'auto',
     'hide_services': '',
     'theme': 'auto',
@@ -86,8 +91,12 @@ def read_properties(path):
     utf-8-sig drops a byte order mark if the file has one. Without it the first key
     would be read as a byte order mark followed by "tmdb_key": not a known key, and
     dropped without a word.
+
+    A key that is not one of ours is dropped with a warning that names it: a typo
+    like "tmdb_keey" would otherwise build an APK without a key and say nothing.
     """
     values = {}
+    warned = set()
     try:
         with open(path, encoding='utf-8-sig') as handle:
             for line in handle:
@@ -97,8 +106,16 @@ def read_properties(path):
                 key, _, value = line.partition('=')
                 key = key.strip()
                 if key not in DEFAULTS:
+                    if key not in warned:
+                        warned.add(key)
+                        print(f'{path}: unknown key "{key}" (ignored)', file=sys.stderr)
                     continue
                 values[key] = value.strip().replace('"', '').replace('\\', '')
+    except UnicodeDecodeError:
+        # Notepad's "Unicode" saves UTF-16, which is not UTF-8. Upstream's own build
+        # script says so in one line instead of reading no settings at all.
+        raise SystemExit(f'{path}: is saved as UTF-16 (Notepad\'s "Unicode"). '
+                         'Save it as UTF-8 and build again.')
     except OSError as error:
         raise SystemExit(f'{path}: cannot be read: {error.strerror or error}')
     return values
@@ -120,15 +137,15 @@ def number(value, name):
 
 def build(properties, generic):
     values = dict(DEFAULTS)
-    if generic:
-        values.update({'tmdb_region': '', 'latitude': '', 'longitude': '', 'currency': ''})
-    else:
+    if not generic:
         for key, value in properties.items():
             if key in SWITCHES and value == '':
                 continue          # an empty switch is a switch that was not set
             values[key] = value
         values['latitude'] = number(values['latitude'], 'latitude')
         values['longitude'] = number(values['longitude'], 'longitude')
+    # --generic leaves the place, the region and the currency empty: the TV's time zone
+    # guesses them, which is what the defaults say too.
     values['disable_assistant'] = 'true' if values['disable_assistant'] == 'true' else 'false'
     values['show_crypto'] = 'true' if values['show_crypto'] == 'true' else 'false'
     values['hide_animation'] = 'true' if values['hide_animation'] == 'true' else 'false'

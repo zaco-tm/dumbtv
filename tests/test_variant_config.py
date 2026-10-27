@@ -102,6 +102,37 @@ class VariantConfigTests(unittest.TestCase):
         # file cannot turn up in it.
         self.assertEqual(java.count('static final'), len(FIELDS))
 
+    def test_an_unknown_key_is_warned_about(self):
+        # A typo like tmdb_keey= would otherwise build an APK with no key and say
+        # nothing at all.
+        with tempfile.TemporaryDirectory() as tmp:
+            props = Path(tmp) / 'config.properties'
+            props.write_text('tmdb_keey=abc123\ncity=Amsterdam\n', encoding='utf-8')
+            done = run_tool(str(props), str(Path(tmp) / 'Config.java'))
+            self.assertEqual(done.returncode, 0, done.stderr)
+            self.assertIn('tmdb_keey', done.stderr)
+            self.assertNotIn('Traceback', done.stderr)
+
+    def test_an_unknown_key_is_warned_about_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            props = Path(tmp) / 'config.properties'
+            props.write_text('nope=1\nnope=2\n', encoding='utf-8')
+            done = run_tool(str(props), str(Path(tmp) / 'Config.java'))
+            self.assertEqual(done.returncode, 0, done.stderr)
+            self.assertEqual(done.stderr.count('nope'), 1, done.stderr)
+
+    def test_a_utf16_file_says_so_in_one_line(self):
+        # Notepad's "Unicode" saves UTF-16, which is not UTF-8. Upstream's own build
+        # script says so in one line; a traceback would not.
+        with tempfile.TemporaryDirectory() as tmp:
+            props = Path(tmp) / 'config.properties'
+            props.write_bytes('tmdb_key=abc123\ncity=Amsterdam\n'.encode('utf-16'))
+            done = run_tool(str(props), str(Path(tmp) / 'Config.java'))
+            self.assertNotEqual(done.returncode, 0)
+            self.assertIn('UTF-16', done.stderr)
+            self.assertNotIn('Traceback', done.stderr)
+            self.assertEqual(len(done.stderr.strip().splitlines()), 1)
+
     def test_hide_services_is_read(self):
         java = generate('hide_services=netflix,prime\n')
         self.assertIn('static final String HIDE_SERVICES = "netflix,prime";', java)
@@ -156,10 +187,25 @@ class VariantConfigTests(unittest.TestCase):
         self.assertIn('static final String LATITUDE = "";', java)
         self.assertIn('static final String LONGITUDE = "";', java)
 
-    def test_a_latitude_that_is_not_in_the_file_keeps_the_default(self):
+    def test_an_absent_latitude_stays_empty(self):
+        # An absent key and an empty one mean the same thing: the app then guesses the
+        # place from the TV's time zone (Place.java). Upstream's shell would put New
+        # York here, and a config that sets only a key and a city would pin the TV to
+        # New York without saying so.
         java = generate('city=Amsterdam\n')
-        self.assertIn('static final String LATITUDE = "40.7128";', java)
-        self.assertIn('static final String LONGITUDE = "-74.0060";', java)
+        self.assertIn('static final String LATITUDE = "";', java)
+        self.assertIn('static final String LONGITUDE = "";', java)
+
+    def test_an_absent_region_and_currency_stay_empty(self):
+        # The same for the region and the currency: empty means the TV's country.
+        java = generate('city=Amsterdam\n')
+        self.assertIn('static final String TMDB_REGION = "";', java)
+        self.assertIn('static final String CURRENCY = "";', java)
+
+    def test_a_region_and_a_currency_that_are_set_are_kept(self):
+        java = generate('tmdb_region=NL\ncurrency=EUR\n')
+        self.assertIn('static final String TMDB_REGION = "NL";', java)
+        self.assertIn('static final String CURRENCY = "EUR";', java)
 
     def test_a_latitude_is_read(self):
         java = generate('latitude=52.37\n')
