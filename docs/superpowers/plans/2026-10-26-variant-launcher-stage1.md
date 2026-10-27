@@ -28,7 +28,7 @@
 |---|---|
 | `variant/src/io/freemytv/*.java` | Upstream's app, verbatim (40 files). Not ours to edit. |
 | `variant/res/**` | Upstream's resources, verbatim. `R` is generated into `io.freemytv`. |
-| `variant/assets/**` | Upstream's assets: Inter font, symbol PNGs, 26 i18n catalogues (28 languages), `zones.json`. |
+| `variant/assets/**` | Upstream's assets: Inter font, symbol PNGs, 26 i18n catalogues, `zones.json`. |
 | `variant/tools/translate.py` | Upstream's i18n tool, adapted to our paths. |
 | `variant/tools/photos.py` | Upstream's photo pusher, adapted to our provider authority. |
 | `variant/tools/gen_config.py` | **Ours.** Reads `config.properties`, writes `io/freemytv/Config.java`. |
@@ -37,7 +37,8 @@
 | `variant/check-apk.sh` | **Ours.** Asserts the built APK is what this repo expects. |
 | `variant/verify-vendor.sh` | **Ours.** Proves the vendored tree is upstream's, byte for byte. |
 | `variant/permissions.txt` | The eight permissions, in order. |
-| `variant/local-changes.txt` | Paths allowed to differ from upstream. Empty in stage 1. |
+| `variant/local-changes.txt` | Upstream paths allowed to differ from upstream (the two adapted tools). |
+| `variant/our-files.txt` | Paths in a vendored tree that are ours, not upstream's (`tools/gen_config.py`). |
 | `variant/UPSTREAM.md` | Provenance: upstream commit, licence, what we changed and why. |
 | `variant/README.md` | How to build and install the variant. |
 | `tests/test_variant_config.py` | **Ours.** Unit tests for the config generator. |
@@ -47,9 +48,9 @@
 ### Task 1: Vendor the upstream tree, and prove it unmodified
 
 **Files:**
-- Create: `variant/src/io/freemytv/*.java` (37 files), `variant/res/**`, `variant/assets/**`
+- Create: `variant/src/io/freemytv/*.java` (40 files), `variant/res/**`, `variant/assets/**`
 - Create: `variant/tools/translate.py`, `variant/tools/photos.py`
-- Create: `variant/verify-vendor.sh`, `variant/local-changes.txt`, `variant/UPSTREAM.md`
+- Create: `variant/verify-vendor.sh`, `variant/local-changes.txt`, `variant/our-files.txt`, `variant/UPSTREAM.md`
 - Create: `variant/LICENSE.free-my-tv`
 - Create: `NOTICE`
 
@@ -159,7 +160,18 @@ chmod +x variant/verify-vendor.sh
 
 - [ ] **Step 5: Write `variant/local-changes.txt` and `variant/UPSTREAM.md`**
 
-`variant/local-changes.txt` is empty (a comment line is not a path; keep the file truly empty):
+`variant/local-changes.txt` lists the two tools we adapted, so the verifier may find them changed:
+
+```
+tools/photos.py
+tools/translate.py
+```
+
+`variant/our-files.txt` lists the files in the vendored tree that are ours, not upstream's:
+
+```
+tools/gen_config.py
+```
 
 ```bash
 : > variant/local-changes.txt
@@ -178,21 +190,26 @@ The Android app in `variant/` is free-my-tv, vendored verbatim.
 - Vendored from: `app/src`, `app/res`, `app/assets`
 - Tools adapted: `tools/translate.py`, `tools/photos.py` (the photo tool now writes to
   `content://tv.dumbtv.variant.photos`, our provider authority)
-- Not vendored: upstream's `web/`, `webos/`, `tizen/`, `docs/`, website and macOS app
+- Not vendored: upstream's `web/`, `webos/`, `tizen/`, `docs/`, `README.md`,
+  `AGENTS.md`, `CLAUDE.md`, `.github/`, `.gitignore`, `.gitattributes`, `build.sh` and
+  `config.example.properties` (we generate the config class ourselves)
 - The app's code keeps upstream's `io.freemytv` package. The application id is ours:
   `aapt2 link --rename-manifest-package tv.dumbtv.variant` renames the manifest at link
   time, so the generated `R` stays in `io.freemytv` and no upstream file is edited.
 
 ## Local changes
 
-None. `local-changes.txt` is empty, and `verify-vendor.sh` proves every vendored byte
-is upstream's.
+`local-changes.txt` lists the two tools we adapted, so the verifier may find them changed.
+`our-files.txt` lists the files in the vendored tree that are ours, not upstream's
+(`tools/gen_config.py`), so the verifier does not call them extra.
 
 ## Third-party material inside the app
 
 - Inter (font, `assets/fonts/`) — SIL Open Font License 1.1
 - Material Symbols (the `assets/symbols/` PNGs) — Apache 2.0
-- The 28 `assets/i18n/*.json` catalogues are upstream's own translations.
+- Coin logos (`res/drawable/coin_*.xml`) — cryptocurrency-icons, CC0
+- Samsung app logos — Simple Icons, CC0
+- The 26 `assets/i18n/*.json` catalogues are upstream's own translations.
 ```
 
 - [ ] **Step 6: Write the root `NOTICE`**
