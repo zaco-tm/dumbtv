@@ -852,10 +852,11 @@ android.permission.REQUEST_INSTALL_PACKAGES
 
 - [ ] **Step 2: Write `variant/AndroidManifest.xml`**
 
-Upstream's manifest, with four changes: the label, the version, the provider authority and
-the fully-qualified component names (the manifest package stays `io.freemytv`, so the
-relative names upstream used would still resolve — but they are written out in full here
-so the file reads on its own).
+Upstream's manifest, with five changes: the label, the version, the provider authority, the
+task affinity (twice) and the fully-qualified component names. The manifest package stays
+`io.freemytv`, but `aapt2 link --rename-manifest-package` makes that `tv.dumbtv.variant` in
+the APK, where our classes are not — so the relative names upstream used are written out in
+full here.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1101,7 +1102,8 @@ authority `content://tv.dumbtv.variant.photos` still matches the manifest.
 ```bash
 #!/usr/bin/env bash
 # Builds variant/build/variant.apk from the vendored free-my-tv app: no Gradle, no libraries.
-# Needs a JDK 17+ and an Android SDK with platforms;android-34 and build-tools 34+.
+# Needs an Android SDK with platforms;android-34 and build-tools 34+. The JDK it builds
+# with is found by the script itself: a JDK 17, which builds cleanly.
 #   ./build.sh            with variant/config.properties (your TMDB key, your city)
 #   ./build.sh --generic  without one, as a CI build: no key, the TV's time zone gives the city
 set -euo pipefail
@@ -1118,14 +1120,64 @@ if [ -z "$SDK" ]; then
   done
 fi
 [ -n "$SDK" ] && [ -d "$SDK/build-tools" ] || { echo "Android SDK not found. Set ANDROID_HOME."; exit 1; }
-BT="$SDK/build-tools/$(ls "$SDK/build-tools" | sort -V | tail -1)"
+# The newest build-tools directory, and only a directory: a stray file must not be picked.
+BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
 AJ="$SDK/platforms/android-34/android.jar"
 [ -f "$AJ" ] || { echo "$AJ missing - sdkmanager \"platforms;android-34\""; exit 1; }
 [ -x "$BT/aapt2" ] || { echo "no aapt2 in $BT - sdkmanager \"build-tools;34.0.0\""; exit 1; }
 
-JAVAC="${JAVA_HOME:+$JAVA_HOME/bin/}javac"
-KEYTOOL="${JAVA_HOME:+$JAVA_HOME/bin/}keytool"
-command -v "$JAVAC" >/dev/null 2>&1 || { echo "JDK not found. Install JDK 17 and set JAVA_HOME."; exit 1; }
+# --- JDK: one that works, and not one that breaks d8.
+# A javac that exists is not a javac that works: macOS ships /usr/bin/javac, a stub that
+# fails with "Unable to locate a Java Runtime that supports javac". So the javac is asked
+# to run, not merely to exist. A stub that hangs (it does, when JAVA_HOME points at
+# something odd) is no better than one that fails: the probe waits five seconds, then
+# gives up on it.
+# The scheme is launcher/build.sh's: the JDK 17 paths, then macOS's java_home, then a
+# warning when the JDK in use is 21 or newer.
+JDK17_PATHS=(/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home /usr/lib/jvm/java-17-openjdk)
+javac_major() { "$1/bin/javac" -version 2>&1 | sed -n 's/^javac \([0-9]*\).*/\1/p'; }
+javac_works() {
+  [[ -x $1/bin/javac ]] || return 1
+  "$1/bin/javac" -version >/dev/null 2>&1 &
+  local pid=$! waited=0
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge 50 ]; then
+      kill -9 "$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null || true
+      return 1
+    fi
+    sleep 0.1
+    waited=$((waited + 1))
+  done
+  wait "$pid"
+}
+
+if [[ -z ${JAVA_HOME:-} ]] || ! javac_works "$JAVA_HOME"; then
+  for j in "${JDK17_PATHS[@]}" /opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home \
+           "$(/usr/libexec/java_home 2>/dev/null || true)"; do
+    if [[ -n $j ]] && javac_works "$j"; then JAVA_HOME=$j; break; fi
+  done
+fi
+# build-tools 34's bundled d8 threw an internal NullPointerException dexing an anonymous inner
+# class compiled by JDK 27, even with --release 8. JDK 17 builds it cleanly. Only 27 was seen
+# failing; 21 is a conservative cut-off, since macOS's java_home and a Linux distro's default
+# javac both commonly land on something newer than 17 now.
+if [[ -z ${JAVA_HOME:-} ]] || ! javac_works "$JAVA_HOME" || [[ $(javac_major "$JAVA_HOME") -ge 21 ]]; then
+  for j in "${JDK17_PATHS[@]}"; do
+    if javac_works "$j"; then JAVA_HOME=$j; break; fi
+  done
+fi
+[[ -n ${JAVA_HOME:-} ]] && javac_works "$JAVA_HOME" || {
+  echo "no working JDK found - brew install openjdk@17 (macOS) or pacman -S jdk17-openjdk (Arch)" >&2
+  exit 1
+}
+if [[ $(javac_major "$JAVA_HOME") -ge 21 ]]; then
+  echo "warning: $JAVA_HOME is JDK $(javac_major "$JAVA_HOME"); build-tools' d8 crashed on JDK 27 output - install a JDK 17 if this fails" >&2
+fi
+export JAVA_HOME
+JAVAC="$JAVA_HOME/bin/javac"
+KEYTOOL="$JAVA_HOME/bin/keytool"
+echo "using JDK $(javac_major "$JAVA_HOME") at $JAVA_HOME"
 
 # --- Settings: config.properties -> io/freemytv/Config.java
 WORK="$PWD/build/tmp"
@@ -1195,14 +1247,18 @@ if [ -z "$SDK" ]; then
     [ -d "$d/build-tools" ] && { SDK="$d"; break; }
   done
 fi
-BT="$SDK/build-tools/$(ls "$SDK/build-tools" | sort -V | tail -1)"
+[ -n "$SDK" ] && [ -d "$SDK/build-tools" ] || { echo "Android SDK not found. Set ANDROID_HOME."; exit 1; }
+# The newest build-tools directory, and only a directory: a stray file must not be picked.
+BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
+[ -x "$BT/aapt2" ] || { echo "no aapt2 in $BT - sdkmanager \"build-tools;34.0.0\""; exit 1; }
 APK=build/variant.apk
 [ -f "$APK" ] || { echo "no $APK - run ./build.sh --generic"; exit 1; }
 
 badging=$("$BT/aapt2" dump badging "$APK")
 pkg=$(printf '%s\n' "$badging" | sed -nE "s/^package: name='([^']+)'.*/\1/p")
 [ "$pkg" = "tv.dumbtv.variant" ] || { echo "expected the application id tv.dumbtv.variant, found $pkg"; exit 1; }
-min=$(printf '%s\n' "$badging" | sed -nE "s/^minSdkVersion:'([0-9]+)'.*/\1/p")
+# aapt2 calls it sdkVersion; minSdkVersion is the name in the manifest.
+min=$(printf '%s\n' "$badging" | sed -nE "s/^(minSdkVersion|sdkVersion):'([0-9]+)'.*/\2/p")
 [ "$min" = 26 ] || { echo "expected minSdkVersion 26, found $min"; exit 1; }
 target=$(printf '%s\n' "$badging" | sed -nE "s/^targetSdkVersion:'([0-9]+)'.*/\1/p")
 [ "$target" = 33 ] || { echo "expected targetSdkVersion 33, found $target"; exit 1; }
@@ -1210,8 +1266,8 @@ target=$(printf '%s\n' "$badging" | sed -nE "s/^targetSdkVersion:'([0-9]+)'.*/\1
 # The permissions are upstream's, unchanged, in upstream's order.
 dump=$("$BT/aapt2" dump permissions "$APK")
 printf '%s\n' "$dump"
-want=$(sed 's/^/uses-permission: name=/' permissions.txt | sed "s/$/'/")
-got=$(printf '%s\n' "$dump" | grep uses-permission | sed -E "s/.*name='([^']+)'.*/\1/" | sed 's/^/uses-permission: name=/' | sed "s/$/'/")
+want=$(sed "s/^/uses-permission: name='/" permissions.txt | sed "s/$/'/")
+got=$(printf '%s\n' "$dump" | grep uses-permission | sed -E "s/.*name='([^']+)'.*/\1/" | sed "s/^/uses-permission: name='/" | sed "s/$/'/" || true)
 [ "$want" = "$got" ] || {
   echo "the permissions are not upstream's eight, in upstream's order"
   diff <(printf '%s\n' "$want") <(printf '%s\n' "$got") || true
@@ -1219,9 +1275,16 @@ got=$(printf '%s\n' "$dump" | grep uses-permission | sed -E "s/.*name='([^']+)'.
 }
 
 # The app's own code is in it, under upstream's package.
-unzip -p "$APK" classes.dex | strings | grep -qx "Lio/freemytv/HomeView;" \
+# The dex must be there: without it, unzip's own stderr would be the only word about it.
+names=$(unzip -Z1 "$APK")
+printf '%s\n' "$names" | grep -x "classes.dex" >/dev/null \
+  || { echo "no classes.dex in $APK"; exit 1; }
+# The dex is read once: grep -q closes the pipe early, and with pipefail on that comes out
+# as a SIGPIPE (141), which would look like a missing class.
+dex=$(unzip -p "$APK" classes.dex | strings)
+grep -qx "Lio/freemytv/HomeView;" <<< "$dex" \
   || { echo "io.freemytv.HomeView is not in the dex"; exit 1; }
-unzip -p "$APK" classes.dex | strings | grep -qx "Lio/freemytv/R;" \
+grep -qx "Lio/freemytv/R;" <<< "$dex" \
   || { echo "io.freemytv.R is not in the dex"; exit 1; }
 
 "$BT/apksigner" verify "$APK" >/dev/null || { echo "the APK is not signed"; exit 1; }
@@ -1260,7 +1323,8 @@ export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
 ./variant/build.sh --generic
 ```
 
-Expected: `built build/variant.apk  <n> bytes`, with `n` around 2 MB.
+Expected: `using JDK 17 at <path>`, then `built build/variant.apk  <n> bytes`, with `n` around
+2 MB. The script finds a JDK 17 by itself; `JAVA_HOME` only points it at one.
 
 If `javac` refuses a `java.*` API that upstream's own build accepts, switch the compile line
 to upstream's flags, which take `java.*` from the Android jar instead of the JDK:
