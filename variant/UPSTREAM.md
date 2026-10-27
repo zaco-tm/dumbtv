@@ -50,7 +50,7 @@ the other vendored files. It is the record of what our own `variant/AndroidManif
 was made from: without it, the prose below would be the only record of upstream's
 manifest, and prose does not fail a build.
 
-Our manifest is upstream's with seven changes, and nothing else that matters:
+Our manifest is upstream's with eight changes, and nothing else that matters:
 
 1. **The label** — `Free My TV` → `dumbtv home (variant)`, on the application and on every
    component that carries a label. The TV shows our name, not upstream's.
@@ -84,11 +84,22 @@ Our manifest is upstream's with seven changes, and nothing else that matters:
    with our wordmark. The picture is ours, so it is listed in `our-files.txt`, and the design
    is kept as an SVG next to it in `variant/artwork/` so the PNG can be re-made and looked at
    in a review.
+8. **The Guard** — upstream declares no accessibility service for the home screen; we declare
+   `io.freemytv.Guard`, ours. Fire OS gives the HOME key to Amazon's protected launcher and
+   lets no third-party app be the home app, so the only way to own HOME there is a Guard: an
+   accessibility service that waits for Amazon's home window and covers it with ours. It is the
+   port of `tv.dumbtv.home`'s Guard (`launcher/src/tv/dumbtv/home/Guard.java`) — the same
+   alarm-fired launch, the same cover, the same rules — and it is a new file of ours, listed in
+   `our-files.txt`. Its configuration is `res/xml/guard.xml`, with its two strings in
+   `res/values/guard.xml`. It is declared `android:exported="true"` behind
+   `android.permission.BIND_ACCESSIBILITY_SERVICE`, like upstream's own `RemoteKeyService`:
+   this APK targets 33, and Android 12 refuses to install a component with an intent filter
+   and no explicit `android:exported`.
 
 Upstream's comments are trimmed: they describe upstream's own screens and its own names.
 
 `tests/test_variant_manifest.py` parses both manifests and asserts that the differences
-between them are exactly these seven, and names any difference that is not one of them. A
+between them are exactly these eight, and names any difference that is not one of them. A
 manifest that drifted away from upstream's — a permission added, an attribute dropped —
 fails the test suite rather than the reviewer.
 
@@ -126,10 +137,10 @@ it fails on a file that differs without being listed as well as on a listed file
 no longer differs.
 
 `our-files.txt` lists the paths in the vendored tree that are ours, not upstream's
-(`tools/gen_config.py` and `res/drawable-nodpi/banner_variant.png`): upstream has no such
-file, so there is nothing to compare it with and the verifier does not call it extra. It is
-not a loophole — a path upstream does have cannot be excused this way, and the verifier says
-so if one is.
+(`tools/gen_config.py`, `res/drawable-nodpi/banner_variant.png`, `src/io/freemytv/Guard.java`,
+`res/xml/guard.xml` and `res/values/guard.xml`): upstream has no such files, so there is
+nothing to compare them with and the verifier does not call them extra. It is not a loophole —
+a path upstream does have cannot be excused this way, and the verifier says so if one is.
 
 ## The proof
 

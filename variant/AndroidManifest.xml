@@ -221,5 +221,28 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <!-- Ours: the Guard takes the HOME key on Fire OS, where Amazon's launcher is
+             protected and no third-party app can be the home app. It is the port of
+             tv.dumbtv.home's Guard, and it is listed in our-files.txt. See
+             variant/UPSTREAM.md.
+
+             android:exported is not optional here: this APK targets 33, and Android 12
+             refuses to install a component that declares an intent filter without an
+             explicit android:exported. "true" is right because the system has to bind
+             the service from another uid; android.permission.BIND_ACCESSIBILITY_SERVICE
+             is what guards it, exactly as upstream's RemoteKeyService declares it. -->
+        <service
+            android:name="io.freemytv.Guard"
+            android:label="@string/guard_label"
+            android:exported="true"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/guard" />
+        </service>
     </application>
 </manifest>

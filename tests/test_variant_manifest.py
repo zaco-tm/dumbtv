@@ -156,6 +156,10 @@ def classify(difference):
     if kind == 'removed' and upstream in ('category android.intent.category.HOME',
                                           'category android.intent.category.DEFAULT'):
         return ('home category', upstream.split(' ', 1)[1], ours)
+    if kind == 'added' and ours == 'service io.freemytv.Guard':
+        # Ours, and ours only: the Guard takes the HOME key on Fire OS, where no
+        # third-party app can be the home app. Upstream declares no such service.
+        return ('guard service', upstream, ours)
     return ('UNDOCUMENTED', f'{path}: {upstream} -> {ours}', kind)
 
 
@@ -185,6 +189,8 @@ EXPECTED = Counter([
     ('home category', 'android.intent.category.HOME', None),
     ('home category', 'android.intent.category.DEFAULT', None),
     ('banner', '@drawable/banner', '@drawable/banner_variant'),
+    # Ours, and ours only: the Guard that takes the HOME key on Fire OS.
+    ('guard service', None, 'service io.freemytv.Guard'),
     # The label is on the application and on the seven components that carry one.
     *([('label', 'Free My TV', 'dumbtv home (variant)')] * 8),
     # The task affinity is on two activities.
@@ -237,6 +243,53 @@ class VariantManifestTests(unittest.TestCase):
         # never arrive and nothing says why.
         self.assertIn('content://' + AUTHORITY, PHOTOS.read_text(encoding='utf-8'))
 
+    def test_the_guard_service_is_declared(self):
+        # The Guard is how the fork owns the HOME key on Fire OS: Amazon's launcher is
+        # protected there and no third-party app can be the home app, so an
+        # accessibility service takes the key instead. The service needs the
+        # permission that binds it and the filter the system looks for.
+        services = [service for service in manifest_root().findall('application/service')
+                    if service.get(ANDROID + 'name') == 'io.freemytv.Guard']
+        self.assertEqual(len(services), 1)
+        service = services[0]
+        self.assertEqual(service.get(ANDROID + 'permission'),
+                         'android.permission.BIND_ACCESSIBILITY_SERVICE')
+        actions = [action.get(ANDROID + 'name')
+                   for action in service.findall('intent-filter/action')]
+        self.assertIn('android.accessibilityservice.AccessibilityService', actions)
+
+    def test_the_guard_points_at_a_configuration_that_exists(self):
+        # The meta-data names a resource. A manifest that pointed at a file that is not
+        # there would not fail the build: it would fail on the TV, with the service
+        # quietly not working and nothing to say why.
+        service = [service for service in manifest_root().findall('application/service')
+                   if service.get(ANDROID + 'name') == 'io.freemytv.Guard'][0]
+        metadata = {meta.get(ANDROID + 'name'): meta.get(ANDROID + 'resource')
+                    for meta in service.findall('meta-data')}
+        resource = metadata.get('android.accessibilityservice')
+        self.assertIsNotNone(resource)
+        self.assertTrue(resource.startswith('@xml/'), resource)
+        path = ROOT / 'variant' / 'res' / (resource[1:] + '.xml')
+        self.assertTrue(path.is_file(), path)
+
+    def test_the_guard_service_says_whether_it_is_exported(self):
+        # This APK targets 33. Android 12 refuses to install a component that declares an
+        # intent filter without an explicit android:exported, so a manifest that leaves it
+        # out installs on this Fire TV (Android 11) and fails on every newer one.
+        # "true" is right: the system binds the service from another uid, and
+        # android.permission.BIND_ACCESSIBILITY_SERVICE is what guards it.
+        service = [service for service in manifest_root().findall('application/service')
+                   if service.get(ANDROID + 'name') == 'io.freemytv.Guard'][0]
+        self.assertEqual(service.get(ANDROID + 'exported'), 'true',
+                         'the Guard service has no android:exported')
+
+    def test_the_guard_service_carries_our_own_label(self):
+        # The label is what the TV's accessibility settings show, and what
+        # "dumpsys accessibility" names a bound service by.
+        service = [service for service in manifest_root().findall('application/service')
+                   if service.get(ANDROID + 'name') == 'io.freemytv.Guard'][0]
+        self.assertEqual(service.get(ANDROID + 'label'), '@string/guard_label')
+
 
 class ManifestDiffTests(unittest.TestCase):
     """Our manifest against upstream's, which is vendored byte for byte."""
@@ -269,7 +322,7 @@ class ManifestDiffTests(unittest.TestCase):
         # in the manifest, not only allowed by it.
         found = Counter(classify(difference)[0] for difference in manifest_differences())
         for kind in ('label', 'version', 'provider authority', 'task affinity',
-                     'component name', 'home category', 'banner'):
+                     'component name', 'home category', 'banner', 'guard service'):
             with self.subTest(kind=kind):
                 self.assertTrue(found[kind] > 0, kind)
 

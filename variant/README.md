@@ -122,6 +122,20 @@ If Android ever offers to switch the home app, decline it. The old launcher shou
 be the one in front once the variant is closed, and `./scripts/verify.sh` must still pass
 end to end.
 
+## The Guard
+
+The fork carries our own Guard (`src/io/freemytv/Guard.java`): the accessibility service
+that takes the HOME key on Fire OS, where Amazon's launcher is protected and no
+third-party app can be the home app. It waits for Amazon's home window, covers it, and
+brings the fork's home screen up instead. It is the port of `tv.dumbtv.home`'s Guard —
+same alarm-fired launch, same cover, same rules — and it is ours, not upstream's, so it
+is listed in `variant/our-files.txt` and described in `variant/UPSTREAM.md`.
+
+Nothing binds it yet. The install path that points the TV's
+`enabled_accessibility_services` at `tv.dumbtv.variant/io.freemytv.Guard`, swaps the old
+guard out and sets `min_futurity=0` comes with stage 2's install work; until then
+`tv.dumbtv.home`'s Guard is still the one in front, and the rollback is that one setting.
+
 ## What the tile on the TV says
 
 The launcher draws the app's **banner** as its tile, so the banner is the picture on the

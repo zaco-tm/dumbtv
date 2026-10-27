@@ -1,0 +1,182 @@
+"""The fork's Guard: dumbtv home's HOME takeover, ported, off-device.
+
+Fire OS gives the HOME key to Amazon's protected launcher, and no third-party app can be
+the home app there, so the only way to own HOME is a Guard: an accessibility service that
+waits for Amazon's home window and covers it with ours. The fork carries one now
+(variant/src/io/freemytv/Guard.java), and these tests read it as text: they cannot run it,
+but they can say that the port is a port and not a copy of the launcher's file.
+
+A copy would be a fault that only shows on the TV: a leftover tv.dumbtv.home in the port
+would send the HOME key to the launcher that works today instead of to ours, and a guard
+that starts the wrong activity would open nothing at all.
+"""
+import re
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+VARIANT = ROOT / 'variant'
+GUARD = VARIANT / 'src' / 'io' / 'freemytv' / 'Guard.java'
+LAUNCHER_GUARD = ROOT / 'launcher' / 'src' / 'tv' / 'dumbtv' / 'home' / 'Guard.java'
+GUARD_XML = VARIANT / 'res' / 'xml' / 'guard.xml'
+OUR_FILES = VARIANT / 'our-files.txt'
+
+
+def guard_text():
+    """The ported Guard, as text."""
+    return GUARD.read_text(encoding='utf-8')
+
+
+def our_files():
+    """The paths our-files.txt lists, one per line, blanks dropped."""
+    return [line.strip() for line in OUR_FILES.read_text(encoding='utf-8').splitlines()
+            if line.strip()]
+
+
+def label_of(strings_xml):
+    """The guard_label string in a values file, or '' when it has none."""
+    match = re.search(r'<string\s+name="guard_label"\s*>([^<]*)</string>',
+                       strings_xml.read_text(encoding='utf-8'))
+    return match.group(1) if match else ''
+
+
+def body_of(text, signature):
+    """The body of a Java method, from its signature to the next method.
+
+    Text, not a parse: the point is to say that a particular call is inside a
+    particular method, and a brace count is enough for that.
+    """
+    start = text.find(signature)
+    if start < 0:
+        raise AssertionError(f'{signature!r} is not in the file')
+    rest = text[start:]
+    depth = 0
+    started = False
+    for index, char in enumerate(rest):
+        if char == '{':
+            depth += 1
+            started = True
+        elif char == '}':
+            depth -= 1
+            if started and depth == 0:
+                return rest[:index + 1]
+    raise AssertionError(f'{signature!r} has no closing brace')
+
+
+class GuardPortTests(unittest.TestCase):
+    def test_the_guard_is_in_the_variant_sources(self):
+        self.assertTrue(GUARD.is_file(), GUARD)
+        self.assertTrue(guard_text().startswith('package io.freemytv;'))
+
+    def test_the_port_has_no_leftover_of_the_launcher(self):
+        # A leftover name would send the HOME key to the launcher that works today,
+        # which is the one thing the port must not do.
+        self.assertNotIn('tv.dumbtv.home', guard_text())
+        self.assertNotIn('tv.dumbtv.home', GUARD_XML.read_text(encoding='utf-8'))
+
+    def test_the_guard_is_not_a_copy_of_the_launcher_s(self):
+        # The launcher's file is a different program in a different package: the two
+        # must not have been copied over one another.
+        self.assertNotEqual(guard_text(), LAUNCHER_GUARD.read_text(encoding='utf-8'))
+
+    def test_the_guard_starts_the_fork_s_own_home_activity(self):
+        # The fork's home screen is io.freemytv.HomeActivity. The launcher starts
+        # tv.dumbtv.home/.Home, which is not installed as part of the variant.
+        self.assertIn('setClass(c, HomeActivity.class)', guard_text())
+
+    def test_the_mechanism_came_across(self):
+        # The three pieces that make the takeover work on a Fire TV: the launch goes
+        # through an alarm (system_server is exempt from the five-second app-switch
+        # delay), the cover hides Amazon's home, and the launch waits until the cover
+        # has reached the window manager (Android 11 refuses a start from an app with
+        # no visible window).
+        text = guard_text()
+        self.assertIn('AlarmManager', text)
+        self.assertIn('setExact', text)
+        self.assertIn('TYPE_ACCESSIBILITY_OVERLAY', text)
+        self.assertIn('OnPreDrawListener', text)
+        # The alarm only fires at once with min_futurity=0, which the install path
+        # sets. The port has to say so, or nobody sets it.
+        self.assertIn('min_futurity=0', text)
+
+    def test_the_launch_waits_for_the_cover_to_be_drawn(self):
+        # Not just "OnPreDrawListener" somewhere in the file: the launch has to be
+        # scheduled from inside the listener's callback. Android 11 refuses to start
+        # an activity from an app with no visible window, and the cover is the only
+        # window the Guard has. A launch scheduled before the cover is drawn is
+        # refused, and HOME does nothing.
+        body = body_of(guard_text(), 'public boolean onPreDraw()')
+        self.assertIn('home(Guard.this)', body,
+                      'the launch is not scheduled from the cover\'s first draw pass')
+
+    def test_a_cover_that_never_draws_still_launches(self):
+        # The fallback: if the cover's first draw pass never comes, the launch must
+        # still happen, or HOME would do nothing on a television where the overlay
+        # never draws.
+        self.assertIn('handler.postDelayed(launch, LAUNCH_FALLBACK_MS)', guard_text())
+
+    def test_the_queued_launch_is_cancelled_when_the_home_screen_comes_up(self):
+        # dumbtv home's activity cancels a queued launch when it resumes, so pressing
+        # HOME twice does not launch the home screen twice. The fork's activity is
+        # upstream's file and cannot call it, so the port cancels when the home
+        # screen's own window appears instead.
+        body = body_of(guard_text(), 'private void homeShown()')
+        self.assertIn('arrived(this)', body,
+                      'a queued launch is not cancelled when the home screen is up')
+
+    def test_the_cover_is_painted_the_colour_the_home_screen_is_about_to_be(self):
+        # The home screen blends its day background into its night one. A cover
+        # painted with a fixed colour flashes white on a dark television at night.
+        # The port asks the home screen the same question the home screen asks itself.
+        text = guard_text()
+        self.assertIn('isNight(', text)
+        self.assertIn('NIGHT_BACKGROUND', text)
+        self.assertIn('DAY_BACKGROUND', text)
+        self.assertNotIn('R.color.home_background', text,
+                         'the cover is painted with a fixed resource colour')
+
+    def test_the_configuration_says_what_the_guard_needs(self):
+        # The service watches for window changes and reads no screen content: the Guard
+        # only needs to know when Amazon's home window appears.
+        text = GUARD_XML.read_text(encoding='utf-8')
+        self.assertIn('typeWindowStateChanged', text)
+        self.assertIn('android:canRetrieveWindowContent="false"', text)
+
+    def test_the_files_of_ours_are_listed(self):
+        # The verifier fails on a file of ours that is not listed, and on a listed path
+        # that upstream has.
+        listed = our_files()
+        for path in ('src/io/freemytv/Guard.java', 'res/xml/guard.xml',
+                     'res/values/guard.xml'):
+            with self.subTest(path=path):
+                self.assertIn(path, listed)
+
+    def test_the_guard_s_label_is_its_own(self):
+        # "dumpsys accessibility" names a bound service by its label, never by its
+        # component, and the TV's accessibility settings show the same string. Two
+        # guards with one label cannot be told apart there, and the check that says
+        # which one is bound is the one that decides whether HOME works.
+        ours = label_of(VARIANT / 'res' / 'values' / 'guard.xml')
+        theirs = label_of(ROOT / 'launcher' / 'res' / 'values' / 'strings.xml')
+        self.assertTrue(ours, 'the fork has no guard label')
+        self.assertTrue(theirs, 'the launcher has no guard label')
+        self.assertNotEqual(ours, theirs,
+                            'the fork and the launcher share a guard label')
+
+
+class GuardNotBoundYetTests(unittest.TestCase):
+    def test_no_script_binds_the_variants_guard(self):
+        # The install path that points the TV's enabled_accessibility_services at the
+        # fork's Guard is the next task's work. Until it exists, the launcher that
+        # works today has to stay the one in front.
+        scripts = []
+        for folder in ('scripts', 'launcher', 'variant'):
+            scripts += sorted((ROOT / folder).glob('*.sh'))
+        for path in scripts:
+            with self.subTest(script=path.name):
+                self.assertNotIn('tv.dumbtv.variant/io.freemytv.Guard',
+                                 path.read_text(encoding='utf-8'))
+
+
+if __name__ == '__main__':
+    unittest.main()

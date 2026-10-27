@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ours: upstream declares no accessibility service for the home screen. -->
+<resources>
+    <!-- The label is what the TV's accessibility settings show, and what
+         "dumpsys accessibility" names a bound service by: it prints the label, never
+         the component. Two guards that share a label cannot be told apart there, and
+         the two are never bound at the same time. So this one says which it is. -->
+    <string name="guard_label">dumbtv home button (variant)</string>
+    <string name="guard_description">Sends the HOME button to the dumbtv home screen instead of Amazon\'s. It reads no screen content and has no internet access.</string>
+</resources>

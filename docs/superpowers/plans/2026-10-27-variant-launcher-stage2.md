@@ -17,7 +17,7 @@ Global constraints (they hold for every task):
   git-ignored. The TMDB key is never printed and never committed.
 - Never write `/system`, never root, never factory-reset, never disable a package in
   `never-disable.txt`, one TV at a time (`ADB_SERIAL`).
-- The CI greps (private addresses, `tmdb_key=`) must stay clean over the tracked files.
+- The CI greps (private addresses, and the TMDB key) must stay clean over the tracked files.
 - Every task ends with: `python3 -m unittest discover -s tests`,
   `python3 catalog/validate.py`, `bash -n` over every `scripts/*.sh launcher/*.sh
   variant/*.sh`, `./variant/verify-vendor.sh`, `./variant/check-apk.sh` after a build, and

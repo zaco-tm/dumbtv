@@ -79,6 +79,10 @@ grep -qx "Lio/freemytv/R;" <<< "$dex" \
   || { echo "io.freemytv.R is not in the dex"; exit 1; }
 grep -qx "Lio/freemytv/HomeActivity;" <<< "$dex" \
   || { echo "io.freemytv.HomeActivity is not in the dex"; exit 1; }
+# The Guard is ours: it takes the HOME key on Fire OS, where no third-party app can be
+# the home app. An APK without it installs, and then does nothing when HOME is pressed.
+grep -qx "Lio/freemytv/Guard;" <<< "$dex" \
+  || { echo "io.freemytv.Guard is not in the dex"; exit 1; }
 
 "$BT/apksigner" verify "$APK" >/dev/null || { echo "the APK is not signed"; exit 1; }
 echo "variant APK ok: $pkg, label '$label', banner $(basename "$banner"), minSdk $min, targetSdk $target, 8 permissions, signed"
