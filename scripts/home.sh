@@ -21,6 +21,10 @@ start_home() {
     fi
     sleep 1
   done
+  # Kill the whole job, not just the wrapper. $pid is the subshell that runs sh_, and
+  # adb is a child of that: killing the subshell alone leaves adb running, and an
+  # "am start -W" that never draws waits for ever - on the host and on the television.
+  pkill -P "$pid" 2>/dev/null || true
   kill "$pid" 2>/dev/null || true
   echo "note: dumbtv home did not draw within $bound s; is the TV asleep? Press a button on the remote."
   return 0
