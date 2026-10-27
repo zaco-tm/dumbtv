@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Builds variant/build/variant.apk from the vendored free-my-tv app: no Gradle, no libraries.
-# Needs a JDK 17+ and an Android SDK with platforms;android-34 and build-tools 34+.
+# Needs an Android SDK with platforms;android-34 and build-tools 34+. The JDK it builds
+# with is found by the script itself: a JDK 17, which builds cleanly.
 #   ./build.sh            with variant/config.properties (your TMDB key, your city)
 #   ./build.sh --generic  without one, as a CI build: no key, the TV's time zone gives the city
 set -euo pipefail
@@ -17,14 +18,64 @@ if [ -z "$SDK" ]; then
   done
 fi
 [ -n "$SDK" ] && [ -d "$SDK/build-tools" ] || { echo "Android SDK not found. Set ANDROID_HOME."; exit 1; }
-BT="$SDK/build-tools/$(ls "$SDK/build-tools" | sort -V | tail -1)"
+# The newest build-tools directory, and only a directory: a stray file must not be picked.
+BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
 AJ="$SDK/platforms/android-34/android.jar"
 [ -f "$AJ" ] || { echo "$AJ missing - sdkmanager \"platforms;android-34\""; exit 1; }
 [ -x "$BT/aapt2" ] || { echo "no aapt2 in $BT - sdkmanager \"build-tools;34.0.0\""; exit 1; }
 
-JAVAC="${JAVA_HOME:+$JAVA_HOME/bin/}javac"
-KEYTOOL="${JAVA_HOME:+$JAVA_HOME/bin/}keytool"
-command -v "$JAVAC" >/dev/null 2>&1 || { echo "JDK not found. Install JDK 17 and set JAVA_HOME."; exit 1; }
+# --- JDK: one that works, and not one that breaks d8.
+# A javac that exists is not a javac that works: macOS ships /usr/bin/javac, a stub that
+# fails with "Unable to locate a Java Runtime that supports javac". So the javac is asked
+# to run, not merely to exist. A stub that hangs (it does, when JAVA_HOME points at
+# something odd) is no better than one that fails: the probe waits five seconds, then
+# gives up on it.
+# The scheme is launcher/build.sh's: the JDK 17 paths, then macOS's java_home, then a
+# warning when the JDK in use is 21 or newer.
+JDK17_PATHS=(/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home /usr/lib/jvm/java-17-openjdk)
+javac_major() { "$1/bin/javac" -version 2>&1 | sed -n 's/^javac \([0-9]*\).*/\1/p'; }
+javac_works() {
+  [[ -x $1/bin/javac ]] || return 1
+  "$1/bin/javac" -version >/dev/null 2>&1 &
+  local pid=$! waited=0
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge 50 ]; then
+      kill -9 "$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null || true
+      return 1
+    fi
+    sleep 0.1
+    waited=$((waited + 1))
+  done
+  wait "$pid"
+}
+
+if [[ -z ${JAVA_HOME:-} ]] || ! javac_works "$JAVA_HOME"; then
+  for j in "${JDK17_PATHS[@]}" /opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home \
+           "$(/usr/libexec/java_home 2>/dev/null || true)"; do
+    if [[ -n $j ]] && javac_works "$j"; then JAVA_HOME=$j; break; fi
+  done
+fi
+# build-tools 34's bundled d8 threw an internal NullPointerException dexing an anonymous inner
+# class compiled by JDK 27, even with --release 8. JDK 17 builds it cleanly. Only 27 was seen
+# failing; 21 is a conservative cut-off, since macOS's java_home and a Linux distro's default
+# javac both commonly land on something newer than 17 now.
+if [[ -z ${JAVA_HOME:-} ]] || ! javac_works "$JAVA_HOME" || [[ $(javac_major "$JAVA_HOME") -ge 21 ]]; then
+  for j in "${JDK17_PATHS[@]}"; do
+    if javac_works "$j"; then JAVA_HOME=$j; break; fi
+  done
+fi
+[[ -n ${JAVA_HOME:-} ]] && javac_works "$JAVA_HOME" || {
+  echo "no working JDK found - brew install openjdk@17 (macOS) or pacman -S jdk17-openjdk (Arch)" >&2
+  exit 1
+}
+if [[ $(javac_major "$JAVA_HOME") -ge 21 ]]; then
+  echo "warning: $JAVA_HOME is JDK $(javac_major "$JAVA_HOME"); build-tools' d8 crashed on JDK 27 output - install a JDK 17 if this fails" >&2
+fi
+export JAVA_HOME
+JAVAC="$JAVA_HOME/bin/javac"
+KEYTOOL="$JAVA_HOME/bin/keytool"
+echo "using JDK $(javac_major "$JAVA_HOME") at $JAVA_HOME"
 
 # --- Settings: config.properties -> io/freemytv/Config.java
 WORK="$PWD/build/tmp"

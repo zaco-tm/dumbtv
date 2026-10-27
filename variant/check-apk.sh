@@ -11,7 +11,9 @@ if [ -z "$SDK" ]; then
   done
 fi
 [ -n "$SDK" ] && [ -d "$SDK/build-tools" ] || { echo "Android SDK not found. Set ANDROID_HOME."; exit 1; }
-BT="$SDK/build-tools/$(ls "$SDK/build-tools" | sort -V | tail -1)"
+# The newest build-tools directory, and only a directory: a stray file must not be picked.
+BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
+[ -x "$BT/aapt2" ] || { echo "no aapt2 in $BT - sdkmanager \"build-tools;34.0.0\""; exit 1; }
 APK=build/variant.apk
 [ -f "$APK" ] || { echo "no $APK - run ./build.sh --generic"; exit 1; }
 
@@ -36,6 +38,10 @@ got=$(printf '%s\n' "$dump" | grep uses-permission | sed -E "s/.*name='([^']+)'.
 }
 
 # The app's own code is in it, under upstream's package.
+# The dex must be there: without it, unzip's own stderr would be the only word about it.
+names=$(unzip -Z1 "$APK")
+printf '%s\n' "$names" | grep -x "classes.dex" >/dev/null \
+  || { echo "no classes.dex in $APK"; exit 1; }
 # The dex is read once: grep -q closes the pipe early, and with pipefail on that comes out
 # as a SIGPIPE (141), which would look like a missing class.
 dex=$(unzip -p "$APK" classes.dex | strings)

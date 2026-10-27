@@ -28,6 +28,8 @@ The Android app in `variant/` is free-my-tv, vendored verbatim.
 - Not vendored: upstream's `web/`, `webos/`, `tizen/`, `docs/`, website and macOS app
 - Not vendored: `build.sh` — it builds upstream's APK from upstream's checkout,
   generating `Config.java` out of `config.properties`; we generate that class ourselves.
+- Not vendored: upstream's `app/AndroidManifest.xml` — ours is the record of it.
+  See **The manifest** below.
 - Not vendored: `config.example.properties` — upstream's settings template; ours is
   `variant/config.properties` (git-ignored, it holds the TMDB key).
 - Not vendored: upstream's root files, which are about upstream's own repository:
@@ -40,6 +42,33 @@ The Android app in `variant/` is free-my-tv, vendored verbatim.
 - The app's code keeps upstream's `io.freemytv` package. The application id is ours:
   `aapt2 link --rename-manifest-package tv.dumbtv.variant` renames the manifest at link
   time, so the generated `R` stays in `io.freemytv` and no upstream file is edited.
+
+## The manifest
+
+Upstream's `app/AndroidManifest.xml` is not vendored, so `variant/AndroidManifest.xml` is
+the only record of it. The verifier does not compare it either: it sits outside the vendored
+trees (`src`, `res`, `assets`, `tools`), and it is ours.
+
+It is upstream's manifest with five changes, and nothing else that matters:
+
+1. **The label** — `Free My TV` → `dumbtv home (variant)`, on the application and on every
+   component that carries a label. The TV shows our name, not upstream's.
+2. **The version** — `versionCode 3`, `versionName 1.2` → `versionCode 1`, `versionName 1.0`.
+   Ours is a different app with its own key; upstream's numbers say nothing about ours.
+3. **The provider authority** — `io.freemytv.photos` → `tv.dumbtv.variant.photos`. An
+   authority belongs to the app that is installed, and ours is `tv.dumbtv.variant`.
+   `tools/photos.py` writes to the same one.
+4. **The task affinity, twice** — `io.freemytv.settings` → `tv.dumbtv.variant.settings`, on
+   `SettingsActivity` and on `FireHomeActivity`. An affinity is a package name as well, and
+   ours has to be ours, or the task lands in upstream's package.
+5. **The fully-qualified component names** — `.App`, `.SettingsActivity`, `.HomeActivity`,
+   `.FireHomeActivity`, `.Screensaver`, `.ScreensaverAlone`, `.ModeJob`, `.RemoteKeyService`,
+   `.PhotoInbox`, `.SleepOverlay`, `.NowPlaying`, `.HomeReceiver` → `io.freemytv.App` and so
+   on. Upstream's names are relative to the manifest's package, and `aapt2 link
+   --rename-manifest-package` makes that `tv.dumbtv.variant`, where our classes are not.
+   Written out in full, every component stays in `io.freemytv`, where the code is.
+
+Upstream's comments are trimmed: they describe upstream's own screens and its own names.
 
 ## Local changes
 
