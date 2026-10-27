@@ -147,6 +147,9 @@ compare_tree "$UP/app/assets" assets
 # upstream's tools/ holds eight scripts; we vendored the two that work on the TV.
 compare_tree "$UP/tools" tools photos.py translate.py
 compare_file "$UP/LICENSE" LICENSE.free-my-tv
+# Upstream's manifest, byte for byte: it is the record of what our own manifest was
+# made from, so it cannot drift from upstream without the proof noticing.
+compare_file "$UP/app/AndroidManifest.xml" upstream/AndroidManifest.xml
 
 if [ "$rc" = 0 ]; then echo "vendor tree matches upstream $COMMIT"; fi
 exit "$rc"

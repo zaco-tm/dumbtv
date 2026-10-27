@@ -129,8 +129,11 @@
             android:theme="@style/FreeMyTV.Home">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.HOME" />
-                <category android:name="android.intent.category.DEFAULT" />
+                <!-- Upstream declares HOME (and DEFAULT) here. We do not: on this TV
+                     tv.dumbtv.home is the home screen, and a home-app candidate could
+                     take the HOME key away from the launcher that works. Stage 2's
+                     Guard gives the variant the HOME key, and it does not need the
+                     category. See variant/UPSTREAM.md. -->
             </intent-filter>
         </activity>
 

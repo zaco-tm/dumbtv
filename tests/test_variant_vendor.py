@@ -24,6 +24,7 @@ FILES = [
     ('app/assets/i18n/en.json', 'assets/i18n/en.json', '{}\n'),
     ('tools/photos.py', 'tools/photos.py', '# upstream photos\n'),
     ('tools/translate.py', 'tools/translate.py', '# upstream translate\n'),
+    ('app/AndroidManifest.xml', 'upstream/AndroidManifest.xml', '<manifest/>\n'),
     ('LICENSE', 'LICENSE.free-my-tv', 'MIT\n'),
 ]
 # upstream's tools/ holds more scripts than we vendored: they are not ours to compare.
@@ -118,6 +119,23 @@ class VendorTests(unittest.TestCase):
             result = self.run_verifier(tree, archive)
             self.assertEqual(result.returncode, 1)
             self.assertIn('CHANGED: LICENSE.free-my-tv', result.stdout)
+
+    def test_a_changed_upstream_manifest_fails(self):
+        # Upstream's manifest is vendored byte for byte: it is the record of what our
+        # own manifest was made from, so it cannot be edited without the proof
+        # noticing.
+        with tempfile.TemporaryDirectory() as tmp:
+            tree, archive = self.fixture(Path(tmp), changed=['upstream/AndroidManifest.xml'])
+            result = self.run_verifier(tree, archive)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn('CHANGED: upstream/AndroidManifest.xml', result.stdout)
+
+    def test_a_missing_upstream_manifest_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tree, archive = self.fixture(Path(tmp), missing=['upstream/AndroidManifest.xml'])
+            result = self.run_verifier(tree, archive)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn('MISSING: upstream/AndroidManifest.xml', result.stdout)
 
     def test_an_extra_tool_fails(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -81,16 +81,23 @@ fault here — upstream keeps a separate `FireHomeActivity` for exactly this rea
 
 ## HOME stays with dumbtv home
 
-The variant declares a HOME category, but installing it should not change the TV's default
-home app: `tv.dumbtv.home` stays HOME. If Android ever offers to switch the home app,
-decline it, and check rather than assume:
+The variant does **not** declare a HOME category: it must not be able to take the HOME key
+away from the launcher that works today. (`tv.dumbtv.home` is the TV's home screen through
+the Guard, an accessibility service; stage 2 gives the variant the HOME key the same way,
+and it does not need the category.)
+
+Check before and after installing the variant, and compare the two answers:
 
 ```sh
-adb shell dumpsys window | grep -i "mCurrentFocus" | head -2
+adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
 ```
 
-The old launcher should still be the one in front once the variant is closed, and
-`./scripts/verify.sh` must still pass end to end.
+Both times it must name `tv.dumbtv.home`. `mCurrentFocus` is not the check here: it
+reports the window in front, not the TV's default home app.
+
+If Android ever offers to switch the home app, decline it. The old launcher should still
+be the one in front once the variant is closed, and `./scripts/verify.sh` must still pass
+end to end.
 
 ## What it is not yet
 

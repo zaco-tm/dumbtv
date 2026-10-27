@@ -6,7 +6,8 @@ The Android app in `variant/` is free-my-tv, vendored verbatim.
 - Commit: `f1830445e6e629a2f1eab19602afef38a1a4f8b8` (2026-10-26)
 - Licence: MIT — the text is in `LICENSE.free-my-tv` (upstream's `LICENSE`, renamed)
 - Vendored from: `app/src`, `app/res`, `app/assets`, plus two of upstream's `tools/`
-  scripts and upstream's licence
+  scripts, upstream's licence and upstream's `app/AndroidManifest.xml` (kept byte for byte
+  at `upstream/AndroidManifest.xml`, as the record of what our own manifest was made from)
 - Tools adapted:
   - `tools/photos.py` — names our application id throughout: the package it checks
     (`pm list packages tv.dumbtv.variant`), the app's own data folder
@@ -28,8 +29,6 @@ The Android app in `variant/` is free-my-tv, vendored verbatim.
 - Not vendored: upstream's `web/`, `webos/`, `tizen/`, `docs/`, website and macOS app
 - Not vendored: `build.sh` — it builds upstream's APK from upstream's checkout,
   generating `Config.java` out of `config.properties`; we generate that class ourselves.
-- Not vendored: upstream's `app/AndroidManifest.xml` — ours is the record of it.
-  See **The manifest** below.
 - Not vendored: `config.example.properties` — upstream's settings template; ours is
   `variant/config.properties` (git-ignored, it holds the TMDB key).
 - Not vendored: upstream's root files, which are about upstream's own repository:
@@ -45,11 +44,13 @@ The Android app in `variant/` is free-my-tv, vendored verbatim.
 
 ## The manifest
 
-Upstream's `app/AndroidManifest.xml` is not vendored, so `variant/AndroidManifest.xml` is
-the only record of it. The verifier does not compare it either: it sits outside the vendored
-trees (`src`, `res`, `assets`, `tools`), and it is ours.
+Upstream's `app/AndroidManifest.xml` is vendored byte for byte at
+`variant/upstream/AndroidManifest.xml`, and the verifier compares it with upstream's, like
+the other vendored files. It is the record of what our own `variant/AndroidManifest.xml`
+was made from: without it, the prose below would be the only record of upstream's
+manifest, and prose does not fail a build.
 
-It is upstream's manifest with five changes, and nothing else that matters:
+Our manifest is upstream's with six changes, and nothing else that matters:
 
 1. **The label** — `Free My TV` → `dumbtv home (variant)`, on the application and on every
    component that carries a label. The TV shows our name, not upstream's.
@@ -67,8 +68,46 @@ It is upstream's manifest with five changes, and nothing else that matters:
    on. Upstream's names are relative to the manifest's package, and `aapt2 link
    --rename-manifest-package` makes that `tv.dumbtv.variant`, where our classes are not.
    Written out in full, every component stays in `io.freemytv`, where the code is.
+6. **The HOME category** — upstream's `HomeActivity` declares `android.intent.category.HOME`
+   and `android.intent.category.DEFAULT` in its intent filter. We drop both. On this Fire OS
+   `tv.dumbtv.home` is the home screen — not through `set-home-activity` (Android caps a
+   third-party launcher's HOME priority to 0), but through the Guard, an accessibility service
+   that stage 2 adds. A HOME category would make the variant a home-app candidate as well: if
+   the system ever offers a chooser and the owner accepts it, `tv.dumbtv.home` silently stops
+   being HOME. The activity stays, exported and startable, and the app is still in the
+   launcher through `SettingsActivity`'s LEANBACK_LAUNCHER and LAUNCHER filters. Stage 2
+   gives the variant the HOME key through the Guard, which does not need the category.
 
 Upstream's comments are trimmed: they describe upstream's own screens and its own names.
+
+`tests/test_variant_manifest.py` parses both manifests and asserts that the differences
+between them are exactly these six, and names any difference that is not one of them. A
+manifest that drifted away from upstream's — a permission added, an attribute dropped —
+fails the test suite rather than the reviewer.
+
+## Re-syncing upstream
+
+Upstream ships daily, so a re-sync is a deliberate piece of work and not an accident. It
+means, in this order:
+
+1. Pick the commit: the one upstream's `main` is on, or a commit you choose
+   (`git ls-remote https://github.com/simbasjungles/free-my-tv HEAD`).
+2. Download that commit's archive and note its hash:
+   `curl -fsSL https://github.com/simbasjungles/free-my-tv/archive/<commit>.tar.gz -o up.tar.gz`
+   then `shasum -a 256 up.tar.gz`.
+3. Update the pin in `variant/verify-vendor.sh`: `COMMIT=` and `SHA256=`.
+4. Replace the vendored tree from the new archive, byte for byte: `src/`, `res/`,
+   `assets/`, the two tools, `LICENSE.free-my-tv` and `upstream/AndroidManifest.xml`.
+5. Re-apply our two adapted tools (the paths in `variant/local-changes.txt`) and our own
+   files (the paths in `variant/our-files.txt`); adapt them again if upstream changed them.
+6. Update the version in `variant/AndroidManifest.xml` (`versionCode`, `versionName`), so the
+   new build is a different one on the TV than the old.
+7. Update `variant/local-changes.txt` and `variant/our-files.txt` if upstream's paths moved.
+8. Update `variant/UPSTREAM.md`: the commit, the date, the hash — and the list of manifest
+   changes above, if upstream's manifest changed. The test compares both manifests, so a
+   new upstream attribute has to be looked at and either accepted or documented.
+9. Run the proof and the tests: `./variant/verify-vendor.sh`,
+   `python3 -m unittest discover -s tests`, and `./variant/check-apk.sh` after a build.
 
 ## Local changes
 
@@ -87,7 +126,7 @@ does have cannot be excused this way, and the verifier says so if one is.
 `./variant/verify-vendor.sh` downloads upstream's archive for the pinned commit, checks
 its sha256 (`ae5337a626a94c19591ac1a7c1285bedefeb876fd5d6568b4edb0840d59e2dc3`,
 recorded on 2026-10-26), unpacks it and compares every vendored file with ours: `src`,
-`res`, `assets`, `tools` and `LICENSE.free-my-tv`. Set
+`res`, `assets`, `tools`, `LICENSE.free-my-tv` and `upstream/AndroidManifest.xml`. Set
 `DUMBTV_VARIANT_TARBALL=/path/to/up.tar.gz` to compare against a copy of the archive
 instead of downloading it; the hash is still checked, so it works offline.
 

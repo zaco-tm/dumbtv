@@ -3,14 +3,21 @@
 The manifest and permissions.txt are two hand-kept copies of upstream's eight permissions:
 they agree today, and nothing but a build on a machine with the Android SDK would say so.
 This test reads both as text, so the drift is caught without the SDK.
+
+It also compares our manifest with upstream's own, which is vendored byte for byte at
+variant/upstream/. The two must differ in exactly the changes variant/UPSTREAM.md
+documents, and in nothing else: a manifest that drifted away from upstream's would
+otherwise go unnoticed, because upstream's manifest is not part of the vendored tree.
 """
 import re
 import unittest
 import xml.etree.ElementTree as ET
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / 'variant' / 'AndroidManifest.xml'
+UPSTREAM_MANIFEST = ROOT / 'variant' / 'upstream' / 'AndroidManifest.xml'
 PERMISSIONS = ROOT / 'variant' / 'permissions.txt'
 PHOTOS = ROOT / 'variant' / 'tools' / 'photos.py'
 
@@ -18,6 +25,11 @@ PHOTOS = ROOT / 'variant' / 'tools' / 'photos.py'
 ANDROID = '{http://schemas.android.com/apk/res/android}'
 PACKAGE = 'io.freemytv'
 AUTHORITY = 'tv.dumbtv.variant.photos'
+
+# The components whose name is ours to change: upstream's names are relative to the
+# manifest's package, and aapt2 renames that package to tv.dumbtv.variant.
+COMPONENT_TAGS = ('application', 'activity', 'service', 'provider', 'receiver')
+
 
 def manifest_root():
     """The manifest's root element."""
@@ -68,6 +80,116 @@ def listed_permissions():
     return names
 
 
+def _describe(element):
+    """A short description of an element, for a message."""
+    name = element.get(ANDROID + 'name')
+    return element.tag if name is None else f'{element.tag} {name}'
+
+
+def _differences(upstream, ours, path, parent=None):
+    """Every difference between two elements, as (kind, path, upstream, ours).
+
+    The children are paired by position: the two manifests hold the same components in
+    the same order, so a difference in one is a difference in the other.
+    """
+    found = []
+    if upstream.tag != ours.tag:
+        return [('element', path, upstream.tag, ours.tag)]
+    for name in sorted(set(upstream.attrib) | set(ours.attrib)):
+        if upstream.attrib.get(name) != ours.attrib.get(name):
+            # The short name in the path: the android namespace is a URL, and a path
+            # with slashes in it cannot be read.
+            short = name.split('}')[-1] if name.startswith('{') else name
+            found.append(('attribute', f'{path}/@{short}',
+                          upstream.attrib.get(name), ours.attrib.get(name)))
+    if (upstream.text or '').strip() != (ours.text or '').strip():
+        found.append(('text', path, (upstream.text or '').strip(), (ours.text or '').strip()))
+    upstream_children = list(upstream)
+    our_children = list(ours)
+    for index in range(min(len(upstream_children), len(our_children))):
+        child = upstream_children[index]
+        found += _differences(child, our_children[index],
+                              f'{path}/{child.tag}[{index}]', upstream)
+    for index in range(len(our_children), len(upstream_children)):
+        child = upstream_children[index]
+        found.append(('removed', f'{path}/{child.tag}[{index}]',
+                      _describe(child), None))
+    for index in range(len(upstream_children), len(our_children)):
+        child = our_children[index]
+        found.append(('added', f'{path}/{child.tag}[{index}]', None, _describe(child)))
+    return found
+
+
+def manifest_differences():
+    """The differences between upstream's manifest and ours."""
+    return _differences(upstream_root(), manifest_root(), 'manifest')
+
+
+def _parent_of(path):
+    """The tag of the element a path points into."""
+    parts = path.split('/')
+    if len(parts) < 2:
+        return ''
+    return re.sub(r'\[\d+\]$', '', parts[-2])
+
+
+def classify(difference):
+    """The documented change a difference belongs to.
+
+    An undocumented difference is returned as it is, so the test can name it.
+    """
+    kind, path, upstream, ours = difference
+    if kind == 'attribute':
+        name = path.rsplit('/', 1)[-1]
+        if name == '@label':
+            return ('label', upstream, ours)
+        if name in ('@versionCode', '@versionName'):
+            return ('version', upstream, ours)
+        if name == '@authorities':
+            return ('provider authority', upstream, ours)
+        if name == '@taskAffinity':
+            return ('task affinity', upstream, ours)
+        if name == '@name' and _parent_of(path) in COMPONENT_TAGS:
+            return ('component name', upstream, ours)
+    if kind == 'removed' and upstream in ('category android.intent.category.HOME',
+                                          'category android.intent.category.DEFAULT'):
+        return ('home category', upstream.split(' ', 1)[1], ours)
+    return ('UNDOCUMENTED', f'{path}: {upstream} -> {ours}', kind)
+
+
+def describe(difference):
+    """A line naming one difference, for a failure message."""
+    kind, path, upstream, ours = difference
+    return f'{path}: {upstream} -> {ours} ({kind})'
+
+
+# The changes variant/UPSTREAM.md documents, and nothing else.
+EXPECTED = Counter([
+    ('version', '3', '1'),
+    ('version', '1.2', '1.0'),
+    ('provider authority', 'io.freemytv.photos', 'tv.dumbtv.variant.photos'),
+    ('component name', '.App', 'io.freemytv.App'),
+    ('component name', '.SettingsActivity', 'io.freemytv.SettingsActivity'),
+    ('component name', '.HomeActivity', 'io.freemytv.HomeActivity'),
+    ('component name', '.FireHomeActivity', 'io.freemytv.FireHomeActivity'),
+    ('component name', '.Screensaver', 'io.freemytv.Screensaver'),
+    ('component name', '.ScreensaverAlone', 'io.freemytv.ScreensaverAlone'),
+    ('component name', '.ModeJob', 'io.freemytv.ModeJob'),
+    ('component name', '.RemoteKeyService', 'io.freemytv.RemoteKeyService'),
+    ('component name', '.PhotoInbox', 'io.freemytv.PhotoInbox'),
+    ('component name', '.SleepOverlay', 'io.freemytv.SleepOverlay'),
+    ('component name', '.NowPlaying', 'io.freemytv.NowPlaying'),
+    ('component name', '.HomeReceiver', 'io.freemytv.HomeReceiver'),
+    ('home category', 'android.intent.category.HOME', None),
+    ('home category', 'android.intent.category.DEFAULT', None),
+    # The label is on the application and on the seven components that carry one.
+    *([('label', 'Free My TV', 'dumbtv home (variant)')] * 8),
+    # The task affinity is on two activities.
+    *([('task affinity', 'io.freemytv.settings', 'tv.dumbtv.variant.settings')] * 2),
+])
+
+
+
 class VariantManifestTests(unittest.TestCase):
     def test_the_manifest_asks_for_the_permissions_the_list_names(self):
         self.assertEqual(manifest_permissions(), listed_permissions())
@@ -103,6 +225,66 @@ class VariantManifestTests(unittest.TestCase):
         # The photos tool writes to the provider; if the two drift apart, the photos
         # never arrive and nothing says why.
         self.assertIn('content://' + AUTHORITY, PHOTOS.read_text(encoding='utf-8'))
+
+
+class ManifestDiffTests(unittest.TestCase):
+    """Our manifest against upstream's, which is vendored byte for byte."""
+
+    def test_the_vendored_manifest_is_upstreams(self):
+        # The record of what upstream's looked like: it must be upstream's file, not a
+        # copy of ours. The verifier proves it byte for byte against the pinned commit;
+        # this is the cheap half: ours must not have crept into that file.
+        upstream_text = UPSTREAM_MANIFEST.read_text(encoding='utf-8')
+        self.assertIn('Free My TV', upstream_text)
+        self.assertNotIn('dumbtv', upstream_text)
+
+    def test_the_differences_are_the_documented_ones(self):
+        differences = manifest_differences()
+        found = Counter(classify(difference) for difference in differences)
+        if found == EXPECTED:
+            return
+        report = []
+        for item in EXPECTED - found:
+            report.append(f'missing: {item}')
+        for item in found - EXPECTED:
+            report.append(f'undocumented: {item}')
+        report.append('every difference between the two manifests:')
+        for difference in differences:
+            report.append('  ' + describe(difference))
+        self.fail('\n'.join(report))
+
+    def test_every_documented_change_is_there(self):
+        # The other half of the same check: each documented change must actually be
+        # in the manifest, not only allowed by it.
+        found = Counter(classify(difference)[0] for difference in manifest_differences())
+        for kind in ('label', 'version', 'provider authority', 'task affinity',
+                     'component name', 'home category'):
+            with self.subTest(kind=kind):
+                self.assertTrue(found[kind] > 0, kind)
+
+    def test_the_variant_is_not_a_home_app_candidate(self):
+        # The variant must not be able to take the HOME key from tv.dumbtv.home: on
+        # this TV the home screen is bound through the Guard, and a HOME category
+        # would make the variant a home-app candidate as well.
+        categories = []
+        for activity in manifest_root().findall('application/activity'):
+            for category in activity.findall('intent-filter/category'):
+                categories.append(category.get(ANDROID + 'name'))
+        self.assertNotIn('android.intent.category.HOME', categories)
+        self.assertNotIn('android.intent.category.DEFAULT', categories)
+
+    def test_the_app_is_still_in_the_launcher(self):
+        # Without the HOME category the variant still has to be launchable from the
+        # TV's app row: SettingsActivity carries the launcher categories.
+        categories = []
+        for activity in manifest_root().findall('application/activity'):
+            name = activity.get(ANDROID + 'name')
+            for category in activity.findall('intent-filter/category'):
+                categories.append((name, category.get(ANDROID + 'name')))
+        self.assertIn(('io.freemytv.SettingsActivity', 'android.intent.category.LEANBACK_LAUNCHER'),
+                      categories)
+        self.assertIn(('io.freemytv.SettingsActivity', 'android.intent.category.LAUNCHER'),
+                      categories)
 
 
 if __name__ == '__main__':
