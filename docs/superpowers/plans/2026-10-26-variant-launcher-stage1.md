@@ -1404,7 +1404,7 @@ Add to `.github/workflows/validate.yml`, after the `launcher` job:
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0" >/dev/null
       - name: the vendored tree is upstream's
         run: ./variant/verify-vendor.sh
-      - name: build (generic: no TMDB key is ever baked by CI)
+      - name: "build (generic: no TMDB key is ever baked by CI)"
         run: ./variant/build.sh --generic
       - name: the apk is what this repo expects
         run: ./variant/check-apk.sh
