@@ -147,11 +147,49 @@ attribution in `variant/UPSTREAM.md`), the one-title hero, `SpaceSky`, the greet
 sleep timer, the app hiding. "Rework the look later": the port keeps my-kids-tv's
 behaviour, our own visual language comes after it works on the TV.
 
-Still open when this stage starts: whether the kids face is the only face, or a PIN-locked
-mode beside the normal one. The owner chose "normal face now, kids face later", so that
-question is asked at the start of this stage, not now.
+**The shape is decided (2026-10-27, the owner):** HOME keeps showing the **normal** face —
+upstream's TMDB picks. The **kids face is a PIN-locked mode** entered from it, and the PIN
+is what a child cannot get past to leave it. So:
+
+- the normal face stays the home screen, and the two faces coexist on it;
+- the parent PIN does two jobs: it locks the kids mode, and it gates the settings (as it
+  does in my-kids-tv);
+- the age band is the parent's choice, made in the settings behind the PIN, out of the
+  three the catalog has (4-6, 7-10, 11-13);
+- the app hiding applies in the kids mode, so a child in it cannot reach the adult apps.
+
+The PIN keypad is my-kids-tv's own: digits where the remote has them, arrows and OK
+everywhere. Five wrong tries wait 30 seconds, and the wait is kept in the prefs, so
+closing and reopening the settings does not reset it.
 
 ## Order
 
-1 → 2 → (3, 4 in parallel) → 5 → 6. Task 5 is last: the repo only says "one product"
-once the fork has proven it owns the home screen on the TV.
+1 → 2 → (3, 4 together) → 6 → 5.
+
+Task 5 (one product in the repo) is now **last**, not before the kids face. Two reasons:
+the repo only says "one product" once the fork has proven it owns the home screen on the
+TV, and the kids face is what the owner is waiting to see — retiring the launcher changes
+nothing a person can see, and doing it before the product is finished risks retiring the
+fallback too early.
+
+Tasks 3 and 4 are one task: the fork opens an input by handing a passthrough URI to the
+TV's own app, so the picture is in another app's window and there is nothing of ours to
+hold the panel awake with. Our launcher opens it with a `TvView` in its own activity,
+which is both the right input id and a window we own. One port, both outcomes.
+
+## What the kids project turned out to be
+
+`suboss87/my-kids-tv` is **a fork of the same upstream we vendored** — it credits
+[simbasjungles/free-my-tv](https://github.com/simbasjungles/free-my-tv) and carries the same
+class names under the package `io.mykidstv`. So the port is a **diff against our exact
+base**, not a rewrite: two new files (`ParentLock.java` for the PIN, `SpaceSky.java`) and
+23 shared files changed, the big ones being `HomeView.java` (1125 lines changed),
+`Recs.java` (538), `SettingsActivity.java` (500), `HomeData.java` (216), `Prefs.java` (188)
+and `HomeMode.java` (176).
+
+Its catalog is an open dataset under **CC BY 4.0** with the attribution "My Kids TV":
+931 title rows over three bands (4-6: 106, 7-10: 372, 11-13: 453), each judged for that
+age with a badge and four scores (age fit, value, must-watch, fun). The attribution goes
+in `variant/UPSTREAM.md`. Note that the kids project **dropped** upstream's `NowPlaying`
+and `Updates` — the same control plane this fork is keeping inert until the stage that
+strips it.
