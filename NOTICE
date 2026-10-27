@@ -16,3 +16,9 @@ paths and the application id changed for this tree (`variant/UPSTREAM.md` says h
 
 - Inter — SIL Open Font License 1.1 — `variant/assets/fonts/`
 - Material Symbols — Apache License 2.0 — `variant/assets/symbols/`
+
+## Logos
+
+- cryptocurrency-icons — CC0 1.0 — the coin logos in `variant/res/drawable/coin_*.xml`
+- Simple Icons — CC0 1.0 — upstream's Samsung app logos, in upstream's `web/icons/`;
+  that app is not vendored here

@@ -41,7 +41,7 @@ class VendorTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content)
 
-    def fixture(self, tmp, *, listed=(), changed=(), missing=(), extra=()):
+    def fixture(self, tmp, *, listed=(), changed=(), missing=(), extra=(), ours=()):
         """Builds a fake upstream archive and our tree beside it; returns (tree, archive)."""
         upstream = tmp / ('free-my-tv-' + self.commit)
         for up_rel, _, content in FILES:
@@ -61,6 +61,7 @@ class VendorTests(unittest.TestCase):
         for our_rel, content in extra:
             self.write(tree / our_rel, content)
         self.write(tree / 'local-changes.txt', ''.join(p + '\n' for p in listed))
+        self.write(tree / 'our-files.txt', ''.join(p + '\n' for p in ours))
         return tree, archive
 
     def run_verifier(self, tree, archive, *, patch_hash=True):
@@ -124,6 +125,65 @@ class VendorTests(unittest.TestCase):
             result = self.run_verifier(tree, archive)
             self.assertEqual(result.returncode, 1)
             self.assertIn('EXTRA: tools/sneaky.py', result.stdout)
+
+    def test_a_file_of_ours_is_not_extra(self):
+        # our-files.txt holds the paths that are ours, not upstream's: they are not
+        # compared with upstream (there is no upstream file) and are not extra.
+        with tempfile.TemporaryDirectory() as tmp:
+            tree, archive = self.fixture(Path(tmp),
+                                        extra=[('tools/gen_config.py', '# ours\n')],
+                                        ours=['tools/gen_config.py'])
+            result = self.run_verifier(tree, archive)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertNotIn('EXTRA', result.stdout)
+            self.assertNotIn('CHANGED', result.stdout)
+            self.assertIn('vendor tree matches upstream ' + self.commit, result.stdout)
+
+    def test_a_file_that_is_neither_upstream_s_nor_ours_is_still_extra(self):
+        # our-files.txt only excuses the paths it lists: any other file of ours that
+        # upstream does not have is still extra.
+        with tempfile.TemporaryDirectory() as tmp:
+            tree, archive = self.fixture(Path(tmp),
+                                        extra=[('tools/gen_config.py', '# ours\n'),
+                                               ('tools/sneaky.py', '# sneaky\n')],
+                                        ours=['tools/gen_config.py'])
+            result = self.run_verifier(tree, archive)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn('EXTRA: tools/sneaky.py', result.stdout)
+            self.assertNotIn('EXTRA: tools/gen_config.py', result.stdout)
+
+    def test_a_file_of_ours_that_upstream_also_has_fails(self):
+        # our-files.txt must not become a loophole: a path upstream has cannot be
+        # excused as "ours", because it must then be compared byte for byte.
+        with tempfile.TemporaryDirectory() as tmp:
+            tree, archive = self.fixture(Path(tmp),
+                                        changed=['tools/photos.py'],
+                                        ours=['tools/photos.py'])
+            result = self.run_verifier(tree, archive)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("OURS BUT UPSTREAM'S: tools/photos.py", result.stdout)
+
+    def test_an_our_file_in_a_vendored_tree_is_not_compared(self):
+        # A file of ours inside src/ must not be compared with upstream's src/ either.
+        with tempfile.TemporaryDirectory() as tmp:
+            tree, archive = self.fixture(Path(tmp),
+                                        extra=[('src/io/freemytv/Ours.java', 'class Ours {}\n')],
+                                        ours=['src/io/freemytv/Ours.java'])
+            result = self.run_verifier(tree, archive)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertNotIn('EXTRA', result.stdout)
+            self.assertIn('vendor tree matches upstream ' + self.commit, result.stdout)
+
+    def test_the_translate_cache_is_not_extra(self):
+        # tools/translate.py writes its cache into tools/: it is not upstream's and it
+        # is git-ignored, so it must not fail the proof.
+        with tempfile.TemporaryDirectory() as tmp:
+            tree, archive = self.fixture(Path(tmp),
+                                        extra=[('tools/.i18n-cache.json', '{}\n')])
+            result = self.run_verifier(tree, archive)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertNotIn('EXTRA', result.stdout)
+            self.assertIn('vendor tree matches upstream ' + self.commit, result.stdout)
 
     def test_a_listed_changed_file_passes(self):
         with tempfile.TemporaryDirectory() as tmp:

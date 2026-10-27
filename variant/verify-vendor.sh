@@ -2,6 +2,9 @@
 # Fails if a vendored file is not upstream's, byte for byte, except the ones listed in
 # variant/local-changes.txt (one path per line, relative to variant/).
 #
+# variant/our-files.txt lists the paths in the vendored tree that are ours, not
+# upstream's: they are not compared with upstream and are not reported as extra.
+#
 #   ./verify-vendor.sh    compare against the pinned upstream commit
 #
 # DUMBTV_VARIANT_TARBALL=/path/to/up.tar.gz  compare against a copy of upstream's
@@ -60,9 +63,25 @@ is_listed() {
   return 1
 }
 
+# our-files.txt holds the paths in the vendored tree that are ours, not upstream's:
+# upstream has no such file, so it is neither compared with upstream nor extra.
+our_files=()
+if [ -f our-files.txt ]; then
+  while IFS= read -r line; do
+    if [ -n "$line" ]; then our_files+=("$line"); fi
+  done < our-files.txt
+fi
+is_ours() {
+  local want="$1" p
+  for p in ${our_files+"${our_files[@]}"}; do [ "$p" = "$want" ] && return 0; done
+  return 1
+}
+
 # macOS drops a .DS_Store in any directory it visits. It is not upstream's and it is
 # git-ignored, so it is never part of the tree; only the real files are compared.
-find_args=(-type f ! -name '.DS_Store')
+# tools/translate.py writes its own cache next to it (tools/.i18n-cache.json), also
+# git-ignored and not upstream's: the same case, and the same exclusion.
+find_args=(-type f ! -name '.DS_Store' ! -name '.i18n-cache.json')
 
 rc=0
 
@@ -78,10 +97,15 @@ compare_tree() {
   local f rel name
   while IFS= read -r -d '' f; do
     name="${f#$up/}"
+    rel="$ours/$name"
+    if is_ours "$rel"; then
+      # our-files.txt says this path is ours; upstream has it too, so one of the two
+      # lists is wrong. Say so rather than compare: the proof must not be a loophole.
+      echo "OURS BUT UPSTREAM'S: $rel"; rc=1; continue
+    fi
     if [ -n "$only" ]; then     # only some of upstream's files are vendored here
       case " $only " in *" $name "*) ;; *) continue ;; esac
     fi
-    rel="$ours/$name"
     if [ ! -e "$rel" ]; then echo "MISSING: $rel"; rc=1; continue; fi
     if cmp -s "$f" "$rel"; then
       if is_listed "$rel"; then echo "LISTED BUT UNCHANGED: $rel"; rc=1; fi
@@ -93,7 +117,13 @@ compare_tree() {
   done < <(find "$up" "${find_args[@]}" -print0)
   while IFS= read -r -d '' f; do
     rel="$ours/${f#$ours/}"
-    [ -e "$up/${rel#$ours/}" ] || { echo "EXTRA: $rel"; rc=1; }
+    if [ -e "$up/${rel#$ours/}" ]; then
+      continue                                # upstream has it: compared above
+    elif is_ours "$rel"; then
+      echo "ours (not upstream's): $rel"      # ours to begin with: nothing to compare
+    else
+      echo "EXTRA: $rel"; rc=1
+    fi
   done < <(find "$ours" "${find_args[@]}" -print0)
 }
 

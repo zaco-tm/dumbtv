@@ -11,4 +11,5 @@ __pycache__/
 variant/build/
 variant/*.keystore
 variant/config.properties
+variant/tools/.i18n-cache.json
 .superpowers/
