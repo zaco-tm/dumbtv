@@ -26,9 +26,9 @@
 
 | Path | Responsibility |
 |---|---|
-| `variant/src/io/freemytv/*.java` | Upstream's app, verbatim (37 files). Not ours to edit. |
+| `variant/src/io/freemytv/*.java` | Upstream's app, verbatim (40 files). Not ours to edit. |
 | `variant/res/**` | Upstream's resources, verbatim. `R` is generated into `io.freemytv`. |
-| `variant/assets/**` | Upstream's assets: Inter font, symbol PNGs, 28 i18n catalogues, `zones.json`. |
+| `variant/assets/**` | Upstream's assets: Inter font, symbol PNGs, 26 i18n catalogues (28 languages), `zones.json`. |
 | `variant/tools/translate.py` | Upstream's i18n tool, adapted to our paths. |
 | `variant/tools/photos.py` | Upstream's photo pusher, adapted to our provider authority. |
 | `variant/tools/gen_config.py` | **Ours.** Reads `config.properties`, writes `io/freemytv/Config.java`. |
@@ -83,7 +83,7 @@ cp "$UP/LICENSE" variant/LICENSE.free-my-tv
 ls variant/src/io/freemytv/*.java | wc -l
 ```
 
-Expected: `37`.
+Expected: `40`.
 
 - [ ] **Step 3: Point the photo tool at our provider authority**
 
@@ -850,6 +850,20 @@ so the file reads on its own).
 </manifest>
 ```
 
+The manifest's provider authority is `tv.dumbtv.variant.photos`, and `variant/tools/photos.py`
+must speak to the variant — not just with our authority, but with our package: it also names
+the app's data directory and lists the installed packages, and the variant installs as
+`tv.dumbtv.variant`, not `io.freemytv`. Point the whole tool at the variant:
+
+```bash
+cd /Users/zaco/Projects/Personal/dumbtv
+sed -i '' 's#io\.freemytv#tv.dumbtv.variant#g' variant/tools/photos.py
+grep -n "tv.dumbtv.variant" variant/tools/photos.py
+```
+
+Expected: every `io.freemytv` in the tool is now `tv.dumbtv.variant`, and the photo
+authority `content://tv.dumbtv.variant.photos` still matches the manifest.
+
 - [ ] **Step 3: Write `variant/build.sh`**
 
 ```bash
@@ -1149,7 +1163,7 @@ breaks, or when the APK stops being what this repo expects. CI builds
 - Create: `variant/README.md`
 
 **Interfaces:**
-- Consumes: `variant/build/variant.apk` (Task 3), the TV at `192.168.4.26:5555`.
+- Consumes: `variant/build/variant.apk` (Task 3), the TV's address (found by the scan in Step 1).
 - Produces: the variant installed and running beside the launcher that works today, and a written procedure.
 
 - [ ] **Step 1: Find the TV and connect**
@@ -1296,5 +1310,5 @@ git commit -m "docs(variant): how to build and install the variant launcher"
   `Updates` (its self-updater) are still in the vendored tree. On Fire OS they are inert:
   `applyFree()` returns early on `AMAZON`, `mayTurnOff()` refuses every `com.amazon.*`
   package, and the updater refuses a build signed with another key. Stage 3 removes them.
-- **Environment note.** The Ember 55 was unreachable (no adb port open on 192.168.4.0/24)
+- **Environment note.** The Ember 55 was unreachable (no adb port open on the local network)
   when this plan was written, so Task 5 starts by finding the TV again.

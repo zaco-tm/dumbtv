@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Sends your photos to the TV for Free My TV's screensaver and home screen (My Photos).
 
-    python3 tools/photos.py 192.168.1.50 beach.jpg hills.jpg Holidays/
+    python3 tools/photos.py <tv-address> beach.jpg hills.jpg Holidays/
     python3 tools/photos.py beach.jpg              # the TV adb is already connected to
 
 The photos go, in the order given (a folder's in name order), to the app's own folder on the TV
