@@ -1,0 +1,15 @@
+# NOTICE
+
+This project vendors third-party software. See `variant/UPSTREAM.md` for the full list.
+
+## free-my-tv
+
+`variant/src`, `variant/res` and `variant/assets` are from
+<https://github.com/simbasjungles/free-my-tv>, commit
+`f1830445e6e629a2f1eab19602afef38a1a4f8b8`, MIT licensed. The licence text is in
+`variant/LICENSE.free-my-tv`.
+
+## Fonts and symbols
+
+- Inter — SIL Open Font License 1.1 — `variant/assets/fonts/`
+- Material Symbols — Apache License 2.0 — `variant/assets/symbols/`
