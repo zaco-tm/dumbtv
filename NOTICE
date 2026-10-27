@@ -9,6 +9,9 @@ This project vendors third-party software. See `variant/UPSTREAM.md` for the ful
 `f1830445e6e629a2f1eab19602afef38a1a4f8b8`, MIT licensed. The licence text is in
 `variant/LICENSE.free-my-tv`.
 
+`variant/tools/photos.py` and `variant/tools/translate.py` are upstream's too, with the
+paths and the application id changed for this tree (`variant/UPSTREAM.md` says how).
+
 ## Fonts and symbols
 
 - Inter — SIL Open Font License 1.1 — `variant/assets/fonts/`

@@ -5,7 +5,7 @@
     python3 tools/photos.py beach.jpg              # the TV adb is already connected to
 
 The photos go, in the order given (a folder's in name order), to the app's own folder on the TV
-(Android/data/io.freemytv/files/photos: adb can write there, and the app needs no permission); where the TV keeps adb
+(Android/data/tv.dumbtv.variant/files/photos: adb can write there, and the app needs no permission); where the TV keeps adb
 out of it (Android 11, Fire OS 8), they go through the app itself (`content write` to its PhotoInbox, which only adb
 may use). The next time the home screen, the screensaver or Free My TV's settings open, the app imports each one
 (upright, cropped to 16:9, at the screensaver's size, without its GPS and other tags) and deletes what was sent. Up to
@@ -18,7 +18,7 @@ import subprocess
 import sys
 import urllib.parse
 
-INBOX = '/sdcard/Android/data/io.freemytv/files/photos'
+INBOX = '/sdcard/Android/data/tv.dumbtv.variant/files/photos'
 KINDS = ('.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif')
 SERIAL = []   # -s <ip>:5555 once connected, so a phone or another TV on adb doesn't get in the way
 
@@ -62,11 +62,11 @@ def main():
     if not found:
         print('No photos to send.')
         return 1
-    listed = adb('shell', 'pm', 'list', 'packages', 'io.freemytv')
+    listed = adb('shell', 'pm', 'list', 'packages', 'tv.dumbtv.variant')
     if listed.returncode != 0:
         print('No TV connected: give its IP address first (adb devices lists the connected ones).')
         return 1
-    if 'package:io.freemytv' not in listed.stdout.split():
+    if 'package:tv.dumbtv.variant' not in listed.stdout.split():
         print('Free My TV is not installed on this TV.')
         return 1
     # Android 11 (Fire OS 8 too) keeps adb out of other apps' Android/data folders: then through the app itself.

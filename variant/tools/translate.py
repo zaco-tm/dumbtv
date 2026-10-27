@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Translation catalogues for the Android app and the LG/Samsung web app (app/assets/i18n/<lang>.json).
+"""Translation catalogues for the Android app and the LG/Samsung web app (assets/i18n/<lang>.json).
 
     python3 tools/translate.py                 # extract en.json from the code, report what each language lacks
     python3 tools/translate.py --fill          # also translate the missing strings (needs ANTHROPIC_API_KEY)
@@ -11,7 +11,8 @@
 
 The English text in the code is the source: every Ui.tr("...") / Ui.trf("...", ...) / Ui.plural("...", n) call (the
 first argument), plus Ui.datePattern("format|..."), and in web/ the same calls without "Ui." (tr, trf, plural and
-formatDate; tools/webapp.py packs the keys the web app uses into its i18n.js). en.json maps each key to its English
+formatDate; tools/webapp.py packs the keys the web app uses into its i18n.js). The website is not vendored here, so when
+web/ is absent its strings are left out and only the Android app's are read. en.json maps each key to its English
 text: a key "context|Text" is "Text" in a given context (a word that needs another translation there), and "{name}"
 is a placeholder filled at runtime. A key "plural|one:{n} season|other:{n} seasons" (Ui.plural) is a count: each language
 gives one form per plural category it uses (CLDR: zero, one, two, few, many, other). Each <lang>.json maps the same keys
@@ -34,9 +35,9 @@ import urllib.error
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, "app", "src")
-WEB = os.path.join(ROOT, "web")
-I18N = os.path.join(ROOT, "app", "assets", "i18n")
+SRC = os.path.join(ROOT, "src")
+WEB = os.path.join(ROOT, "web")          # upstream's website: not vendored, so it may be absent
+I18N = os.path.join(ROOT, "assets", "i18n")
 CACHE = os.path.join(ROOT, "tools", ".i18n-cache.json")   # translations made with --fill, by hash (not committed)
 DEFAULT_MODEL = "claude-haiku-5-5"
 HAND = {"pt", "es", "de", "ru", "th", "tr"}   # hand translations: --fill leaves them to a person unless --lang names one
@@ -129,6 +130,8 @@ def java_calls():
 
 
 def web_calls():
+    if not os.path.isdir(WEB):
+        return   # upstream's website is not vendored here: the Android app's strings only
     for name in sorted(os.listdir(WEB)):
         if not name.endswith(".js") or name == "strings.js":   # strings.js is where the calls are made, not used
             continue

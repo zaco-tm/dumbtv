@@ -3,20 +3,55 @@
 # variant/local-changes.txt (one path per line, relative to variant/).
 #
 #   ./verify-vendor.sh    compare against the pinned upstream commit
+#
+# DUMBTV_VARIANT_TARBALL=/path/to/up.tar.gz  compare against a copy of upstream's
+# archive instead of downloading it. The archive is still checked against the pinned
+# hash, so this works offline.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 COMMIT=f1830445e6e629a2f1eab19602afef38a1a4f8b8
+# sha256 of upstream's archive for the commit above, recorded on 2026-10-26. A different
+# hash means the archive was regenerated (or it is not upstream's at all): check that
+# upstream's commit is still the one this tree was vendored from before trusting it.
+SHA256=ae5337a626a94c19591ac1a7c1285bedefeb876fd5d6568b4edb0840d59e2dc3
+
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/dumbtv-vendor.XXXXXX")
 trap 'rm -rf "$TMP"' EXIT
-curl -fsSL "https://github.com/simbasjungles/free-my-tv/archive/$COMMIT.tar.gz" -o "$TMP/up.tar.gz"
-tar xzf "$TMP/up.tar.gz" -C "$TMP"
-UP="$TMP/free-my-tv-$COMMIT/app"
+
+sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
+  else shasum -a 256 "$1" | awk '{print $1}'; fi
+}
+
+ARCHIVE="$TMP/up.tar.gz"
+if [ -n "${DUMBTV_VARIANT_TARBALL:-}" ]; then
+  [ -f "$DUMBTV_VARIANT_TARBALL" ] || { echo "no such archive: $DUMBTV_VARIANT_TARBALL"; exit 1; }
+  cp "$DUMBTV_VARIANT_TARBALL" "$ARCHIVE"
+else
+  curl -fsSL "https://github.com/simbasjungles/free-my-tv/archive/$COMMIT.tar.gz" -o "$ARCHIVE" || {
+    echo "could not download upstream's archive. Set DUMBTV_VARIANT_TARBALL to a copy of it to run offline."
+    exit 1; }
+fi
+
+got=$(sha256 "$ARCHIVE")
+if [ "$got" != "$SHA256" ]; then
+  echo "upstream's archive is not the pinned one:"
+  echo "  expected $SHA256"
+  echo "  actual   $got"
+  echo "The archive may have been regenerated, or it is not upstream's. Check that upstream's"
+  echo "commit is still $COMMIT before trusting this tree."
+  exit 1
+fi
+
+tar xzf "$ARCHIVE" -C "$TMP"
+UP="$TMP/free-my-tv-$COMMIT"
+[ -d "$UP" ] || { echo "the archive has no $COMMIT/ in it"; exit 1; }
 
 listed=()
 if [ -f local-changes.txt ]; then
   while IFS= read -r line; do
-    [ -n "$line" ] && listed+=("$line")
+    if [ -n "$line" ]; then listed+=("$line"); fi
   done < local-changes.txt
 fi
 is_listed() {
@@ -30,10 +65,23 @@ is_listed() {
 find_args=(-type f ! -name '.DS_Store')
 
 rc=0
-for top in src res assets; do
-  [ -d "$UP/$top" ] || { echo "upstream has no $top/"; exit 1; }
+
+# Compares an upstream directory with ours: every upstream file we vendored must be
+# here, byte for byte (unless it is listed in local-changes.txt), and every file of ours
+# must be upstream's. The names given after the two directories are the upstream files
+# to compare (all of them when none is given).
+compare_tree() {
+  local up="$1" ours="$2"
+  shift 2
+  local only="$*"
+  [ -d "$up" ] || { echo "upstream has no $ours/"; exit 1; }
+  local f rel name
   while IFS= read -r -d '' f; do
-    rel="$top/${f#$UP/$top/}"
+    name="${f#$up/}"
+    if [ -n "$only" ]; then     # only some of upstream's files are vendored here
+      case " $only " in *" $name "*) ;; *) continue ;; esac
+    fi
+    rel="$ours/$name"
     if [ ! -e "$rel" ]; then echo "MISSING: $rel"; rc=1; continue; fi
     if cmp -s "$f" "$rel"; then
       if is_listed "$rel"; then echo "LISTED BUT UNCHANGED: $rel"; rc=1; fi
@@ -42,12 +90,33 @@ for top in src res assets; do
     else
       echo "CHANGED: $rel"; rc=1
     fi
-  done < <(find "$UP/$top" "${find_args[@]}" -print0)
+  done < <(find "$up" "${find_args[@]}" -print0)
   while IFS= read -r -d '' f; do
-    rel="$top/${f#$top/}"
-    [ -e "$UP/$rel" ] || { echo "EXTRA: $rel"; rc=1; }
-  done < <(find "$top" "${find_args[@]}" -print0)
-done
+    rel="$ours/${f#$ours/}"
+    [ -e "$up/${rel#$ours/}" ] || { echo "EXTRA: $rel"; rc=1; }
+  done < <(find "$ours" "${find_args[@]}" -print0)
+}
 
-[ "$rc" = 0 ] && echo "vendor tree matches upstream $COMMIT"
+# Compares one upstream file with ours (upstream's licence, renamed to ours).
+compare_file() {
+  local up="$1" ours="$2"
+  [ -f "$up" ] || { echo "upstream has no $ours"; exit 1; }
+  if [ ! -e "$ours" ]; then echo "MISSING: $ours"; rc=1; return; fi
+  if cmp -s "$up" "$ours"; then
+    if is_listed "$ours"; then echo "LISTED BUT UNCHANGED: $ours"; rc=1; fi
+  elif is_listed "$ours"; then
+    echo "changed (listed): $ours"
+  else
+    echo "CHANGED: $ours"; rc=1
+  fi
+}
+
+compare_tree "$UP/app/src" src
+compare_tree "$UP/app/res" res
+compare_tree "$UP/app/assets" assets
+# upstream's tools/ holds eight scripts; we vendored the two that work on the TV.
+compare_tree "$UP/tools" tools photos.py translate.py
+compare_file "$UP/LICENSE" LICENSE.free-my-tv
+
+if [ "$rc" = 0 ]; then echo "vendor tree matches upstream $COMMIT"; fi
 exit "$rc"
