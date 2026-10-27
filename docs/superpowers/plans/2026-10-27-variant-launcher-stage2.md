@@ -78,51 +78,47 @@ Acceptance:
   was bound again. Both directions are proven, not assumed.
 - `bash -n` clean; the scripts job green.
 
-## Task 3 — the input mapping
+## Task 3 + 4 — the inputs, and the TV staying awake while one shows
 
-The fork discovers the inputs and opens them, but it tunes the port (`HW2`) where the
-tile is named after the device (`Apple TV`). `dumbtv home` tunes
+**These two are one task.** The fork opens an input by handing a passthrough URI to the
+TV's own app (`Intent(ACTION_VIEW, buildChannelUriForPassthroughInput(it.inputId))` in
+`HomeApps.inputIntent()`), so on this TV the picture is in Amazon's `PassthroughPlayerActivity`
+— another app's window. That is why the fork has no keep-awake: there is nothing of ours
+to hold the panel awake with, and BACK leaves the fork entirely. `dumbtv home` opens the
+input with a `TvView` in **its own** activity, so the picture is in a window of ours, the
+window can hold the panel awake, and BACK comes back home.
+
+So: port `launcher/src/tv/dumbtv/home/Input.java` into the fork, and the device-id mapping
+and the keep-awake come with it.
+
+The mapping: the fork discovers the inputs and opens them, but it tunes the port (`HW2`)
+where the tile is named after the device (`Apple TV`). `dumbtv home` tunes
 `com.mediatek.tis/.HdmiInputService/HDMI100004`, the CEC child input, which is what that
 tile is on this TV.
 
 1. Find out exactly how the fork opens an input (`HomeApps`/`HomeView`) and where the
    id it tunes comes from.
-2. Port the mapping from `launcher/src/tv/dumbtv/home/Input.java`: the device input
-   (`HDMI100004`) rather than the port, and the "hand over to the TV's own app" rule,
-   including the case where Amazon's Live TV claims the passthrough URI and would
-   redirect to a channel scan instead of showing the picture.
-3. Measure on the TV: the tile is named "Apple TV", the log says the input tuned is
-   `HDMI100004`, and the picture appears.
+2. Port the mapping: the device input (`HDMI100004`) rather than the port, and the "hand
+   over to the TV's own app" rule, including the case where Amazon's Live TV claims the
+   passthrough URI and would redirect to a channel scan instead of showing the picture.
+   The launcher had three ways to answer that question behind a setting; the fork has no
+   such setting and takes the "hand over to a single television app, but not to Live TV"
+   one.
+3. Keep-awake: `FLAG_KEEP_SCREEN_ON` on the window that shows the picture, and only while
+   there is a picture — an input on a dead port still sleeps.
 
-Acceptance:
+Acceptance, measured on the TV:
 
-- The logcat line names `HDMI100004` for the Apple TV tile.
-- The picture appears, and the other ports still work.
+- The logcat line names `HDMI100004` for the Apple TV tile, and the picture appears.
+- The other ports still work, and the maker-specific paths (Allwinner, Xiaomi) still go
+  through upstream's own player.
+- The sleep test: 30 s timeout, 70 s later still awake, no sleep events, and a negative
+  control that does sleep. `mWakefulness` and `Display Power` are the signals —
+  `mUserActivityTimeoutOverrideFromWindowManager` stays -1 on this build even when a
+  window legitimately holds the screen.
+- BACK from the input returns to the fork's home screen.
 - The change is a diff against upstream's input logic, in the variant's tree, listed in
   `our-files.txt` or `local-changes.txt` as the lists require.
-
-## Task 4 — keep-awake
-
-An HDMI input shows a raw picture with no media session, so nothing resets the idle
-timer: the panel goes off at the screen-off timeout and the TV sleeps "to save energy"
-while something is plainly playing. `dumbtv home` holds the panel awake
-(`FLAG_KEEP_SCREEN_ON` on the window that shows the picture) — proven on this TV with a
-30 s timeout: 70 s later still awake, no sleep events, and a negative control that did
-sleep.
-
-The fork has no keep-awake at all, and with a passthrough input the picture is a hardware
-layer that no window of ours holds, so this is not a copy — it is a measurement first.
-
-1. Measure: with the fork in front and an HDMI input up, what holds the panel awake on
-   this TV? (`dumpsys power`, `mHoldScreenWindow`, `mUserActivityTimeoutOverrideFromWindowManager`.)
-   Note that `mUserActivityTimeoutOverrideFromWindowManager` stays -1 on this build even
-   when a window legitimately holds the screen, so judge by `mWakefulness` and
-   `Display Power`, not by that field.
-2. Implement what the measurement says.
-3. Prove it: 30 s timeout, 70 s later, still awake, no sleep events; and a negative
-   control that does sleep.
-
-Acceptance: the sleep test is run on the TV and both directions are recorded.
 
 ## Task 5 — one product in the repo
 

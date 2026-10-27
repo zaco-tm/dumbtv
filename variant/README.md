@@ -205,11 +205,20 @@ It is the same TV mark as `launcher/res/drawable/banner.xml`, in the launcher's 
 colours, with our wordmark beside it. The label under the tile is the app's name,
 `dumbtv home (variant)`, which the launcher shows when the tile is focused.
 
-## What it is not yet
+## The TV's inputs
 
-The app is upstream's, with our application id and our signing key, and it takes the HOME
-key through our Guard. It does not show the TV's passthrough inputs yet, and it does not
-hold the screen awake while a picture shows. Those are ours, and they come next.
+The home screen's Inputs row lists the TV's HDMI inputs, and a tile named after a device that
+talks HDMI-CEC (an Apple TV on the Ember 55) carries that device's own name. Tapping a tile
+opens the input on **our** screen — `io.freemytv.Input`, the port of `tv.dumbtv.home`'s input
+screen — with the picture in a window of ours:
+
+- BACK returns to the home screen, because the input is our own screen and not another app's.
+- The panel stays awake while the input shows a picture, and the normal idle timeout applies
+  again when it does not (a port with nothing plugged into it).
+- A tile named after a device tunes that device's own input, not the port it is plugged into.
+
+The maker's own players (Allwinner, Xiaomi) still have the last word on the boards where no
+app opens a passthrough input, and Live TV is still Amazon's: upstream's paths, unchanged.
 
 ## Status
 
@@ -221,5 +230,10 @@ carries our own banner, and it takes the HOME key through its Guard — HOME lan
 end, naming the fork. The way back was run on the TV as well: with the old launcher's
 Guard back in `enabled_accessibility_services`, HOME landed on `tv.dumbtv.home/.Home`
 and `verify.sh` named the launcher.
+
+The inputs were measured on the same TV: the "Apple TV" tile opens our screen and tunes the
+device's own input (`…/HdmiInputService/HDMI100004`, not the port's `HW2`), the picture
+comes up, BACK comes back to the home screen, and with a 30-second idle timeout the picture
+held the panel awake for 70 seconds while the same screen with no signal slept in 28.
 
 See `variant/UPSTREAM.md` for the upstream commit and the licence.

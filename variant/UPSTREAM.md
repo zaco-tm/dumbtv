@@ -26,6 +26,11 @@ The Android app in `variant/` is free-my-tv, vendored verbatim.
     (`About this TV`, `Back closes.`, `Couldn't open TV Settings`, `Firmware`,
     `IP address`, `Model`, `System`, `Time zone`), and it reports them as obsolete in
     every language. That is upstream's state, not a fault of ours.
+- Source adapted:
+  - `src/io/freemytv/HomeApps.java` — upstream's file, with our two changes to it: an HDMI
+    input is opened on our own screen (`io.freemytv.Input`) instead of in the TV's own app,
+    and a tile named after an HDMI-CEC device tunes that device's own input rather than the
+    port it is plugged into. See "Local changes" below.
 - Not vendored: upstream's `web/`, `webos/`, `tizen/`, `docs/`, website and macOS app
 - Not vendored: `build.sh` — it builds upstream's APK from upstream's checkout,
   generating `Config.java` out of `config.properties`; we generate that class ourselves.
@@ -50,7 +55,7 @@ the other vendored files. It is the record of what our own `variant/AndroidManif
 was made from: without it, the prose below would be the only record of upstream's
 manifest, and prose does not fail a build.
 
-Our manifest is upstream's with eight changes, and nothing else that matters:
+Our manifest is upstream's with nine changes, and nothing else that matters:
 
 1. **The label** — `Free My TV` → `dumbtv home (variant)`, on the application and on every
    component that carries a label. The TV shows our name, not upstream's.
@@ -95,11 +100,22 @@ Our manifest is upstream's with eight changes, and nothing else that matters:
    `android.permission.BIND_ACCESSIBILITY_SERVICE`, like upstream's own `RemoteKeyService`:
    this APK targets 33, and Android 12 refuses to install a component with an intent filter
    and no explicit `android:exported`.
+9. **The input screen** — upstream declares no activity for an input: it opens one in the TV's
+   own app. We declare `io.freemytv.Input`, ours, and open the input there instead. Upstream's
+   way leaves the picture in another app's window: on this TV that is Amazon's input player, so
+   BACK does not come back to the home screen and there is nothing of ours to hold the panel
+   awake with. Ours is the port of `tv.dumbtv.home`'s input screen
+   (`launcher/src/tv/dumbtv/home/Input.java`), a new file of ours listed in `our-files.txt`.
+   It runs in the home screen's process and task (`android:process=":home"`, the same
+   `android:taskAffinity` as `HomeActivity`), so BACK returns to the home screen, and its theme
+   is the platform's fullscreen one and not `FreeMyTV.Home`: the window's background is
+   transparent there, and `FreeMyTV.Home`'s light background would flash before the code can
+   clear it.
 
 Upstream's comments are trimmed: they describe upstream's own screens and its own names.
 
 `tests/test_variant_manifest.py` parses both manifests and asserts that the differences
-between them are exactly these eight, and names any difference that is not one of them. A
+between them are exactly these nine, and names any difference that is not one of them. A
 manifest that drifted away from upstream's — a permission added, an attribute dropped —
 fails the test suite rather than the reviewer.
 
@@ -116,10 +132,13 @@ means, in this order:
 3. Update the pin in `variant/verify-vendor.sh`: `COMMIT=` and `SHA256=`.
 4. Replace the vendored tree from the new archive, byte for byte: `src/`, `res/`,
    `assets/`, the two tools, `LICENSE.free-my-tv` and `upstream/AndroidManifest.xml`.
-5. Re-apply our two adapted tools (the paths in `variant/local-changes.txt`) and our own
+5. Re-apply our adapted files (the paths in `variant/local-changes.txt`) and our own
    files (the paths in `variant/our-files.txt`); adapt them again if upstream changed them.
-   Step 4 replaces `res/` wholesale, so our banner goes with it: re-make it from
-   `variant/artwork/banner_variant.svg` (the command is in `variant/README.md`).
+   Step 4 replaces `src/` wholesale, so our changes to `src/io/freemytv/HomeApps.java` and our
+   `src/io/freemytv/Input.java` go with it: re-apply both (the file's own comment says what
+   ours are, and `variant/UPSTREAM.md` above has the whole of it). Our banner goes with
+   `res/`: re-make it from `variant/artwork/banner_variant.svg` (the command is in
+   `variant/README.md`).
 6. Update the version in `variant/AndroidManifest.xml` (`versionCode`, `versionName`), so the
    new build is a different one on the TV than the old.
 7. Update `variant/local-changes.txt` and `variant/our-files.txt` if upstream's paths moved.
@@ -131,16 +150,20 @@ means, in this order:
 
 ## Local changes
 
-`local-changes.txt` lists the two adapted tools: they are the only files that differ
-from upstream. `verify-vendor.sh` proves every other vendored byte is upstream's, and
-it fails on a file that differs without being listed as well as on a listed file that
-no longer differs.
+`local-changes.txt` lists the files that differ from upstream: the two adapted tools and
+`src/io/freemytv/HomeApps.java`. That one is upstream's file with our two changes to it: an
+input is opened on our own screen (`io.freemytv.Input`) instead of in the TV's own app, and a
+tile named after an HDMI-CEC device tunes that device's own input rather than the port it is
+plugged into. The file says so in its own comment, because a re-sync replaces it with
+upstream's. `verify-vendor.sh` proves every other vendored byte is upstream's, and it fails on
+a file that differs without being listed as well as on a listed file that no longer differs.
 
 `our-files.txt` lists the paths in the vendored tree that are ours, not upstream's
 (`tools/gen_config.py`, `res/drawable-nodpi/banner_variant.png`, `src/io/freemytv/Guard.java`,
-`res/xml/guard.xml` and `res/values/guard.xml`): upstream has no such files, so there is
-nothing to compare them with and the verifier does not call them extra. It is not a loophole —
-a path upstream does have cannot be excused this way, and the verifier says so if one is.
+`src/io/freemytv/Input.java`, `res/xml/guard.xml` and `res/values/guard.xml`): upstream has no
+such files, so there is nothing to compare them with and the verifier does not call them
+extra. It is not a loophole — a path upstream does have cannot be excused this way, and the
+verifier says so if one is.
 
 ## The proof
 

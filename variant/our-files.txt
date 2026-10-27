@@ -1,5 +1,6 @@
 tools/gen_config.py
 res/drawable-nodpi/banner_variant.png
 src/io/freemytv/Guard.java
+src/io/freemytv/Input.java
 res/xml/guard.xml
 res/values/guard.xml

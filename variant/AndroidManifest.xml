@@ -244,5 +244,25 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/guard" />
         </service>
+
+        <!-- Ours: the input screen. The picture is in a window of ours (TvView), so BACK comes
+             back to the home screen and the panel stays awake while the input shows a picture.
+             It is the port of tv.dumbtv.home's Input, and it is listed in our-files.txt. See
+             variant/UPSTREAM.md.
+
+             Same process and task affinity as HomeActivity: the input screen belongs to the home
+             screen's task, so BACK returns to it. The theme is the platform's fullscreen one and
+             not FreeMyTV.Home: the window's background is transparent here (the video is a layer
+             behind it), and FreeMyTV.Home's light background would flash before the code can
+             clear it. -->
+        <activity
+            android:name="io.freemytv.Input"
+            android:process=":home"
+            android:exported="false"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen" />
     </application>
 </manifest>

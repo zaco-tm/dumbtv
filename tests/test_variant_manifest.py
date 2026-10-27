@@ -160,6 +160,11 @@ def classify(difference):
         # Ours, and ours only: the Guard takes the HOME key on Fire OS, where no
         # third-party app can be the home app. Upstream declares no such service.
         return ('guard service', upstream, ours)
+    if kind == 'added' and ours == 'activity io.freemytv.Input':
+        # Ours, and ours only: the input screen. The picture is in a window of ours, so
+        # BACK comes back to the home screen and the panel stays awake. Upstream opens an
+        # input in the TV's own app and declares no activity of its own for it.
+        return ('input activity', upstream, ours)
     return ('UNDOCUMENTED', f'{path}: {upstream} -> {ours}', kind)
 
 
@@ -191,6 +196,8 @@ EXPECTED = Counter([
     ('banner', '@drawable/banner', '@drawable/banner_variant'),
     # Ours, and ours only: the Guard that takes the HOME key on Fire OS.
     ('guard service', None, 'service io.freemytv.Guard'),
+    # Ours, and ours only: the input screen, with the picture in a window of ours.
+    ('input activity', None, 'activity io.freemytv.Input'),
     # The label is on the application and on the seven components that carry one.
     *([('label', 'Free My TV', 'dumbtv home (variant)')] * 8),
     # The task affinity is on two activities.
@@ -322,7 +329,8 @@ class ManifestDiffTests(unittest.TestCase):
         # in the manifest, not only allowed by it.
         found = Counter(classify(difference)[0] for difference in manifest_differences())
         for kind in ('label', 'version', 'provider authority', 'task affinity',
-                     'component name', 'home category', 'banner', 'guard service'):
+                     'component name', 'home category', 'banner', 'guard service',
+                     'input activity'):
             with self.subTest(kind=kind):
                 self.assertTrue(found[kind] > 0, kind)
 

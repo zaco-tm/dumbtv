@@ -51,6 +51,14 @@ import java.util.regex.Pattern;
  * (downloaded from Wikimedia Commons by tools/logos.py) or, without one, the logo lifted from the app's TV art (the
  * Android TV "banner"), saved to disk after the first time. In "All Apps", 16:9 cards with the whole TV art (or the
  * icon on a dark card). Shortcuts (live TV, inputs, All Apps, settings) are icon buttons.
+ *
+ * Ours, adapted: upstream opens an HDMI input in the TV's own app, which on this TV is another
+ * app's window - so BACK leaves the fork and nothing of ours holds the panel awake. We open the
+ * input on our own screen instead (io.freemytv.Input, the port of the launcher's), and the tile
+ * named after an HDMI-CEC device tunes that device's own input rather than the port it is
+ * plugged into. This file is upstream's, with those two changes: it is listed in
+ * variant/local-changes.txt, and a re-sync of upstream's tree has to re-apply them. See
+ * variant/UPSTREAM.md.
  */
 final class HomeApps {
     private HomeApps() {}
@@ -378,6 +386,9 @@ final class HomeApps {
         // A device that talks HDMI-CEC gets its own input, a child of the port's, named after the device: port input id
         // -> that name.
         Map<String, String> devices = new HashMap<>();
+        // The same, with the child's own input id: the tile is named after the device, so it has to tune the device's
+        // input and not the port it is plugged into (ours, not upstream's: see variant/UPSTREAM.md).
+        Map<String, String> deviceIds = new HashMap<>();
         try {
             for (TvInputInfo info : tim.getTvInputList()) {
                 if (info.getType() != TvInputInfo.TYPE_HDMI) continue;
@@ -385,6 +396,7 @@ final class HomeApps {
                     list.add(info);
                 } else {
                     devices.put(info.getParentId(), String.valueOf(info.loadLabel(c)).trim());
+                    deviceIds.put(info.getParentId(), info.getId());
                 }
             }
         } catch (RuntimeException e) {
@@ -416,7 +428,8 @@ final class HomeApps {
             String symbol = state == TvInputManager.INPUT_STATE_CONNECTED || custom != null
                     ? deviceSymbol(label) : "hdmi";
             Item it = shortcut(INPUT, "hdmi" + number, label, symbol);
-            it.inputId = info.getId();
+            // The device's own input when the port has one (the tile is named after the device), the port's otherwise.
+            it.inputId = deviceIds.containsKey(info.getId()) ? deviceIds.get(info.getId()) : info.getId();
             it.number = String.valueOf(number);
             it.connected = state == TvInputManager.INPUT_STATE_CONNECTED;
             out.add(it);
@@ -560,10 +573,25 @@ final class HomeApps {
             case LIVE_TV:
                 intent = liveTv(a);
                 break;
-            case INPUT:
+            case INPUT: {
+                // The maker's own player (Allwinner, Xiaomi): no app opens a passthrough input on those boards, and
+                // only the maker's player reaches the TV's inputs. Upstream's path, unchanged.
+                if (noPassthrough(a)) {
+                    intent = inputIntent(a, it);
+                    break;
+                }
+                // Ours: the picture is in a window of ours, so BACK comes back to the home screen and our window holds
+                // the panel awake. The TV's own app gets the input when Input.intent() says so.
+                Intent ours = Input.intent(a, it);
+                if (ours != null) {
+                    intent = ours;
+                    break;
+                }
+                // The TV's own app has the passthrough URI: on Fire OS its own input switch, elsewhere the URI itself.
                 if (HomeMode.AMAZON && fireInput(a, it)) return true;
                 intent = inputIntent(a, it);
                 break;
+            }
             case SETTINGS:
                 intent = new Intent().setComponent(new ComponentName(a, SettingsActivity.class));
                 break;

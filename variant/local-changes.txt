@@ -1,2 +1,3 @@
 tools/photos.py
 tools/translate.py
+src/io/freemytv/HomeApps.java
