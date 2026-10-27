@@ -162,20 +162,52 @@ class GuardPortTests(unittest.TestCase):
         self.assertTrue(theirs, 'the launcher has no guard label')
         self.assertNotEqual(ours, theirs,
                             'the fork and the launcher share a guard label')
+        # And neither is the beginning of the other. The dump cuts a long label
+        # short, so a label that begins with the other one would be read as this one
+        # when the dump cut it short: the check for one guard would answer for the
+        # other, and it would pass wrongly.
+        self.assertFalse(ours.startswith(theirs),
+                         f'{ours!r} begins with {theirs!r}')
+        self.assertFalse(theirs.startswith(ours),
+                         f'{theirs!r} begins with {ours!r}')
 
 
-class GuardNotBoundYetTests(unittest.TestCase):
-    def test_no_script_binds_the_variants_guard(self):
-        # The install path that points the TV's enabled_accessibility_services at the
-        # fork's Guard is the next task's work. Until it exists, the launcher that
-        # works today has to stay the one in front.
-        scripts = []
-        for folder in ('scripts', 'launcher', 'variant'):
-            scripts += sorted((ROOT / folder).glob('*.sh'))
-        for path in scripts:
+class GuardBoundByTheForkTests(unittest.TestCase):
+    """The fork's Guard is bound by the fork's own install path, and by nothing else.
+
+    This class used to say the opposite: until the install path existed, no script
+    mentioned tv.dumbtv.variant/io.freemytv.Guard, so that the launcher which works
+    today stayed the one in front. The install path exists now, and the test says
+    what it must do instead: the fork's path binds the fork's Guard, and the old
+    launcher's path does not. Two paths that bind Guards would fight over the HOME
+    key.
+    """
+
+    FORK_GUARD = 'tv.dumbtv.variant/io.freemytv.Guard'
+
+    def test_the_fork_s_install_path_binds_the_fork_s_guard(self):
+        text = (VARIANT / 'install.sh').read_text(encoding='utf-8')
+        self.assertIn(self.FORK_GUARD, text)
+
+    def test_the_old_launcher_s_path_does_not_bind_the_fork_s_guard(self):
+        for path in (ROOT / 'launcher' / 'install.sh', ROOT / 'scripts' / 'launcher.sh'):
             with self.subTest(script=path.name):
-                self.assertNotIn('tv.dumbtv.variant/io.freemytv.Guard',
-                                 path.read_text(encoding='utf-8'))
+                self.assertNotIn(self.FORK_GUARD, path.read_text(encoding='utf-8'))
+
+    def test_only_one_install_path_binds_a_guard(self):
+        # The old launcher's guard has to go out when the fork's comes in: two Guards
+        # bound at once would fight over the HOME key.
+        text = (VARIANT / 'install.sh').read_text(encoding='utf-8')
+        self.assertIn('tv.dumbtv.home/tv.dumbtv.home.Guard', text)
+
+    def test_the_fork_is_not_made_a_home_app_candidate(self):
+        # The Guard is the whole mechanism. A HOME category or a set-home-activity
+        # would let the package manager hand the HOME key to the fork on its own.
+        text = (VARIANT / 'install.sh').read_text(encoding='utf-8')
+        self.assertNotIn('set-home-activity', text)
+        self.assertNotIn('category.HOME', text)
+        manifest = (VARIANT / 'AndroidManifest.xml').read_text(encoding='utf-8')
+        self.assertNotIn('android.intent.category.HOME', manifest)
 
 
 if __name__ == '__main__':

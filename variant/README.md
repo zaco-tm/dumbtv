@@ -30,6 +30,19 @@ export PATH="$HOME/Downloads/platform-tools:$PATH"
 export ADB_SERIAL=<the TV>:5555
 adb connect "$ADB_SERIAL"
 adb devices                                # the line must end in "device"
+./variant/install.sh --build               # build the APK, install it, and give it HOME
+```
+
+`./variant/install.sh` installs the APK in `variant/build` when it is already there;
+`--build` builds it first (it needs `variant/config.properties` with your TMDB key).
+Either way the script does the whole job: it installs the fork, grants the two app
+ops, sets the alarm setting the Guard needs, and swaps the fork's Guard into
+`enabled_accessibility_services` — the old launcher's Guard goes out, the fork's comes
+in, and every other accessibility service stays.
+
+To install the APK by hand instead:
+
+```sh
 adb install -r variant/build/variant.apk
 adb shell pm list packages | grep dumbtv
 ```
@@ -46,10 +59,11 @@ adb shell appops set tv.dumbtv.variant SCHEDULE_EXACT_ALARM allow
 adb shell appops get tv.dumbtv.variant SYSTEM_ALERT_WINDOW
 ```
 
-`SYSTEM_ALERT_WINDOW` is the sleep timer's overlay, and `REQUEST_INSTALL_PACKAGES` belongs
-to upstream's self-updater. Both are granted over adb here rather than by making the owner
-click through an installer's warning. Stage 3 removes both permissions along with the code
-that wanted them.
+`./variant/install.sh` sets the first two; the commands are here for a TV where the
+app was installed by hand. `SYSTEM_ALERT_WINDOW` is the sleep timer's overlay, and
+`REQUEST_INSTALL_PACKAGES` belongs to upstream's self-updater. Both are granted over adb
+here rather than by making the owner click through an installer's warning. Stage 3
+removes both permissions along with the code that wanted them.
 
 The third line is upstream's exact-alarm permission. `SCHEDULE_EXACT_ALARM` became an
 appop in Android 12, so on Fire OS 8 (Android 11) `appops` may answer
@@ -79,29 +93,44 @@ which leaves the window focus on the paused launcher and drops remote key events
 home screen shows but the remote does not drive it, that is this known quirk rather than a
 fault here — upstream keeps a separate `FireHomeActivity` for exactly this reason.
 
-## HOME stays with dumbtv home
+## The fork takes the HOME key
 
-The variant does **not** declare a HOME category: it must not be able to take the HOME key
-away from the launcher that works today. (`tv.dumbtv.home` is the TV's home screen through
-the Guard, an accessibility service; stage 2 gives the variant the HOME key the same way,
-and it does not need the category.)
+Fire OS protects Amazon's launcher and lets no third-party app be the home app, so HOME
+is taken by a Guard: an accessibility service that covers Amazon's home window with
+ours. `./variant/install.sh` points the TV's `enabled_accessibility_services` at the
+fork's Guard, `tv.dumbtv.variant/io.freemytv.Guard`, and takes the old launcher's Guard
+out. Only one Guard may be bound at a time: two of them would fight over the HOME key.
 
-Two different things have to be true, and on this TV they are checked two different ways.
-
-**The variant is not a home app candidate.** Ask the package manager which activities
-answer a HOME intent, and look for `tv.dumbtv.variant` in the answer — it must not be
-there:
+The fork is **not** a home-app candidate. It declares no HOME category and the install
+path never calls `set-home-activity`: the Guard is the whole mechanism. Ask the package
+manager which activities answer a HOME intent, and look for `tv.dumbtv.variant` in the
+answer — it must not be there:
 
 ```sh
 adb shell cmd package query-activities -a android.intent.action.MAIN -c android.intent.category.HOME \
   | grep -E 'packageName=' | sort -u
 ```
 
-The answer is the same set of packages before the variant is installed and after, and
-`tv.dumbtv.variant` is in neither.
+The answer is the same set of packages before the variant is installed and after.
 
-**Our launcher is still the one in front.** This is the check that matters, and the Guard
-decides it, not the package manager:
+**Which Guard is bound.** The setting names the component; the dump names the label:
+
+```sh
+adb shell settings --user 0 get secure enabled_accessibility_services
+adb shell dumpsys accessibility | grep -o 'Service\[label=[^,]*'
+```
+
+The fork's service is `dumbtv home (variant) button`, the old launcher's is
+`dumbtv home button`. The two labels differ on purpose, so the two guards can be told
+apart there and in the TV's accessibility settings.
+
+The dump cuts a long label short at 22 characters: the fork's comes out as
+`Service[label=dumbtv home (variant) b…`, with an ellipsis where the rest was. The two
+labels part at the eleventh character, so what is left of the cut still says which
+service it is — the old launcher's is short enough to print whole.
+
+**HOME has to land on the fork's home screen.** That is the proof, and it is the only
+one: a bound service says nothing about whether the key arrives.
 
 ```sh
 adb shell dumpsys window | grep mCurrentFocus
@@ -109,18 +138,37 @@ adb shell input keyevent KEYCODE_HOME
 adb shell dumpsys window | grep mCurrentFocus
 ```
 
-Both must name `tv.dumbtv.home/tv.dumbtv.home.Home`.
+Both must name `tv.dumbtv.variant/io.freemytv.HomeActivity`. `./scripts/verify.sh`
+checks all of it and says which product it is about: `dumbtv home (variant)` when the
+fork is in front, `dumbtv home` when the old launcher is.
 
 Do **not** use `resolve-activity` for this. On the Ember 55 it answers
 `com.amazon.tv.launcher/.ui.HomeActivity_vNext`, with `priority=950` and
-`isDefault=true`: Fire OS's own launcher wins the resolver even though `tv.dumbtv.home`
-is the home screen in practice, because the Guard takes the HOME key rather than a HOME
+`isDefault=true`: Fire OS's own launcher wins the resolver even though our home screen
+is the one in practice, because the Guard takes the HOME key rather than a HOME
 category. That answer is the same before and after the variant is installed — it is the
 *change* that would matter, not the name.
 
-If Android ever offers to switch the home app, decline it. The old launcher should still
-be the one in front once the variant is closed, and `./scripts/verify.sh` must still pass
-end to end.
+If Android ever offers to switch the home app, decline it. The Guard stays the way HOME
+is taken, and `./scripts/verify.sh` must still pass end to end.
+
+## The way back to a working TV
+
+One setting. If the fork misbehaves, put the old launcher's Guard back:
+
+```sh
+adb shell settings put secure enabled_accessibility_services tv.dumbtv.home/tv.dumbtv.home.Guard
+```
+
+`accessibility_enabled` is already 1. The launcher that works today is the home screen
+again — HOME lands on `tv.dumbtv.home/.Home` — and `./scripts/verify.sh` passes and
+names the launcher.
+
+That one command replaces the whole list, so any *other* accessibility service on the
+TV is dropped with it. `./variant/install.sh --undo` does the same swap and keeps the
+other services; it waits for the old Guard to bind before it says the TV is back.
+
+To put the fork back in front: `./variant/install.sh`.
 
 ## The Guard
 
@@ -131,10 +179,12 @@ brings the fork's home screen up instead. It is the port of `tv.dumbtv.home`'s G
 same alarm-fired launch, same cover, same rules — and it is ours, not upstream's, so it
 is listed in `variant/our-files.txt` and described in `variant/UPSTREAM.md`.
 
-Nothing binds it yet. The install path that points the TV's
-`enabled_accessibility_services` at `tv.dumbtv.variant/io.freemytv.Guard`, swaps the old
-guard out and sets `min_futurity=0` comes with stage 2's install work; until then
-`tv.dumbtv.home`'s Guard is still the one in front, and the rollback is that one setting.
+`variant/install.sh` binds it: it points the TV's `enabled_accessibility_services` at
+`tv.dumbtv.variant/io.freemytv.Guard`, swaps the old launcher's Guard out, keeps every
+other accessibility service, and sets `min_futurity=0` (the Guard's launch goes through
+an alarm, and an alarm does not fire sooner than five seconds from now unless that
+setting says otherwise). `./variant/install.sh --undo` puts the old Guard back, and the
+rollback is that one setting, written down above.
 
 ## What the tile on the TV says
 
@@ -157,16 +207,19 @@ colours, with our wordmark beside it. The label under the tile is the app's name
 
 ## What it is not yet
 
-This is stage 1: the app is upstream's, with our application id and our signing key. It does
-not take the HOME key, it does not show the TV's passthrough inputs, and it does not hold
-the screen awake while a picture shows. Those are ours and they come in stage 2.
+The app is upstream's, with our application id and our signing key, and it takes the HOME
+key through our Guard. It does not show the TV's passthrough inputs yet, and it does not
+hold the screen awake while a picture shows. Those are ours, and they come next.
 
 ## Status
 
-The build and the APK checks run in CI on every push. The on-TV pass has happened once, on
-the Ember 55 (Fire OS 8): the variant installs beside `tv.dumbtv.home`, opens without a
-crash, fetches live picks from TMDB, the remote drives it, HOME still lands on
-`tv.dumbtv.home`, its tile in the APPS row carries our own banner, and
-`./scripts/verify.sh` passes end to end.
+The build and the APK checks run in CI on every push. The on-TV pass has happened on the
+Ember 55 (Fire OS 8): the variant installs beside `tv.dumbtv.home`, opens without a
+crash, fetches live picks from TMDB, the remote drives it, its tile in the APPS row
+carries our own banner, and it takes the HOME key through its Guard — HOME lands on
+`tv.dumbtv.variant/io.freemytv.HomeActivity` and `./scripts/verify.sh` passes end to
+end, naming the fork. The way back was run on the TV as well: with the old launcher's
+Guard back in `enabled_accessibility_services`, HOME landed on `tv.dumbtv.home/.Home`
+and `verify.sh` named the launcher.
 
 See `variant/UPSTREAM.md` for the upstream commit and the licence.

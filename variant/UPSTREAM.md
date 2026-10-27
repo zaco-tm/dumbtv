@@ -70,13 +70,13 @@ Our manifest is upstream's with eight changes, and nothing else that matters:
    Written out in full, every component stays in `io.freemytv`, where the code is.
 6. **The HOME category** — upstream's `HomeActivity` declares `android.intent.category.HOME`
    and `android.intent.category.DEFAULT` in its intent filter. We drop both. On this Fire OS
-   `tv.dumbtv.home` is the home screen — not through `set-home-activity` (Android caps a
-   third-party launcher's HOME priority to 0), but through the Guard, an accessibility service
-   that stage 2 adds. A HOME category would make the variant a home-app candidate as well: if
-   the system ever offers a chooser and the owner accepts it, `tv.dumbtv.home` silently stops
+   the home screen is ours — not through `set-home-activity` (Android caps a
+   third-party launcher's HOME priority to 0), but through our Guard, an accessibility
+   service. A HOME category would make the variant a home-app candidate as well: if
+   the system ever offers a chooser and the owner accepts it, the Guard stops
    being HOME. The activity stays, exported and startable, and the app is still in the
-   launcher through `SettingsActivity`'s LEANBACK_LAUNCHER and LAUNCHER filters. Stage 2
-   gives the variant the HOME key through the Guard, which does not need the category.
+   launcher through `SettingsActivity`'s LEANBACK_LAUNCHER and LAUNCHER filters. The
+   Guard gives the variant the HOME key, and it does not need the category.
 7. **The banner** — `@drawable/banner` → `@drawable/banner_variant`. Upstream's banner is a
    picture with the words *Free My TV* in it, and the launcher draws the banner as the app's
    tile: the variant's tile in `dumbtv home`'s APPS row said "Free My TV", not our name. Ours

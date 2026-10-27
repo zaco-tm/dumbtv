@@ -8,9 +8,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LABEL = 'Service[label=dumbtv home button, feedbackType[FEEDBACK_GENERIC]]'
+# The fork's guard has its own label on purpose: the dump names a bound service by
+# its label, never by its component, and the two guards are never bound at once.
+FORK_LABEL = 'Service[label=dumbtv home (variant) button, feedbackType[FEEDBACK_GENERIC]]'
 
 
-class VerifyTests(unittest.TestCase):
+class VerifyHarness(unittest.TestCase):
+    """The pretend TV the checks run against. No test of its own."""
+
     BLOCKED = ['softwareupdates.amazon.com', 'arcus-uswest.amazon.com',
                'unagi-zaz.amazon.com', 'unagi-na.amazon.com']
     ALLOWED = ['www.youtube.com', 'i.ytimg.com',
@@ -82,6 +87,8 @@ class VerifyTests(unittest.TestCase):
     def modern(bound, user=0):
         return f'User state[\n attributes:{{id={user}, flags=0}}\n Bound services:{{{bound}}}\n Enabled services:{{tv.dumbtv.home/.Guard}}\n Binding services:{{}}\n]\n'
 
+
+class VerifyTests(VerifyHarness):
     def test_bound_android14_while_another_app_is_foreground(self):
         result, _ = self.run_verify(self.modern(LABEL))
         self.assertEqual(result.returncode, 0, result.stdout)
@@ -240,6 +247,57 @@ class VerifyTests(unittest.TestCase):
         self.assertIn('FAIL       vpn', result.stdout)
         self.assertIn('personalDNSfilter is not installed', result.stdout)
         self.assertNotIn('ok         vpn', result.stdout)
+
+
+class VerifyForkTests(VerifyHarness):
+    """The same checks, when the fork is the home screen instead of the old launcher."""
+
+    def test_the_fork_is_named_when_it_owns_home(self):
+        # The owner has to be able to read the table and know which app is the home
+        # screen.
+        result, _ = self.run_verify(self.modern(FORK_LABEL),
+                                    component='tv.dumbtv.variant/io.freemytv.Guard',
+                                    landed='tv.dumbtv.variant/io.freemytv.HomeActivity')
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn('dumbtv home (variant)', result.stdout)
+        self.assertIn('HOME lands on tv.dumbtv.variant/io.freemytv.HomeActivity', result.stdout)
+
+    def test_the_old_launcher_is_named_when_it_owns_home(self):
+        result, _ = self.run_verify(self.modern(LABEL))
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn('dumbtv home: bound', result.stdout)
+        self.assertNotIn('dumbtv home (variant)', result.stdout)
+
+    def test_the_fork_s_guard_must_be_the_one_bound(self):
+        # The setting names the fork's guard, but the old launcher's service is the
+        # one that is actually bound: the fork does not own HOME.
+        result, _ = self.run_verify(self.modern(LABEL),
+                                    component='tv.dumbtv.variant/io.freemytv.Guard',
+                                    landed='tv.dumbtv.variant/io.freemytv.HomeActivity')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('dumbtv home (variant): enabled but not bound', result.stdout)
+
+    def test_no_dumbtv_home_in_charge_is_a_failure(self):
+        # Something else's accessibility service is enabled: no dumbtv home screen.
+        result, _ = self.run_verify(self.modern(''), component='example.reader/.Service')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('no dumbtv home is in charge', result.stdout)
+
+    def test_home_on_the_old_launcher_is_a_failure_for_the_fork(self):
+        # The fork's guard is bound, but HOME still lands on the old launcher.
+        result, _ = self.run_verify(self.modern(FORK_LABEL),
+                                    component='tv.dumbtv.variant/io.freemytv.Guard',
+                                    landed='tv.dumbtv.home/.Home')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('FAIL       home-key', result.stdout)
+
+    def test_the_install_path_named_is_the_one_of_the_product(self):
+        result, _ = self.run_verify(self.modern(FORK_LABEL),
+                                    component='tv.dumbtv.variant/io.freemytv.Guard',
+                                    landed='tv.dumbtv.variant/io.freemytv.HomeActivity',
+                                    futurity='null', alarms='other=1', sdk='30')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('re-run ./variant/install.sh', result.stdout)
 
 
 if __name__ == '__main__':

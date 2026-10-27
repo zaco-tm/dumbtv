@@ -28,8 +28,15 @@ what makes Android bind it.
 ### `verify.sh` says the home hook is enabled but not bound
 
 Enabled is a setting; bound means the service is actually running. `verify.sh`
-reads `dumpsys accessibility` and only passes when "dumbtv home button" is in the
-current user's bound services. Run `./scripts/launcher.sh -y`.
+reads `dumpsys accessibility` and only passes when the label of the product that is in
+charge is in the current user's bound services — "dumbtv home button" for the old
+launcher, "dumbtv home (variant) button" for the fork. Run the install path of that
+product: `./scripts/launcher.sh -y` or `./variant/install.sh`.
+
+Note that the dump cuts a long label short (at 22 characters on a Fire OS 8 set), so
+the fork's comes out as `Service[label=dumbtv home (variant) b…`. That is the fork's:
+the old launcher's label is short enough to print whole, and the two part at the
+eleventh character.
 
 On a TCL G08 the service stayed unbound because TCL's `TclAppBoot` refused it
 (`callee doesn't have OP_AUTO_START permission`). Granting the app's `AUTO_START`

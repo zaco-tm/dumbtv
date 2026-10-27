@@ -29,6 +29,11 @@ if args[:1] == ['disconnect']:
 if args[-1:] == ['get-state']:
     print('device')
     sys.exit(0)
+if len(args) >= 3 and args[0] == '-s' and args[2] == 'install':
+    # The fake has no package manager: the install succeeds, and the packages the
+    # state names are the ones on the TV.
+    print('Success')
+    sys.exit(0)
 if len(args) < 3 or args[0] != '-s' or args[2] != 'shell':
     sys.exit(91)
 
@@ -127,6 +132,26 @@ elif words[:4] == ['pm', 'uninstall', '--user', '0']:
     print('Success')
 elif words[:2] == ['dumpsys', 'package']:
     print('    userId=10050')
+elif command == 'dumpsys accessibility':
+    # The bound services are the enabled ones whose package is installed. AOSP names
+    # a bound service by its label, never by its component, so the labels come from
+    # the state; a component with no label is printed by its class name, the way
+    # Android prints it before the resources load.
+    labels = state.get('accessibility_labels', {})
+    enabled = settings.get('secure/enabled_accessibility_services', '')
+    bound = []
+    for comp in [c for c in enabled.split(':') if c]:
+        pkg = comp.split('/')[0]
+        if pkg not in apps:
+            continue
+        cls = comp.split('/', 1)[1] if '/' in comp else comp
+        bound.append(f'Service[label={labels.get(comp, cls)}, feedbackType[FEEDBACK_GENERIC]]')
+    print('User state[\n attributes:{id=0, flags=0}\n Bound services:{'
+          + ', '.join(bound) + '}\n Enabled services:{' + enabled + '}\n Binding services:{}\n]')
+elif command == 'dumpsys window':
+    print(state.get('window', '  Window{80fe56a u0 tv.dumbtv.variant/io.freemytv.HomeActivity}'))
+elif command == 'am get-current-user':
+    print(state.get('user', 0))
 elif command == 'ps -A -o NAME':
     print('NAME')
 elif command == 'dumpsys activity activities':

@@ -1,0 +1,195 @@
+#!/usr/bin/env bash
+# Installs the dumbtv home variant (the free-my-tv fork) on the TV and gives it the
+# HOME key.
+#
+# Fire OS protects Amazon's launcher and lets no third-party app be the home app, so
+# HOME is taken by a Guard: an accessibility service that covers Amazon's home window
+# with ours. This script installs the fork, swaps the old launcher's guard out for
+# the fork's own, and sets the alarm setting the Guard's launch needs. The fork is
+# never made a home-app candidate: the Guard is the whole mechanism.
+#
+#   ./variant/install.sh            install the APK in variant/build
+#   ./variant/install.sh --build    build it from source first (needs a JDK and the Android SDK)
+#   ./variant/install.sh --undo     hand HOME back to the old launcher (tv.dumbtv.home)
+#
+# Pick the device with ADB_SERIAL when more than one is connected.
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+PKG=tv.dumbtv.variant
+# The fork's class is not in the app's own package, so the component is written out.
+GUARD=tv.dumbtv.variant/io.freemytv.Guard
+GUARD_CLASS=io.freemytv.Guard
+# What "dumpsys accessibility" names the bound service by: it prints the label, never
+# the component. Keep it in sync with variant/res/values/guard.xml.
+GUARD_LABEL='dumbtv home (variant) button'
+HOME_ACTIVITY=tv.dumbtv.variant/io.freemytv.HomeActivity
+# The old launcher. Its guard must not be bound at the same time as ours: two Guards
+# would fight over the HOME key. Putting its guard back into
+# enabled_accessibility_services is the rollback, and it is one setting.
+OLD_PKG=tv.dumbtv.home
+OLD_GUARD=tv.dumbtv.home/tv.dumbtv.home.Guard
+OLD_GUARD_CLASS=tv.dumbtv.home.Guard
+ADB=${ADB:-adb}
+
+adb_() { "$ADB" ${ADB_SERIAL:+-s "$ADB_SERIAL"} "$@"; }
+sh_() { adb_ shell "$@" </dev/null; }
+installed() { sh_ pm path "$1" 2>/dev/null | grep -q '^package:'; }
+# shellcheck disable=SC1091
+source ../scripts/home.sh
+# shellcheck disable=SC1091
+source ../scripts/accessibility.sh
+
+mode=apk
+case ${1:-} in
+  "") ;;
+  --build) mode=build ;;
+  --undo) mode=undo ;;
+  *) echo "usage: $0 [--build | --undo]" >&2; exit 2 ;;
+esac
+
+command -v "$ADB" >/dev/null || { echo "error: adb not found — install Android platform-tools" >&2; exit 1; }
+state=$(adb_ get-state 2>/dev/null || true)
+[[ $state == device ]] || { echo "error: no TV connected (adb connect <tv-ip>:5555; set ADB_SERIAL if several)" >&2; exit 1; }
+
+dev_sdk=$(sh_ getprop ro.build.version.sdk | tr -d '\r')
+case $dev_sdk in ''|*[!0-9]*) dev_sdk=28 ;; esac
+# The fork needs Android 8 (sdk 26) or newer. Fire OS 6's Keeper, which is how the
+# old launcher takes HOME there, is not ours: on such a TV the old launcher stays the
+# home screen.
+if [[ $dev_sdk -lt 26 ]]; then
+  echo "error: the variant needs Android 8 (sdk 26) or newer; this TV is sdk $dev_sdk." >&2
+  echo "  on Fire OS 6 the home screen is $OLD_PKG, which is installed already." >&2
+  exit 1
+fi
+
+# Fire OS 6's `settings` command silently drops writes to enabled_accessibility_services
+# (exit code 0, value unchanged); the settings content provider still takes them.
+put_secure() {
+  local got
+  sh_ settings put secure "$1" "${2:-\"\"}"
+  got=$(sh_ settings get secure "$1" | tr -d '\r')
+  [[ $got == "$2" || ( -z $2 && $got == null ) ]] && return 0
+  sh_ content insert --uri content://settings/secure --bind "name:s:$1" --bind "value:s:$2"
+}
+
+# Puts $1 (or nothing) in place of the old launcher's guard, keeping every other
+# service. orig is deliberately not local: the trap below puts it back.
+set_guard() {
+  local cur
+  orig=$(sh_ settings get secure enabled_accessibility_services | tr -d '\r')
+  [[ $orig == null ]] && orig=
+  cur=$(printf '%s' "$orig" | tr ':' '\n' |
+    { grep -vxF -e "$GUARD" -e "$PKG/.io.freemytv.Guard" -e "$OLD_GUARD" -e "$OLD_PKG/.Guard" -e '' || true; } |
+    paste -sd: -)
+  if [[ -n ${1:-} ]]; then cur=${cur:+$cur:}$1; fi
+  # Clearing first makes the accessibility manager rebind a service whose process died. The
+  # other services live only in $orig meanwhile: if this is cut short, the trap puts them back.
+  trap 'put_secure enabled_accessibility_services "$orig" || true' EXIT
+  trap 'exit 130' INT TERM
+  put_secure enabled_accessibility_services ""
+  sleep 1
+  if [[ -n $cur ]]; then
+    put_secure enabled_accessibility_services "$cur"
+    put_secure accessibility_enabled 1
+  else
+    put_secure accessibility_enabled 0
+  fi
+  trap - EXIT INT TERM
+}
+
+if [[ $mode == undo ]]; then
+  # The rollback is one setting: the old launcher's guard goes back into
+  # enabled_accessibility_services, and the launcher that works today is the home
+  # screen again. The fork stays installed; it is simply not in charge.
+  set_guard "$OLD_GUARD"
+  sleep 2
+  user=$(sh_ am get-current-user | tr -d '\r')
+  bound=0
+  for _ in $(seq 1 15); do
+    if sh_ dumpsys accessibility | guard_bound "${user:-0}" 'dumbtv home button' "$OLD_GUARD_CLASS"; then
+      bound=1; break
+    fi
+    sleep 1
+  done
+  if [[ $bound == 0 ]]; then
+    echo "error: Fire OS did not bind the old launcher's guard ($OLD_GUARD)." >&2
+    # The fork's guard was working a moment ago: put it back rather than leave the
+    # TV without a home screen of ours.
+    set_guard "$GUARD" || true
+    echo "  the variant's guard is back in front; the TV still works." >&2
+    exit 1
+  fi
+  start_home $OLD_PKG/.Home
+  echo "HOME handed back to $OLD_PKG: enabled_accessibility_services is $OLD_GUARD again"
+  echo "put the variant back in front with: ./variant/install.sh"
+  exit 0
+fi
+
+if [[ $mode == build ]]; then
+  ./build.sh
+fi
+APK=build/variant.apk
+[[ -f $APK ]] || { echo "error: no $APK — run ./variant/install.sh --build" >&2; exit 1; }
+
+# adb's result is its last word: "Success" or "Failure [REASON]". Take the line
+# that says so rather than the first line that mentions it — an incremental install
+# that fails and falls back to a streamed one prints an error of its own first, and
+# that error is not the result.
+out=$(adb_ install -r "$APK" 2>&1 | grep -E '^[[:space:]]*(Success|Failure)' | tail -1 || true)
+case $out in
+  *Success*) echo "installed $PKG" ;;
+  *INSTALL_FAILED_UPDATE_INCOMPATIBLE*)
+    echo "error: the installed variant was signed with a different key (a release vs your own build)." >&2
+    echo "  replacing it means uninstalling it (adb uninstall $PKG), which deletes its settings." >&2
+    exit 1 ;;
+  '') echo "error: adb install printed no result; the APK was not installed." >&2; exit 1 ;;
+  *) echo "error: adb install failed: $(printf '%s' "$out" | sed 's/^[[:space:]]*//')" >&2; exit 1 ;;
+esac
+
+# The fork's two app ops: the sleep timer's overlay, and upstream's self-updater.
+# They are allowed already on a TV where the fork was installed by hand, but a fresh
+# install elsewhere needs them, and setting them again changes nothing.
+sh_ appops set $PKG SYSTEM_ALERT_WINDOW allow >/dev/null 2>&1 || true
+sh_ appops set $PKG REQUEST_INSTALL_PACKAGES allow >/dev/null 2>&1 || true
+
+sh_ dumpsys deviceidle whitelist +$PKG >/dev/null
+
+# The Guard's launch goes through an alarm, and an alarm does not fire sooner than
+# five seconds from now unless min_futurity says otherwise.
+set_futurity on
+
+# The swap: our Guard in, the old launcher's Guard out, every other service kept.
+set_guard "$GUARD"
+sleep 2
+
+# The setting alone proves nothing: Fire OS decides whether the service is bound. The
+# dump names the service by its label, not by its package, so match the label inside
+# the current user's bound-services section (same parser verify.sh uses).
+user=$(sh_ am get-current-user | tr -d '\r')
+bound=0
+for _ in $(seq 1 15); do
+  if sh_ dumpsys accessibility | guard_bound "${user:-0}" "$GUARD_LABEL" "$GUARD_CLASS"; then
+    bound=1; break
+  fi
+  sleep 1
+done
+if [[ $bound == 0 ]]; then
+  echo "error: Fire OS did not bind the variant's guard ($GUARD)." >&2
+  # The TV must not be left without a home screen of ours: the old launcher's guard
+  # goes back in, and the TV works again.
+  set_guard "$OLD_GUARD" || true
+  echo "  the old launcher's guard is back in front; the TV still works." >&2
+  exit 1
+fi
+
+start_home $HOME_ACTIVITY
+if installed com.spocky.projengmenu; then
+  echo "note: Projectivy is installed; its accessibility service wants the HOME key too —"
+  echo "  disable it in the TV's accessibility settings if the two fight."
+fi
+
+sleep 2
+printf 'accessibility: %s\n' "$(sh_ settings get secure enabled_accessibility_services)"
+printf 'front window:  %s\n' "$(sh_ dumpsys window | grep -m1 mCurrentFocus | sed 's/.* u0 //; s/}$//')"
+echo "home: dumbtv home (variant)"

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# The HOME takeover helpers of launcher/install.sh. They use the caller's sh_ (adb shell),
+# The HOME takeover helpers of the install paths. They use the caller's sh_ (adb shell),
 # and set_futurity also its dev_sdk.
+# The product table at the end is shared: scripts/verify.sh and variant/install.sh both
+# need to know which dumbtv product owns HOME, and what tells the two apart.
 
 # Starts dumbtv home at the end of the install.
 #
@@ -76,4 +78,61 @@ set_futurity() {
   if [[ $store == config_futurity && $(constants_futurity get) == 0 ]]; then
     constants_futurity put ""
   fi
+}
+
+# --- The products that can own HOME on a Fire TV.
+#
+# One line per product:
+#
+#   package | guard class | label | home activity | name to show | enabled components
+#
+# - The guard class is what enabled_accessibility_services names, and what the Guard
+#   service is called in the dump before its resources load.
+# - The label is what "dumpsys accessibility" names a bound service by: it prints the
+#   label, never the component. The two products' labels differ on purpose, so the two
+#   can be told apart there and in the TV's accessibility settings.
+# - The home activity is what the HOME key has to land on.
+# - The enabled components are the forms the setting may hold: the full class, and the
+#   shorthand with a leading dot.
+dumbtv_home_product() {
+  case $1 in
+    tv.dumbtv.variant)
+      printf '%s\n' 'tv.dumbtv.variant|io.freemytv.Guard|dumbtv home (variant) button|tv.dumbtv.variant/io.freemytv.HomeActivity|dumbtv home (variant)|tv.dumbtv.variant/io.freemytv.Guard tv.dumbtv.variant/.io.freemytv.Guard' ;;
+    tv.dumbtv.home)
+      printf '%s\n' 'tv.dumbtv.home|tv.dumbtv.home.Guard|dumbtv home button|tv.dumbtv.home/.Home|dumbtv home|tv.dumbtv.home/tv.dumbtv.home.Guard tv.dumbtv.home/.Guard' ;;
+    *) return 1 ;;
+  esac
+}
+
+# The product whose guard is in the enabled_accessibility_services value $1.
+# Prints its package name; prints nothing when no dumbtv guard is enabled.
+dumbtv_home_product_of() {
+  local value=$1 row comps
+  for row in "$(dumbtv_home_product tv.dumbtv.variant)" "$(dumbtv_home_product tv.dumbtv.home)"; do
+    IFS='|' read -r _ _ _ _ _ comps <<< "$row"
+    for comp in $comps; do
+      case ":$value:" in
+        *":$comp:"*) printf '%s\n' "${row%%|*}"; return 0 ;;
+      esac
+    done
+  done
+  return 1
+}
+
+# Is the activity $1 the activity $2? Both are "package/.Class". Android prints
+# "pkg/.Class" for a class in the app's own package and "pkg/full.Class" for a class in
+# another one, so the class is compared by its last segment.
+home_activity_is() {
+  local got_pkg=${1%%/*} want_pkg=${2%%/*} got_cls=${1#*/} want_cls=${2#*/}
+  [[ $got_pkg == "$want_pkg" ]] || return 1
+  [[ ${got_cls##*.} == "${want_cls##*.}" ]] || return 1
+  return 0
+}
+
+# The command that installs the product again, for the messages that say what to do.
+dumbtv_home_install_cmd() {
+  case $1 in
+    tv.dumbtv.variant) printf '%s\n' './variant/install.sh' ;;
+    tv.dumbtv.home) printf '%s\n' './scripts/launcher.sh' ;;
+  esac
 }

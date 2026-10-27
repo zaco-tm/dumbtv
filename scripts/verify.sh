@@ -6,6 +6,7 @@
 set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 source "$ROOT/scripts/accessibility.sh"
+source "$ROOT/scripts/home.sh"
 parse_flags "$@"
 need_device
 load_conf
@@ -74,65 +75,87 @@ elif [[ $SDK -lt 28 ]]; then
 else
   # An enabled setting can outlive the process/binding. Check the current user's
   # exact component AND the live bound-service section, without sending HOME.
+  # Which product is in charge is decided by the enabled guard component, and every
+  # check below is about that product: the fork and the old launcher are two home
+  # screens, and the table has to say which one it is talking about.
   current_user=$(dev 'am get-current-user' | tr -d '\r')
   hook=unknown
+  product=""
+  user_ok=0
   case $current_user in
     ''|*[!0-9]*) ;;
     *)
+      user_ok=1
       a11y=$(dev "settings --user $current_user get secure enabled_accessibility_services" | tr -d '\r')
       enabled=$(dev "settings --user $current_user get secure accessibility_enabled" | tr -d '\r')
-      case :$a11y: in
-        *:tv.dumbtv.home/.Guard:*|*:tv.dumbtv.home/tv.dumbtv.home.Guard:*)
-          if [[ $enabled == 1 ]]; then
-            if dump=$(dev 'dumpsys accessibility'); then
-              printf '%s\n' "$dump" | guard_bound "$current_user"
-              case $? in 0) hook=bound ;; 1) hook=unbound ;; esac
-            fi
-          else
-            hook=disabled
-          fi ;;
-        *) hook=disabled ;;
-      esac ;;
+      product=$(dumbtv_home_product_of "$a11y" || true)
+      if [[ -n $product ]]; then
+        IFS='|' read -r _ guard_class guard_label guard_activity product_name _ \
+          <<< "$(dumbtv_home_product "$product")"
+        if [[ $enabled == 1 ]]; then
+          if dump=$(dev 'dumpsys accessibility'); then
+            printf '%s\n' "$dump" | guard_bound "$current_user" "$guard_label" "$guard_class"
+            case $? in 0) hook=bound ;; 1) hook=unbound ;; esac
+          fi
+        else
+          hook=disabled
+        fi
+      fi ;;
   esac
-  case $hook in
-    bound) printf '%-10s %-38s %s\n' ok home "bound, front is ${home:-unknown}" ;;
-    unbound)
-      printf '%-10s %-38s %s\n' FAIL home "enabled but not bound; see docs/TROUBLESHOOTING.md"; fail=1 ;;
-    disabled)
-      printf '%-10s %-38s %s\n' FAIL home "hook disabled (front: ${home:-unknown}, wakefulness: ${wake:-?})"; fail=1 ;;
-    *) printf '%-10s %-38s %s\n' FAIL home "cannot verify accessibility binding; inspect dumpsys accessibility"; fail=1 ;;
-  esac
+  install_cmd=$(dumbtv_home_install_cmd "$product")
+  [[ -n $install_cmd ]] || install_cmd='the install script'
+  if [[ -z $product ]]; then
+    if [[ $user_ok == 1 ]]; then
+      printf '%-10s %-38s %s\n' FAIL home "no dumbtv home is in charge; no dumbtv guard is enabled"; fail=1
+    else
+      printf '%-10s %-38s %s\n' FAIL home "cannot verify accessibility binding; inspect dumpsys accessibility"; fail=1
+    fi
+  else
+    case $hook in
+      bound) printf '%-10s %-38s %s\n' ok home "$product_name: bound, front is ${home:-unknown}" ;;
+      unbound)
+        printf '%-10s %-38s %s\n' FAIL home "$product_name: enabled but not bound; see docs/TROUBLESHOOTING.md"; fail=1 ;;
+      disabled)
+        printf '%-10s %-38s %s\n' FAIL home "$product_name: hook disabled (front: ${home:-unknown}, wakefulness: ${wake:-?})"; fail=1 ;;
+      *) printf '%-10s %-38s %s\n' FAIL home "$product_name: cannot verify accessibility binding; inspect dumpsys accessibility"; fail=1 ;;
+    esac
+  fi
   if [[ $futurity != 0 ]]; then
     # Without it HOME still works, but Amazon's home shows for 5 s first.
-    printf '%-10s %-38s %s\n' FAIL home-speed "min_futurity=0 missing; re-run launcher.sh"; fail=1
+    printf '%-10s %-38s %s\n' FAIL home-speed "min_futurity=0 missing; re-run $install_cmd"; fail=1
   fi
-  # A bound accessibility service proves nothing about the swap: on Fire OS 8 the
-  # launch can be refused by the background-activity-start rule even when the
-  # service is enabled and bound. The only proof is the HOME key itself.
-  # Leave the home screen first: a swap that starts while our own activity is
-  # still resumed is allowed anyway, and that would hide a takeover that is
-  # broken.
-  [[ $wake == Awake ]] || { dev 'input keyevent KEYCODE_WAKEUP' >/dev/null 2>&1 || true; sleep 2; }
-  dev 'am start -a android.intent.action.MAIN -c android.intent.category.LEANBACK_SETTINGS' >/dev/null 2>&1 || true
-  for i in 1 2 3 4 5 6; do
-    away=$(front_activity)
-    [[ -n $away && $away != tv.dumbtv.home/* ]] && break
-    sleep 1
-  done
-  if [[ -z $away || $away == tv.dumbtv.home/* ]]; then
-    printf '%-10s %-38s %s\n' skip home-key "could not leave the home screen; press HOME to check"
+  if [[ -z $product ]]; then
+    printf '%-10s %-38s %s\n' skip home-key "no dumbtv home is in charge"
   else
-    dev 'input keyevent KEYCODE_HOME' >/dev/null 2>&1 || true
-    # Amazon's home can show first while the swap is under way.
-    for i in 1 2 3 4 5 6 7 8; do
+    # A bound accessibility service proves nothing about the swap: on Fire OS 8 the
+    # launch can be refused by the background-activity-start rule even when the
+    # service is enabled and bound. The only proof is the HOME key itself.
+    # Leave the home screen first: a swap that starts while our own activity is
+    # still resumed is allowed anyway, and that would hide a takeover that is
+    # broken.
+    [[ $wake == Awake ]] || { dev 'input keyevent KEYCODE_WAKEUP' >/dev/null 2>&1 || true; sleep 2; }
+    dev 'am start -a android.intent.action.MAIN -c android.intent.category.LEANBACK_SETTINGS' >/dev/null 2>&1 || true
+    for i in 1 2 3 4 5 6; do
+      away=$(front_activity)
+      [[ -n $away && $away != "$product"/* ]] && break
       sleep 1
-      landed=$(front_activity)
-      [[ $landed == tv.dumbtv.home/* ]] && break
     done
-    case $landed in
-      tv.dumbtv.home/*) printf '%-10s %-38s %s\n' ok home-key "HOME lands on $landed" ;;
-      *) printf '%-10s %-38s %s\n' FAIL home-key "HOME lands on ${landed:-unknown}"; fail=1 ;;
-    esac
+    if [[ -z $away || $away == "$product"/* ]]; then
+      printf '%-10s %-38s %s\n' skip home-key "could not leave the home screen; press HOME to check"
+    else
+      dev 'input keyevent KEYCODE_HOME' >/dev/null 2>&1 || true
+      # Amazon's home can show first while the swap is under way.
+      for i in 1 2 3 4 5 6 7 8; do
+        sleep 1
+        landed=$(front_activity)
+        [[ $landed == "$product"/* ]] && break
+      done
+      if home_activity_is "$landed" "$guard_activity"; then
+        printf '%-10s %-38s %s\n' ok home-key "$product_name: HOME lands on $landed"
+      else
+        printf '%-10s %-38s %s\n' FAIL home-key "$product_name: HOME lands on ${landed:-unknown}"; fail=1
+      fi
+    fi
   fi
 fi
 
