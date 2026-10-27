@@ -8,7 +8,14 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 GENERIC=false
-for arg in "$@"; do [ "$arg" = "--generic" ] && GENERIC=true; done
+for arg in "$@"; do
+  case "$arg" in
+    --generic) GENERIC=true ;;
+    # An unknown argument is refused, not ignored: "--generic" typed as "--generik"
+    # would silently build the keyed APK instead of the generic one.
+    *) echo "unknown argument: $arg" >&2; echo "usage: ./build.sh [--generic]" >&2; exit 2 ;;
+  esac
+done
 
 SDK=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}
 if [ -z "$SDK" ]; then
@@ -18,13 +25,26 @@ if [ -z "$SDK" ]; then
   done
 fi
 [ -n "$SDK" ] && [ -d "$SDK/build-tools" ] || { echo "Android SDK not found. Set ANDROID_HOME."; exit 1; }
-# The newest build-tools directory, and only a directory: a stray file must not be picked.
-BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
+# The build-tools version is pinned, so the build does not drift when the SDK is
+# updated: today's ubuntu-latest image ships build-tools 34.0.0 and 35, 36 and 37,
+# and "the newest one" would make CI build with a different toolchain than this
+# machine does. BUILD_TOOLS says which version; the pinned one is used when the SDK
+# has it, and the newest one otherwise, so a machine with only another version still
+# builds.
+BUILD_TOOLS=${BUILD_TOOLS:-34.0.0}
+BT=""
+if [ -n "$BUILD_TOOLS" ] && [ -d "$SDK/build-tools/$BUILD_TOOLS" ]; then
+  BT="$SDK/build-tools/$BUILD_TOOLS"
+else
+  # The newest build-tools directory, and only a directory: a stray file must not be picked.
+  BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
+fi
 AJ="$SDK/platforms/android-34/android.jar"
 [ -f "$AJ" ] || { echo "$AJ missing - sdkmanager \"platforms;android-34\""; exit 1; }
 # $BT is empty when build-tools/ has no directory in it: say which SDK it looked in
 # rather than print an empty path.
 [ -x "$BT/aapt2" ] || { echo "no aapt2 in ${BT:-$SDK} - sdkmanager \"build-tools;34.0.0\""; exit 1; }
+echo "build-tools: $(basename "$BT")"
 
 # --- JDK: one that works, and not one that breaks d8.
 # A javac that exists is not a javac that works: macOS ships /usr/bin/javac, a stub that
@@ -92,6 +112,14 @@ else
     exit 1
   fi
   python3 tools/gen_config.py config.properties "$WORK/gen/io/freemytv/Config.java"
+fi
+# The log says whether a key was baked into the APK: a keyed build and a generic one
+# are otherwise indistinguishable, and only one of them carries the owner's key.
+# The key itself is never printed.
+if grep -q 'static final String TMDB_KEY = "";' "$WORK/gen/io/freemytv/Config.java"; then
+  echo "TMDB key: none"
+else
+  echo "TMDB key: baked"
 fi
 
 # --- Build: aapt2 -> javac -> d8 -> zipalign -> apksigner

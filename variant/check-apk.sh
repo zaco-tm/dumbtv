@@ -11,8 +11,17 @@ if [ -z "$SDK" ]; then
   done
 fi
 [ -n "$SDK" ] && [ -d "$SDK/build-tools" ] || { echo "Android SDK not found. Set ANDROID_HOME."; exit 1; }
-# The newest build-tools directory, and only a directory: a stray file must not be picked.
-BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
+# The build-tools version is pinned, so the check runs with the toolchain the build
+# used: the same rule as build.sh (BUILD_TOOLS, the pinned one when the SDK has it,
+# the newest one otherwise).
+BUILD_TOOLS=${BUILD_TOOLS:-34.0.0}
+BT=""
+if [ -n "$BUILD_TOOLS" ] && [ -d "$SDK/build-tools/$BUILD_TOOLS" ]; then
+  BT="$SDK/build-tools/$BUILD_TOOLS"
+else
+  # The newest build-tools directory, and only a directory: a stray file must not be picked.
+  BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
+fi
 # $BT is empty when build-tools/ has no directory in it: say which SDK it looked in
 # rather than print an empty path.
 [ -x "$BT/aapt2" ] || { echo "no aapt2 in ${BT:-$SDK} - sdkmanager \"build-tools;34.0.0\""; exit 1; }
@@ -27,14 +36,24 @@ min=$(printf '%s\n' "$badging" | sed -nE "s/^(minSdkVersion|sdkVersion):'([0-9]+
 [ "$min" = 26 ] || { echo "expected minSdkVersion 26, found $min"; exit 1; }
 target=$(printf '%s\n' "$badging" | sed -nE "s/^targetSdkVersion:'([0-9]+)'.*/\1/p")
 [ "$target" = 33 ] || { echo "expected targetSdkVersion 33, found $target"; exit 1; }
+# The label is ours, not upstream's: the TV shows our name.
+label=$(printf '%s\n' "$badging" | sed -nE "s/^application-label:'(.*)'$/\1/p" | head -1)
+[ "$label" = "dumbtv home (variant)" ] || { echo "expected the label 'dumbtv home (variant)', found '$label'"; exit 1; }
+# The provider authority is ours too, and it is inside the APK: a manifest that says
+# io.freemytv.photos would make the photos tool write to an authority nobody owns.
+xmltree=$("$BT/aapt2" dump xmltree "$APK" --file AndroidManifest.xml)
+grep -q 'authorities.*="tv.dumbtv.variant.photos"' <<< "$xmltree" \
+  || { echo "the provider authority in the APK is not tv.dumbtv.variant.photos"; exit 1; }
 
-# The permissions are upstream's, unchanged, in upstream's order.
+# The permissions are upstream's, unchanged, in upstream's order. The whole line is
+# compared, not just the name: SCHEDULE_EXACT_ALARM carries android:maxSdkVersion="32",
+# and a manifest without it would ask for the exact alarm on every Android version.
 dump=$("$BT/aapt2" dump permissions "$APK")
 printf '%s\n' "$dump"
-want=$(sed "s/^/uses-permission: name='/" permissions.txt | sed "s/$/'/")
-got=$(printf '%s\n' "$dump" | grep uses-permission | sed -E "s/.*name='([^']+)'.*/\1/" | sed "s/^/uses-permission: name='/" | sed "s/$/'/" || true)
+want=$(cat permissions.txt)
+got=$(printf '%s\n' "$dump" | grep uses-permission || true)
 [ "$want" = "$got" ] || {
-  echo "the permissions are not upstream's eight, in upstream's order"
+  echo "the permissions are not upstream's eight, in upstream's order, with upstream's attributes"
   diff <(printf '%s\n' "$want") <(printf '%s\n' "$got") || true
   exit 1
 }
@@ -51,6 +70,8 @@ grep -qx "Lio/freemytv/HomeView;" <<< "$dex" \
   || { echo "io.freemytv.HomeView is not in the dex"; exit 1; }
 grep -qx "Lio/freemytv/R;" <<< "$dex" \
   || { echo "io.freemytv.R is not in the dex"; exit 1; }
+grep -qx "Lio/freemytv/HomeActivity;" <<< "$dex" \
+  || { echo "io.freemytv.HomeActivity is not in the dex"; exit 1; }
 
 "$BT/apksigner" verify "$APK" >/dev/null || { echo "the APK is not signed"; exit 1; }
-echo "variant APK ok: $pkg, minSdk $min, targetSdk $target, 8 permissions, signed"
+echo "variant APK ok: $pkg, label '$label', minSdk $min, targetSdk $target, 8 permissions, signed"

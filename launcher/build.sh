@@ -21,9 +21,23 @@ if [[ -z $SDK ]]; then
   done
 fi
 JAR=$SDK/platforms/android-$MIN_SDK/android.jar
-BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
+# The build-tools version is pinned, so the build does not drift when the SDK is
+# updated: today's ubuntu-latest image ships build-tools 34.0.0 and 35, 36 and 37,
+# and "the newest one" would make CI build with a different toolchain than this
+# machine does. BUILD_TOOLS says which version; the pinned one is used when the SDK
+# has it, and the newest one otherwise, so a machine with only another version still
+# builds.
+BUILD_TOOLS=${BUILD_TOOLS:-34.0.0}
+BT=""
+if [[ -n $BUILD_TOOLS && -d $SDK/build-tools/$BUILD_TOOLS ]]; then
+  BT="$SDK/build-tools/$BUILD_TOOLS"
+else
+  # The newest build-tools directory, and only a directory: a stray file must not be picked.
+  BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
+fi
 [[ -f $JAR ]] || { echo "error: $JAR missing — sdkmanager 'platforms;android-$MIN_SDK'" >&2; exit 1; }
 [[ -x $BT/aapt2 ]] || { echo "error: no build-tools in $SDK — sdkmanager 'build-tools;34.0.0'" >&2; exit 1; }
+echo "build-tools: $(basename "$BT")"
 
 JDK17_PATHS=(/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home /usr/lib/jvm/java-17-openjdk)
 javac_major() { "$1/bin/javac" -version 2>&1 | sed -n 's/^javac \([0-9]*\).*/\1/p'; }
