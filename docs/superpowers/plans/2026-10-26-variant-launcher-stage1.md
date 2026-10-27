@@ -1626,15 +1626,25 @@ Expected: the device listed as `device`.
 adb shell dumpsys package tv.dumbtv.home | grep -E "versionName|versionCode" | head -3
 adb shell settings get secure enabled_accessibility_services
 adb shell settings get system screen_off_timeout
-adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
+adb shell cmd package query-activities -a android.intent.action.MAIN -c android.intent.category.HOME \
+  | grep -E "packageName=" | sort -u
+adb shell dumpsys window | grep -i "mCurrentFocus"
 ```
 
-Expected: `versionName=1.5`, the Guard bound, `300000`, and `tv.dumbtv.home` as the
-activity that answers HOME. Write these down: the checks in
-Step 6 compare against them.
+Expected on the Ember 55: `versionName=1.5`, the Guard bound, `300000`, the HOME
+candidates `com.amazon.tv.launcher`, `com.amazon.firehomestarter`, `com.amazon.servicemenu`,
+`com.amazon.tv.settings.v2` and `tv.dumbtv.home` — and `tv.dumbtv.home/tv.dumbtv.home.Home`
+in front. Write these down: the checks in Step 6 compare against them.
 
-The last command is the one that answers "is `tv.dumbtv.home` still HOME?". `mCurrentFocus`
-does not: it reports the window in front, not the default home app.
+Two notes, both learned on the TV:
+
+* **Do not use `resolve-activity` to ask who is HOME.** It answers
+  `com.amazon.tv.launcher/.ui.HomeActivity_vNext` (`priority=950`, `isDefault=true`):
+  Fire OS's own launcher wins the resolver, even though `tv.dumbtv.home` is the home
+  screen in practice, because the Guard takes the HOME key rather than a HOME category.
+  The candidate list is the check that matters — `tv.dumbtv.variant` must never be in it.
+* **`mCurrentFocus` answers "who is in front"**, which is the thing the owner actually
+  sees. That and the HOME key are what Step 6 compares.
 
 - [ ] **Step 3: Install the variant beside it**
 
@@ -1677,12 +1687,18 @@ adb shell dumpsys package tv.dumbtv.home | grep -E "versionName" | head -1
 adb shell settings get secure enabled_accessibility_services
 adb shell settings get system screen_off_timeout
 adb shell dumpsys window | grep -i "mCurrentFocus" | head -2
-adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
+adb shell cmd package query-activities -a android.intent.action.MAIN -c android.intent.category.HOME \
+  | grep -E "packageName=" | sort -u
 ```
 
 Expected: `1.5`, the Guard still bound, `300000`, the old launcher still the focus when
-the variant is closed, and — the one that matters — `tv.dumbtv.home` still answering HOME.
-The variant declares no HOME category, so it must not have taken the key.
+the variant is closed, and — the one that matters — `tv.dumbtv.variant` **not** among the
+HOME candidates, the candidate set being the same as in Step 2. The variant declares no
+HOME category, so it must not have taken the key.
+
+Press HOME as well and check `mCurrentFocus` again: it must come back to
+`tv.dumbtv.home/tv.dumbtv.home.Home`. That is the Guard doing its job, and it is what the
+owner sees.
 
 - [ ] **Step 7: Run the repo's own check on the TV**
 

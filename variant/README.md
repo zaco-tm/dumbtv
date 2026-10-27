@@ -86,18 +86,49 @@ away from the launcher that works today. (`tv.dumbtv.home` is the TV's home scre
 the Guard, an accessibility service; stage 2 gives the variant the HOME key the same way,
 and it does not need the category.)
 
-Check before and after installing the variant, and compare the two answers:
+Two different things have to be true, and on this TV they are checked two different ways.
+
+**The variant is not a home app candidate.** Ask the package manager which activities
+answer a HOME intent, and look for `tv.dumbtv.variant` in the answer — it must not be
+there:
 
 ```sh
-adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
+adb shell cmd package query-activities -a android.intent.action.MAIN -c android.intent.category.HOME \
+  | grep -E 'packageName=' | sort -u
 ```
 
-Both times it must name `tv.dumbtv.home`. `mCurrentFocus` is not the check here: it
-reports the window in front, not the TV's default home app.
+The answer is the same set of packages before the variant is installed and after, and
+`tv.dumbtv.variant` is in neither.
+
+**Our launcher is still the one in front.** This is the check that matters, and the Guard
+decides it, not the package manager:
+
+```sh
+adb shell dumpsys window | grep mCurrentFocus
+adb shell input keyevent KEYCODE_HOME
+adb shell dumpsys window | grep mCurrentFocus
+```
+
+Both must name `tv.dumbtv.home/tv.dumbtv.home.Home`.
+
+Do **not** use `resolve-activity` for this. On the Ember 55 it answers
+`com.amazon.tv.launcher/.ui.HomeActivity_vNext`, with `priority=950` and
+`isDefault=true`: Fire OS's own launcher wins the resolver even though `tv.dumbtv.home`
+is the home screen in practice, because the Guard takes the HOME key rather than a HOME
+category. That answer is the same before and after the variant is installed — it is the
+*change* that would matter, not the name.
 
 If Android ever offers to switch the home app, decline it. The old launcher should still
 be the one in front once the variant is closed, and `./scripts/verify.sh` must still pass
 end to end.
+
+## What the tile on the TV says
+
+The variant's tile in the launcher's APPS row shows a pink banner reading **"Free My TV"**.
+That is upstream's artwork — `res/drawable-nodpi/banner.png` has the words in the picture —
+not the app's name. The name the package manager holds is `dumbtv home (variant)`, and it
+is what the tile's label says. Stage 2 brings our own artwork; until then, upstream's
+banner is what the variant looks like.
 
 ## What it is not yet
 
@@ -107,9 +138,9 @@ the screen awake while a picture shows. Those are ours and they come in stage 2.
 
 ## Status
 
-The build and the APK checks run in CI on every push, and the steps above are what the
-on-TV pass does. That pass has not happened yet: the Ember 55 was off the network when this
-was written. Run the steps above on it, and confirm `./scripts/verify.sh` still passes end
-to end afterwards.
+The build and the APK checks run in CI on every push. The on-TV pass has happened once, on
+the Ember 55 (Fire OS 8): the variant installs beside `tv.dumbtv.home`, opens without a
+crash, fetches live picks from TMDB, the remote drives it, HOME still lands on
+`tv.dumbtv.home`, and `./scripts/verify.sh` passes end to end.
 
 See `variant/UPSTREAM.md` for the upstream commit and the licence.
