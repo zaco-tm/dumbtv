@@ -7,12 +7,19 @@
 Upstream builds the same class from shell; this is the same rules in one place, so the
 repo's unit tests can check them without a device. The rules are upstream's:
   - a value is the last "key = value" line, trimmed, with quotes and backslashes removed
-  - latitude and longitude must be numbers
+  - a key that is not in the file keeps the default; a key that is in the file but empty
+    stays empty. The app reads an empty place, region or currency as "the TV's time zone
+    guesses" (Place.java), so an empty value is an answer, not a missing one.
+  - latitude and longitude must be a plain number: an optional minus sign, digits and an
+    optional fraction, and nothing else
   - disable_assistant and hide_animation are true only for exactly "true"
   - show_crypto is true only for exactly "true"
   - screensaver is false only for exactly "false"
+  - the four switches are Java booleans, which have no empty state: an empty one keeps
+    the default
   - --generic leaves the location, region and currency empty, and sets GENERIC true
 """
+import re
 import sys
 
 DEFAULTS = {
@@ -32,6 +39,13 @@ DEFAULTS = {
     'hide_animation': 'false',
     'screensaver': 'true',
 }
+
+# The switches the app reads as Java booleans: there is no empty state for them, so an
+# empty one is a switch that was not set and keeps the default.
+SWITCHES = ('disable_assistant', 'show_crypto', 'hide_animation', 'screensaver')
+
+# Upstream's own pattern: an optional minus sign, digits, an optional fraction.
+NUMBER = re.compile(r'-?[0-9]+(\.[0-9]+)?')
 
 TEMPLATE = '''package io.freemytv;
 
@@ -60,8 +74,12 @@ final class Config {{
 
 
 def read_properties(path):
-    """The last value wins, as upstream's shell does. An empty value keeps the default."""
-    values = dict(DEFAULTS)
+    """The last value wins, as upstream's shell does.
+
+    A key that is not in the file is not in the result, so the default is used for it. A
+    key that is in the file is in the result with the value it has there, empty or not.
+    """
+    values = {}
     with open(path, encoding='utf-8') as handle:
         for line in handle:
             line = line.strip()
@@ -71,16 +89,20 @@ def read_properties(path):
             key = key.strip()
             if key not in DEFAULTS:
                 continue
-            value = value.strip().replace('"', '').replace('\\', '')
-            if value:
-                values[key] = value
+            values[key] = value.strip().replace('"', '').replace('\\', '')
     return values
 
 
 def number(value, name):
-    try:
-        float(value)
-    except ValueError:
+    """Upstream's rule: an optional minus sign, digits, an optional fraction. Nothing else,
+    so "nan", "inf" and "1e5" are refused the way upstream refuses them.
+
+    An empty value is left alone: it says the TV's time zone guesses, which is what the
+    app does with an empty place.
+    """
+    if value == '':
+        return value
+    if not NUMBER.fullmatch(value):
         raise SystemExit(f'config.properties: {name} must be a number (got "{value}")')
     return value
 
@@ -90,7 +112,10 @@ def build(properties, generic):
     if generic:
         values.update({'tmdb_region': '', 'latitude': '', 'longitude': '', 'currency': ''})
     else:
-        values.update(properties)
+        for key, value in properties.items():
+            if key in SWITCHES and value == '':
+                continue          # an empty switch is a switch that was not set
+            values[key] = value
         values['latitude'] = number(values['latitude'], 'latitude')
         values['longitude'] = number(values['longitude'], 'longitude')
     values['disable_assistant'] = 'true' if values['disable_assistant'] == 'true' else 'false'
