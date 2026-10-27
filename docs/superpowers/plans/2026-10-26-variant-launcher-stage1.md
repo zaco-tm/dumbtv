@@ -317,22 +317,33 @@ FIELDS = ['TMDB_KEY', 'WATCHMODE_KEY', 'TMDB_REGION', 'LATITUDE', 'LONGITUDE', '
           'DISABLE_ASSISTANT', 'SHOW_CRYPTO', 'HIDE_ANIMATION', 'SCREENSAVER', 'GENERIC']
 
 
-def generate(properties, *, generic=False):
-    """Run the tool and return the generated Java."""
+def run_tool(*arguments):
+    """Run the tool with these arguments and return the finished process."""
+    return subprocess.run([sys.executable, str(TOOL), *arguments],
+                          capture_output=True, text=True)
+
+
+def generate_bytes(properties, *, generic=False, encoding='utf-8'):
+    """Run the tool on these properties and return the generated Java as bytes."""
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / 'Config.java'
-        args = [sys.executable, str(TOOL)]
+        args = []
         if generic:
             args.append('--generic')
         else:
             props = Path(tmp) / 'config.properties'
-            props.write_text(properties, encoding='utf-8')
+            props.write_text(properties, encoding=encoding)
             args.append(str(props))
         args.append(str(out))
-        done = subprocess.run(args, capture_output=True, text=True)
+        done = run_tool(*args)
         if done.returncode != 0:
             raise AssertionError(done.stderr.strip())
-        return out.read_text(encoding='utf-8')
+        return out.read_bytes()
+
+
+def generate(properties, *, generic=False, encoding='utf-8'):
+    """Run the tool and return the generated Java."""
+    return generate_bytes(properties, generic=generic, encoding=encoding).decode('utf-8')
 
 
 class VariantConfigTests(unittest.TestCase):
@@ -370,6 +381,52 @@ class VariantConfigTests(unittest.TestCase):
     def test_quotes_and_backslashes_are_stripped(self):
         java = generate('tmdb_key="quoted"\n')
         self.assertIn('static final String TMDB_KEY = "quoted";', java)
+
+    def test_spaces_around_the_equals_are_allowed(self):
+        # The docstring's own form: "key = value".
+        java = generate('city = Amsterdam\ntmdb_key  =  abc123\n')
+        self.assertIn('static final String CITY = "Amsterdam";', java)
+        self.assertIn('static final String TMDB_KEY = "abc123";', java)
+
+    def test_a_comment_line_is_ignored(self):
+        # A comment that looks like a setting is still a comment. It comes after the
+        # setting it names, so if it were honoured the last value would win.
+        java = generate('city=Amsterdam\n# city=Berlin\n# tmdb_key=commented\n')
+        self.assertIn('static final String CITY = "Amsterdam";', java)
+        self.assertIn('static final String TMDB_KEY = "";', java)
+        self.assertNotIn('Berlin', java)
+        self.assertNotIn('commented', java)
+
+    def test_an_unknown_key_is_ignored(self):
+        java = generate('not_a_setting=whatever\ncity=Amsterdam\n')
+        self.assertIn('static final String CITY = "Amsterdam";', java)
+        self.assertNotIn('not_a_setting', java)
+        self.assertNotIn('whatever', java)
+        # The class holds the sixteen fields and nothing else, so an unknown key in the
+        # file cannot turn up in it.
+        self.assertEqual(java.count('static final'), len(FIELDS))
+
+    def test_hide_services_is_read(self):
+        java = generate('hide_services=netflix,prime\n')
+        self.assertIn('static final String HIDE_SERVICES = "netflix,prime";', java)
+
+    def test_watchmode_key_is_read(self):
+        java = generate('watchmode_key=abc123\n')
+        self.assertIn('static final String WATCHMODE_KEY = "abc123";', java)
+
+    def test_a_city_that_is_not_ascii_comes_out_as_utf8(self):
+        # The build compiles with -encoding UTF-8, so the city has to be UTF-8 in the file.
+        data = generate_bytes('city=København\n')
+        self.assertIn('static final String CITY = "København";', data.decode('utf-8'))
+        self.assertIn('København'.encode('utf-8'), data)
+
+    def test_a_byte_order_mark_does_not_hide_the_first_key(self):
+        # A file saved with a BOM starts with U+FEFF. Without utf-8-sig the first key
+        # would be a byte order mark followed by "tmdb_key": not a known key, and
+        # dropped without a word.
+        java = generate('tmdb_key=abc123\ncity=Amsterdam\n', encoding='utf-8-sig')
+        self.assertIn('static final String TMDB_KEY = "abc123";', java)
+        self.assertIn('static final String CITY = "Amsterdam";', java)
 
     def test_booleans_follow_upstream(self):
         java = generate('disable_assistant=true\nshow_crypto=false\n'
@@ -418,33 +475,81 @@ class VariantConfigTests(unittest.TestCase):
         self.assertIn('static final String LONGITUDE = "151.21";', java)
 
     def test_a_latitude_that_is_not_a_number_is_refused(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(AssertionError) as caught:
             generate('latitude=52,37\n')
+        self.assertIn('must be a number', str(caught.exception))
 
     def test_a_longitude_that_is_not_a_number_is_refused(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(AssertionError) as caught:
             generate('longitude=4,89\n')
+        self.assertIn('must be a number', str(caught.exception))
 
     def test_a_latitude_that_is_not_finite_is_refused(self):
         for value in ('nan', 'inf', '-inf'):
             with self.subTest(value=value):
-                with self.assertRaises(AssertionError):
+                with self.assertRaises(AssertionError) as caught:
                     generate(f'latitude={value}\n')
+                self.assertIn('must be a number', str(caught.exception))
 
     def test_a_latitude_in_exponent_form_is_refused(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(AssertionError) as caught:
             generate('latitude=1e5\n')
+        self.assertIn('must be a number', str(caught.exception))
 
     def test_a_latitude_with_letters_after_it_is_refused(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(AssertionError) as caught:
             generate('latitude=52.37abc\n')
+        self.assertIn('must be a number', str(caught.exception))
 
     def test_the_error_names_the_key_and_the_value(self):
         with self.assertRaises(AssertionError) as caught:
             generate('latitude=nan\n')
         message = str(caught.exception)
+        self.assertIn('must be a number', message)
         self.assertIn('latitude', message)
         self.assertIn('nan', message)
+
+    def test_a_refused_value_leaves_an_earlier_target_alone(self):
+        # The text is built before the target is opened, so a refused value cannot leave
+        # an empty Config.java behind for a later javac to misread.
+        with tempfile.TemporaryDirectory() as tmp:
+            props = Path(tmp) / 'config.properties'
+            props.write_text('latitude=52,37\n', encoding='utf-8')
+            out = Path(tmp) / 'Config.java'
+            out.write_text('// the build from before\n', encoding='utf-8')
+            done = run_tool(str(props), str(out))
+            self.assertNotEqual(done.returncode, 0)
+            self.assertEqual(out.read_text(encoding='utf-8'), '// the build from before\n')
+
+    def test_a_refused_value_leaves_no_target_at_all(self):
+        # The same, with nothing to keep: the run leaves no file, not an empty one.
+        with tempfile.TemporaryDirectory() as tmp:
+            props = Path(tmp) / 'config.properties'
+            props.write_text('latitude=52,37\n', encoding='utf-8')
+            out = Path(tmp) / 'Config.java'
+            done = run_tool(str(props), str(out))
+            self.assertNotEqual(done.returncode, 0)
+            self.assertFalse(out.exists())
+
+    def test_a_missing_input_file_says_so_in_one_line(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            missing = Path(tmp) / 'nope.properties'
+            done = run_tool(str(missing), str(Path(tmp) / 'Config.java'))
+            self.assertNotEqual(done.returncode, 0)
+            self.assertIn(str(missing), done.stderr)
+            self.assertNotIn('Traceback', done.stderr)
+            self.assertEqual(len(done.stderr.strip().splitlines()), 1)
+
+    def test_a_missing_output_directory_says_so_in_one_line(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            props = Path(tmp) / 'config.properties'
+            props.write_text('city=Amsterdam\n', encoding='utf-8')
+            out = Path(tmp) / 'nowhere' / 'Config.java'
+            done = run_tool(str(props), str(out))
+            self.assertNotEqual(done.returncode, 0)
+            self.assertIn(str(out), done.stderr)
+            self.assertNotIn('Traceback', done.stderr)
+            self.assertEqual(len(done.stderr.strip().splitlines()), 1)
 
     def test_an_empty_region_and_currency_stay_empty(self):
         # The app reads an empty region or currency as "the TV's time zone guesses" too.
@@ -487,12 +592,16 @@ Create `variant/tools/gen_config.py`:
     gen_config.py --generic OUT.java
     gen_config.py config.properties OUT.java
 
-Upstream builds the same class from shell; this is the same rules in one place, so the
-repo's unit tests can check them without a device. The rules are upstream's:
+Upstream builds the same class from shell; this puts upstream's rules in one place, so the
+repo's unit tests can check them without a device. There is one deliberate difference from
+upstream, the empty-value rule, which the bullets below explain.
   - a value is the last "key = value" line, trimmed, with quotes and backslashes removed
+  - a UTF-8 byte order mark at the start of the file is ignored
   - a key that is not in the file keeps the default; a key that is in the file but empty
     stays empty. The app reads an empty place, region or currency as "the TV's time zone
-    guesses" (Place.java), so an empty value is an answer, not a missing one.
+    guesses" (Place.java), so an empty value is an answer, not a missing one. This is the
+    one deliberate difference from upstream: upstream's shell gives an empty value the
+    default.
   - latitude and longitude must be a plain number: an optional minus sign, digits and an
     optional fraction, and nothing else
   - disable_assistant and hide_animation are true only for exactly "true"
@@ -561,18 +670,25 @@ def read_properties(path):
 
     A key that is not in the file is not in the result, so the default is used for it. A
     key that is in the file is in the result with the value it has there, empty or not.
+
+    utf-8-sig drops a byte order mark if the file has one. Without it the first key
+    would be read as a byte order mark followed by "tmdb_key": not a known key, and
+    dropped without a word.
     """
     values = {}
-    with open(path, encoding='utf-8') as handle:
-        for line in handle:
-            line = line.strip()
-            if not line or line.startswith('#') or '=' not in line:
-                continue
-            key, _, value = line.partition('=')
-            key = key.strip()
-            if key not in DEFAULTS:
-                continue
-            values[key] = value.strip().replace('"', '').replace('\\', '')
+    try:
+        with open(path, encoding='utf-8-sig') as handle:
+            for line in handle:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                key, _, value = line.partition('=')
+                key = key.strip()
+                if key not in DEFAULTS:
+                    continue
+                values[key] = value.strip().replace('"', '').replace('\\', '')
+    except OSError as error:
+        raise SystemExit(f'{path}: cannot be read: {error.strerror or error}')
     return values
 
 
@@ -626,8 +742,14 @@ def main(argv):
             raise SystemExit('usage: gen_config.py <config.properties> <Config.java>')
         source, target = args
     properties = {} if generic else read_properties(source)
-    with open(target, 'w', encoding='utf-8') as handle:
-        handle.write(build(properties, generic))
+    # The text is built before the target is opened: a refused value must leave an
+    # earlier Config.java alone, not leave an empty one behind.
+    text = build(properties, generic)
+    try:
+        with open(target, 'w', encoding='utf-8') as handle:
+            handle.write(text)
+    except OSError as error:
+        raise SystemExit(f'{target}: cannot be written: {error.strerror or error}')
     return 0
 
 
@@ -642,7 +764,7 @@ cd /Users/zaco/Projects/Personal/dumbtv
 python3 -m unittest tests.test_variant_config -v
 ```
 
-Expected: 22 tests, all OK.
+Expected: 33 tests, all OK.
 
 - [ ] **Step 5: Write the example config**
 
@@ -654,6 +776,11 @@ Create `variant/config.example.properties`:
 # Your TMDB API key (read-only): account.tmdb.org -> Settings -> API -> Authentication Key.
 # Without it the shelf and the clock still work, but no picks appear.
 tmdb_key=
+
+# Your Watchmode API key (optional): a free key from watchmode.com makes the picks open
+# the title's own page in its app, not just the app. Keep it private. Uncomment the line
+# below and paste the key in.
+#watchmode_key=
 
 # Your city, and its coordinates. Leave them empty and the TV's time zone guesses.
 city=
