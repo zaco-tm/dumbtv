@@ -27,22 +27,43 @@ BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort 
 
 JDK17_PATHS=(/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home /usr/lib/jvm/java-17-openjdk)
 javac_major() { "$1/bin/javac" -version 2>&1 | sed -n 's/^javac \([0-9]*\).*/\1/p'; }
+# A javac that exists is not a javac that works: macOS ships /usr/bin/javac, a stub that
+# fails with "Unable to locate a Java Runtime that supports javac", and that can wait for an
+# answer instead of failing. So the javac is asked to run, not merely to exist, and the probe
+# is given five seconds before it gives up on one that hangs.
+javac_works() {
+  [[ -x $1/bin/javac ]] || return 1
+  "$1/bin/javac" -version >/dev/null 2>&1 &
+  local pid=$! waited=0
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge 50 ]; then
+      kill -9 "$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null || true
+      return 1
+    fi
+    sleep 0.1
+    waited=$((waited + 1))
+  done
+  wait "$pid"
+}
 
-if [[ -z ${JAVA_HOME:-} || ! -x ${JAVA_HOME:-}/bin/javac ]]; then
+if [[ -z ${JAVA_HOME:-} ]] || ! javac_works "$JAVA_HOME"; then
   for j in "${JDK17_PATHS[@]}" /opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home \
            "$(/usr/libexec/java_home 2>/dev/null || true)"; do
-    if [[ -n $j && -x $j/bin/javac ]]; then JAVA_HOME=$j; break; fi
+    if [[ -n $j ]] && javac_works "$j"; then JAVA_HOME=$j; break; fi
   done
 fi
 # build-tools 34's bundled d8 threw an internal NullPointerException dexing an anonymous inner
 # class (Keeper$1) compiled by JDK 27, even with --release 8. JDK 17 builds it cleanly. Only 27
 # was seen failing; 21 is a conservative cut-off, since macOS's java_home and a Linux distro's
 # default javac both commonly land on something newer than 17 now.
-if [[ -z ${JAVA_HOME:-} ]] || [[ $(javac_major "$JAVA_HOME") -ge 21 ]]; then
-  for j in "${JDK17_PATHS[@]}"; do [[ -x $j/bin/javac ]] && { JAVA_HOME=$j; break; }; done
+if [[ -z ${JAVA_HOME:-} ]] || ! javac_works "$JAVA_HOME" || [[ $(javac_major "$JAVA_HOME") -ge 21 ]]; then
+  for j in "${JDK17_PATHS[@]}"; do
+    if javac_works "$j"; then JAVA_HOME=$j; break; fi
+  done
 fi
-[[ -x ${JAVA_HOME:-}/bin/javac ]] || {
-  echo "error: no JDK found — brew install openjdk@17 (macOS) or pacman -S jdk17-openjdk (Arch)" >&2
+[[ -n ${JAVA_HOME:-} ]] && javac_works "$JAVA_HOME" || {
+  echo "error: no working JDK found — brew install openjdk@17 (macOS) or pacman -S jdk17-openjdk (Arch)" >&2
   exit 1
 }
 if [[ $(javac_major "$JAVA_HOME") -ge 21 ]]; then
