@@ -67,6 +67,9 @@ passthrough input is. That part stays ours, and it is the part that makes the TV
    signature, and that the expected classes are in the APK.
 6. `variant/UPSTREAM.md` and a root `NOTICE` recording provenance: upstream commit, MIT text,
    Inter (OFL), Material Symbols (Apache 2.0).
+7. A **real** `variant/config.properties` for the owner's own build: the TMDB API key, the
+   city and its coordinates, the region and currency. The file is git-ignored; CI still
+   builds `--generic`, so no key is ever committed or baked by CI.
 
 ### Out (later stages)
 
@@ -126,7 +129,16 @@ unchanged: it blocks Amazon telemetry, not these three hosts.
 
 The TMDB API key is baked into the APK when one is configured — that is upstream's model, and
 the key is a read-only public key. `config.properties` is git-ignored and the CI build is
-`--generic`, so no key is ever committed or baked by CI.
+`--generic`, so no key is ever committed or baked by CI. The owner's own build in stage 1
+carries a real key and a real city, so the first build on the TV shows real picks rather
+than an empty shelf.
+
+**The DNS filter already permits all of this.** Its blocklist is 56 hosts, every one of them
+Amazon or Alexa telemetry and app-store CDN; nothing belonging to Netflix, TMDB, Open-Meteo
+or Binance is blocked. The filter's `verify-allowed.txt` is a *check* list — hosts that must
+keep resolving — not an enforcement list, so the content hosts work unchanged. Stage 3 adds
+`api.themoviedb.org` and `api.open-meteo.com` to that check list, and `www.netflix.com` if
+the owner keeps Netflix installed.
 
 ## 6. Testing
 
@@ -143,7 +155,10 @@ the key is a read-only public key. `config.properties` is git-ignored and the CI
 - `adb install variant/build/variant.apk` succeeds and `tv.dumbtv.home` 1.5 stays installed,
   still HOME, still keeping the panel awake on a picture.
 - The variant opens from the app row: shelf, clock, day/night theme, and the app row.
-- With a TMDB key in `config.properties`, the picks load; the weather card loads without a key.
+- The picks load with the owner's TMDB key; the weather card loads without one.
+- The owner then installs Netflix (and any other streaming apps they want) and signs in, so
+  the content layer can be judged on a shelf that actually has something to play. The
+  launcher does not install, enable or sign in to anything: the apps are the owner's.
 - The variant's own "Open original home" path is inert — it must not disable or switch away
   from anything (their `AMAZON` branch).
 - `./scripts/verify.sh` on the TV still passes end to end.
@@ -156,7 +171,7 @@ the key is a read-only public key. `config.properties` is git-ignored and the CI
 | Upstream's app pulls `POST_NOTIFICATIONS` or other runtime prompts | Those are device-SDK gated (API 33); Fire OS 8 is API 30, so they never appear. |
 | The variant's app-side `HomeMode` disables something on Fire OS | `applyFree()` returns early on `AMAZON` and `mayTurnOff()` refuses every `com.amazon.*` package. Verified in upstream's source, and stage 1's on-TV check re-verifies it. |
 | The variant's in-app self-updater installs something over our build | Upstream pins the release certificate (`RELEASE_CERT`), so a build signed with another key "checks only when asked and never downloads" — upstream's own words. Our variant is signed with our key, so the updater is inert by construction until stage 3 removes it. |
-| The Ember 55 has almost no apps, so the shelf looks empty and the picks are not playable | Expected, and stated up front: this TV is a passthrough box for the Apple TV, so the content layer is for the project's other users. Stage 2 is where *this* TV gains. |
+| The Ember 55 has almost no apps, so the shelf looks empty and the picks are not playable | Expected on the first look, and stated up front: this TV is a passthrough box for the Apple TV. The owner installs Netflix and signs in before judging the content layer, and stage 2 is where *this* TV gains. |
 | Upstream keeps shipping daily, so our vendored copy drifts | Pinned to a commit in `UPSTREAM.md`; re-syncing is a deliberate later task, not an accident. |
 
 ## 8. Later stages (outline)
@@ -170,7 +185,8 @@ the key is a read-only public key. `config.properties` is git-ignored and the CI
   `RemoteKeys`); make the Mac-side scripts the only thing that changes the TV; rewrite the
   contract (AGENTS.md, CONTRIBUTING.md, README, the interview text) from "no internet access"
   to the precise promise in §5.4; relax the CI permission rule to "INTERNET only"; finalise
-  the id, the label and the in-app branding; add `verify.sh` checks for the variant; set up
+  the id, the label and the in-app branding; add `verify.sh` checks for the variant, and the
+  content hosts to the DNS filter's `verify-allowed.txt`; set up
   the release and checksum flow.
 - **Stage 4 — Extend.** Port the kids face from my-kids-tv: `ParentLock` (PIN), the bundled
   three-band catalog (CC BY 4.0), the one-title hero composition, `SpaceSky`, the calmer
