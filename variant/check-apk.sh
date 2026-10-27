@@ -13,7 +13,9 @@ fi
 [ -n "$SDK" ] && [ -d "$SDK/build-tools" ] || { echo "Android SDK not found. Set ANDROID_HOME."; exit 1; }
 # The newest build-tools directory, and only a directory: a stray file must not be picked.
 BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
-[ -x "$BT/aapt2" ] || { echo "no aapt2 in $BT - sdkmanager \"build-tools;34.0.0\""; exit 1; }
+# $BT is empty when build-tools/ has no directory in it: say which SDK it looked in
+# rather than print an empty path.
+[ -x "$BT/aapt2" ] || { echo "no aapt2 in ${BT:-$SDK} - sdkmanager \"build-tools;34.0.0\""; exit 1; }
 APK=build/variant.apk
 [ -f "$APK" ] || { echo "no $APK - run ./build.sh --generic"; exit 1; }
 

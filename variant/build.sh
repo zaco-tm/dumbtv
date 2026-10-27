@@ -22,7 +22,9 @@ fi
 BT=$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)
 AJ="$SDK/platforms/android-34/android.jar"
 [ -f "$AJ" ] || { echo "$AJ missing - sdkmanager \"platforms;android-34\""; exit 1; }
-[ -x "$BT/aapt2" ] || { echo "no aapt2 in $BT - sdkmanager \"build-tools;34.0.0\""; exit 1; }
+# $BT is empty when build-tools/ has no directory in it: say which SDK it looked in
+# rather than print an empty path.
+[ -x "$BT/aapt2" ] || { echo "no aapt2 in ${BT:-$SDK} - sdkmanager \"build-tools;34.0.0\""; exit 1; }
 
 # --- JDK: one that works, and not one that breaks d8.
 # A javac that exists is not a javac that works: macOS ships /usr/bin/javac, a stub that
