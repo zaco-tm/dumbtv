@@ -288,13 +288,21 @@ class stays where upstream's code expects it."
 - Consumes: `variant/config.properties` (optional) and `--generic`.
 - Produces: `gen_config.py` writes an `io/freemytv/Config.java` with the sixteen fields upstream's code reads: `TMDB_KEY`, `WATCHMODE_KEY`, `TMDB_REGION`, `LATITUDE`, `LONGITUDE`, `CITY`, `LANGUAGE`, `CURRENCY`, `TEMPERATURE`, `HIDE_SERVICES`, `THEME`, `DISABLE_ASSISTANT`, `SHOW_CRYPTO`, `HIDE_ANIMATION`, `SCREENSAVER`, `GENERIC`. Task 3's build script calls it.
 
+> **The empty-value rule (settled after review).** A key that is in `config.properties` but
+> empty stays empty: an empty latitude or longitude is what makes the app guess the place
+> from the TV's time zone (`Place.java`), and `config.example.properties` promises exactly
+> that. Upstream's shell resolves an empty value to the default (`${v:-$2}`), which would
+> pin every TV to New York. A key that is *not* in the file keeps the default, as upstream
+> does. The four switches are Java booleans with no empty state: an empty one keeps the
+> default, as upstream's shell does. Numbers are upstream's own pattern — an optional minus
+> sign, digits, an optional fraction and nothing else, so `nan`, `inf` and `1e5` are refused.
+
 - [ ] **Step 1: Write the failing tests**
 
 Create `tests/test_variant_config.py`:
 
 ```python
 """The variant's config.properties -> io.freemytv.Config generator, off-device."""
-import importlib.util
 import subprocess
 import sys
 import tempfile
@@ -307,13 +315,6 @@ TOOL = ROOT / 'variant' / 'tools' / 'gen_config.py'
 FIELDS = ['TMDB_KEY', 'WATCHMODE_KEY', 'TMDB_REGION', 'LATITUDE', 'LONGITUDE', 'CITY',
           'LANGUAGE', 'CURRENCY', 'TEMPERATURE', 'HIDE_SERVICES', 'THEME',
           'DISABLE_ASSISTANT', 'SHOW_CRYPTO', 'HIDE_ANIMATION', 'SCREENSAVER', 'GENERIC']
-
-
-def load_tool():
-    spec = importlib.util.spec_from_file_location('gen_config', TOOL)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
 
 
 def generate(properties, *, generic=False):
@@ -386,9 +387,70 @@ class VariantConfigTests(unittest.TestCase):
         java = generate('screensaver=maybe\n')
         self.assertIn('static final boolean SCREENSAVER = true;', java)
 
+    def test_an_empty_switch_keeps_the_default(self):
+        # The app reads the switches as Java booleans: an empty one is a switch that was
+        # not set, so it keeps the default, as upstream's shell does.
+        java = generate('disable_assistant=\nshow_crypto=\nhide_animation=\nscreensaver=\n')
+        self.assertIn('static final boolean DISABLE_ASSISTANT = false;', java)
+        self.assertIn('static final boolean SHOW_CRYPTO = true;', java)
+        self.assertIn('static final boolean HIDE_ANIMATION = false;', java)
+        self.assertIn('static final boolean SCREENSAVER = true;', java)
+
+    def test_an_empty_latitude_stays_empty(self):
+        # An empty place is an answer: the app then guesses it from the TV's time zone
+        # (Place.java). Upstream's shell would put New York here.
+        java = generate('latitude=\nlongitude=\n')
+        self.assertIn('static final String LATITUDE = "";', java)
+        self.assertIn('static final String LONGITUDE = "";', java)
+
+    def test_a_latitude_that_is_not_in_the_file_keeps_the_default(self):
+        java = generate('city=Amsterdam\n')
+        self.assertIn('static final String LATITUDE = "40.7128";', java)
+        self.assertIn('static final String LONGITUDE = "-74.0060";', java)
+
+    def test_a_latitude_is_read(self):
+        java = generate('latitude=52.37\n')
+        self.assertIn('static final String LATITUDE = "52.37";', java)
+
+    def test_a_latitude_below_zero_is_read(self):
+        java = generate('latitude=-33.87\nlongitude=151.21\n')
+        self.assertIn('static final String LATITUDE = "-33.87";', java)
+        self.assertIn('static final String LONGITUDE = "151.21";', java)
+
     def test_a_latitude_that_is_not_a_number_is_refused(self):
         with self.assertRaises(AssertionError):
             generate('latitude=52,37\n')
+
+    def test_a_longitude_that_is_not_a_number_is_refused(self):
+        with self.assertRaises(AssertionError):
+            generate('longitude=4,89\n')
+
+    def test_a_latitude_that_is_not_finite_is_refused(self):
+        for value in ('nan', 'inf', '-inf'):
+            with self.subTest(value=value):
+                with self.assertRaises(AssertionError):
+                    generate(f'latitude={value}\n')
+
+    def test_a_latitude_in_exponent_form_is_refused(self):
+        with self.assertRaises(AssertionError):
+            generate('latitude=1e5\n')
+
+    def test_a_latitude_with_letters_after_it_is_refused(self):
+        with self.assertRaises(AssertionError):
+            generate('latitude=52.37abc\n')
+
+    def test_the_error_names_the_key_and_the_value(self):
+        with self.assertRaises(AssertionError) as caught:
+            generate('latitude=nan\n')
+        message = str(caught.exception)
+        self.assertIn('latitude', message)
+        self.assertIn('nan', message)
+
+    def test_an_empty_region_and_currency_stay_empty(self):
+        # The app reads an empty region or currency as "the TV's time zone guesses" too.
+        java = generate('tmdb_region=\ncurrency=\n')
+        self.assertIn('static final String TMDB_REGION = "";', java)
+        self.assertIn('static final String CURRENCY = "";', java)
 
     def test_every_field_upstream_reads_is_there(self):
         java = generate('', generic=True)
@@ -428,12 +490,19 @@ Create `variant/tools/gen_config.py`:
 Upstream builds the same class from shell; this is the same rules in one place, so the
 repo's unit tests can check them without a device. The rules are upstream's:
   - a value is the last "key = value" line, trimmed, with quotes and backslashes removed
-  - latitude and longitude must be numbers
+  - a key that is not in the file keeps the default; a key that is in the file but empty
+    stays empty. The app reads an empty place, region or currency as "the TV's time zone
+    guesses" (Place.java), so an empty value is an answer, not a missing one.
+  - latitude and longitude must be a plain number: an optional minus sign, digits and an
+    optional fraction, and nothing else
   - disable_assistant and hide_animation are true only for exactly "true"
   - show_crypto is true only for exactly "true"
   - screensaver is false only for exactly "false"
+  - the four switches are Java booleans, which have no empty state: an empty one keeps
+    the default
   - --generic leaves the location, region and currency empty, and sets GENERIC true
 """
+import re
 import sys
 
 DEFAULTS = {
@@ -453,6 +522,13 @@ DEFAULTS = {
     'hide_animation': 'false',
     'screensaver': 'true',
 }
+
+# The switches the app reads as Java booleans: there is no empty state for them, so an
+# empty one is a switch that was not set and keeps the default.
+SWITCHES = ('disable_assistant', 'show_crypto', 'hide_animation', 'screensaver')
+
+# Upstream's own pattern: an optional minus sign, digits, an optional fraction.
+NUMBER = re.compile(r'-?[0-9]+(\.[0-9]+)?')
 
 TEMPLATE = '''package io.freemytv;
 
@@ -481,8 +557,12 @@ final class Config {{
 
 
 def read_properties(path):
-    """The last value wins, as upstream's shell does. An empty value keeps the default."""
-    values = dict(DEFAULTS)
+    """The last value wins, as upstream's shell does.
+
+    A key that is not in the file is not in the result, so the default is used for it. A
+    key that is in the file is in the result with the value it has there, empty or not.
+    """
+    values = {}
     with open(path, encoding='utf-8') as handle:
         for line in handle:
             line = line.strip()
@@ -492,16 +572,20 @@ def read_properties(path):
             key = key.strip()
             if key not in DEFAULTS:
                 continue
-            value = value.strip().replace('"', '').replace('\\', '')
-            if value:
-                values[key] = value
+            values[key] = value.strip().replace('"', '').replace('\\', '')
     return values
 
 
 def number(value, name):
-    try:
-        float(value)
-    except ValueError:
+    """Upstream's rule: an optional minus sign, digits, an optional fraction. Nothing else,
+    so "nan", "inf" and "1e5" are refused the way upstream refuses them.
+
+    An empty value is left alone: it says the TV's time zone guesses, which is what the
+    app does with an empty place.
+    """
+    if value == '':
+        return value
+    if not NUMBER.fullmatch(value):
         raise SystemExit(f'config.properties: {name} must be a number (got "{value}")')
     return value
 
@@ -511,7 +595,10 @@ def build(properties, generic):
     if generic:
         values.update({'tmdb_region': '', 'latitude': '', 'longitude': '', 'currency': ''})
     else:
-        values.update(properties)
+        for key, value in properties.items():
+            if key in SWITCHES and value == '':
+                continue          # an empty switch is a switch that was not set
+            values[key] = value
         values['latitude'] = number(values['latitude'], 'latitude')
         values['longitude'] = number(values['longitude'], 'longitude')
     values['disable_assistant'] = 'true' if values['disable_assistant'] == 'true' else 'false'
@@ -555,7 +642,7 @@ cd /Users/zaco/Projects/Personal/dumbtv
 python3 -m unittest tests.test_variant_config -v
 ```
 
-Expected: 11 tests, all OK.
+Expected: 22 tests, all OK.
 
 - [ ] **Step 5: Write the example config**
 
@@ -601,8 +688,9 @@ git commit -m "feat(variant): the config.properties -> Config generator, with te
 
 Upstream builds its io.freemytv.Config from shell. The same rules live
 here in one place, so the repo's own unit tests can check them without a
-device: last value wins, latitude and longitude must be numbers, and
-the three booleans follow upstream's exact wording."
+device: last value wins, latitude and longitude must be plain numbers or
+empty, and the four booleans follow upstream's exact wording (GENERIC
+marks the build that leaves the place to the TV's time zone)."
 ```
 
 ---
