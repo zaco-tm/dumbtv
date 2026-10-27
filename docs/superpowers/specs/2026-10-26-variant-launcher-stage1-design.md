@@ -61,7 +61,7 @@ passthrough input is. That part stays ours, and it is the part that makes the TV
    - assets packed with `-A`, fonts stored uncompressed
    - signed with `variant/release.keystore`, created on demand, **never committed**
 3. A `variant/AndroidManifest.xml` with the variant's application id, upstream's components, and
-   exactly one permission: `android.permission.INTERNET`.
+   upstream's permission set unchanged (see §5.4 — it is eight, not one).
 4. A `variant/config.example.properties` committed; `variant/config.properties` git-ignored.
 5. CI: a new job that builds the variant `--generic` and asserts the permission set, the
    signature, and that the expected classes are in the APK.
@@ -118,7 +118,26 @@ needed: the variant is signed by us, for us.
 
 ### 5.4 Content and privacy
 
-The variant holds exactly one permission, `INTERNET`, and talks to:
+The variant ships **upstream's eight permissions unchanged** in stage 1. Removing one would
+break a feature inside upstream's code, and stage 1 is the stage that proves the app runs;
+the trim is stage 3's job.
+
+| Permission | Why upstream needs it | Stage 3 |
+|---|---|---|
+| `INTERNET` | TMDB, Open-Meteo, Binance | **stays** |
+| `ACCESS_NETWORK_STATE` | "No connection" on the card | **stays** |
+| `RECEIVE_BOOT_COMPLETED` | boot check and the update job | goes with the control plane |
+| `SYSTEM_ALERT_WINDOW` | the sleep timer's minutes-left overlay, over any app | goes with the sleep overlay, or is granted explicitly |
+| `FOREGROUND_SERVICE` | the sleep timer's overlay service | goes with the sleep overlay |
+| `SCHEDULE_EXACT_ALARM` (maxSdk 32) / `USE_EXACT_ALARM` | the sleep timer's exact wake-up | goes with the sleep timer |
+| `REQUEST_INSTALL_PACKAGES` | the in-app self-updater | goes with `Updates` |
+
+Two of these are *special* permissions: the TV's installer warns about
+`REQUEST_INSTALL_PACKAGES`, and `SYSTEM_ALERT_WINDOW` needs a grant. Stage 1 grants them
+over adb (`appops set tv.dumbtv.variant SYSTEM_ALERT_WINDOW allow`) instead of asking the
+owner to click through an installer warning — and stage 3 removes both.
+
+The variant talks to:
 
 - `api.themoviedb.org` — trending picks, title metadata, images
 - `api.open-meteo.com` — weather and sunrise/sunset
@@ -145,7 +164,8 @@ the owner keeps Netflix installed.
 **In CI**
 - `variant/build.sh --generic` succeeds on a clean checkout (JDK 17, platform android-26,
   build-tools 34).
-- The built APK declares exactly one `uses-permission`, and it is `android.permission.INTERNET`.
+- The built APK declares exactly upstream's eight `uses-permission` entries, no more and no
+  fewer, in the order recorded in `variant/permissions.txt`.
 - The APK is signed and verifies.
 - The APK contains `io.freemytv.HomeActivity` and `io.freemytv.HomeView`.
 - The existing checks still pass: 108 unit tests, `catalog/validate.py`, `bash -n` over every
@@ -173,6 +193,7 @@ the owner keeps Netflix installed.
 | The variant's in-app self-updater installs something over our build | Upstream pins the release certificate (`RELEASE_CERT`), so a build signed with another key "checks only when asked and never downloads" — upstream's own words. Our variant is signed with our key, so the updater is inert by construction until stage 3 removes it. |
 | The Ember 55 has almost no apps, so the shelf looks empty and the picks are not playable | Expected on the first look, and stated up front: this TV is a passthrough box for the Apple TV. The owner installs Netflix and signs in before judging the content layer, and stage 2 is where *this* TV gains. |
 | Upstream keeps shipping daily, so our vendored copy drifts | Pinned to a commit in `UPSTREAM.md`; re-syncing is a deliberate later task, not an accident. |
+| The variant asks for two *special* permissions on the owner's TV | `REQUEST_INSTALL_PACKAGES` makes the installer warn, and `SYSTEM_ALERT_WINDOW` needs a grant. Stage 1 grants the appops over adb instead of making the owner click through a warning, and stage 3 deletes both permissions along with the code that wanted them. |
 
 ## 8. Later stages (outline)
 
