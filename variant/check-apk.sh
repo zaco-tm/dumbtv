@@ -39,6 +39,13 @@ target=$(printf '%s\n' "$badging" | sed -nE "s/^targetSdkVersion:'([0-9]+)'.*/\1
 # The label is ours, not upstream's: the TV shows our name.
 label=$(printf '%s\n' "$badging" | sed -nE "s/^application-label:'(.*)'$/\1/p" | head -1)
 [ "$label" = "dumbtv home (variant)" ] || { echo "expected the label 'dumbtv home (variant)', found '$label'"; exit 1; }
+# The banner is ours too, and it is the picture the launcher draws as the app's tile:
+# upstream's has the words "Free My TV" in it, which is not what the tile on the TV says.
+banner=$(printf '%s\n' "$badging" | sed -nE "s/^application:.*banner='([^']*)'.*/\1/p" | head -1)
+case "$banner" in
+  *banner_variant.png) ;;
+  *) echo "expected the banner to be banner_variant.png, found '$banner'"; exit 1 ;;
+esac
 # The provider authority is ours too, and it is inside the APK: a manifest that says
 # io.freemytv.photos would make the photos tool write to an authority nobody owns.
 xmltree=$("$BT/aapt2" dump xmltree "$APK" --file AndroidManifest.xml)
@@ -74,4 +81,4 @@ grep -qx "Lio/freemytv/HomeActivity;" <<< "$dex" \
   || { echo "io.freemytv.HomeActivity is not in the dex"; exit 1; }
 
 "$BT/apksigner" verify "$APK" >/dev/null || { echo "the APK is not signed"; exit 1; }
-echo "variant APK ok: $pkg, label '$label', minSdk $min, targetSdk $target, 8 permissions, signed"
+echo "variant APK ok: $pkg, label '$label', banner $(basename "$banner"), minSdk $min, targetSdk $target, 8 permissions, signed"

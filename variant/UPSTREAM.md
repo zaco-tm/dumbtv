@@ -50,7 +50,7 @@ the other vendored files. It is the record of what our own `variant/AndroidManif
 was made from: without it, the prose below would be the only record of upstream's
 manifest, and prose does not fail a build.
 
-Our manifest is upstream's with six changes, and nothing else that matters:
+Our manifest is upstream's with seven changes, and nothing else that matters:
 
 1. **The label** — `Free My TV` → `dumbtv home (variant)`, on the application and on every
    component that carries a label. The TV shows our name, not upstream's.
@@ -77,11 +77,18 @@ Our manifest is upstream's with six changes, and nothing else that matters:
    being HOME. The activity stays, exported and startable, and the app is still in the
    launcher through `SettingsActivity`'s LEANBACK_LAUNCHER and LAUNCHER filters. Stage 2
    gives the variant the HOME key through the Guard, which does not need the category.
+7. **The banner** — `@drawable/banner` → `@drawable/banner_variant`. Upstream's banner is a
+   picture with the words *Free My TV* in it, and the launcher draws the banner as the app's
+   tile: the variant's tile in `dumbtv home`'s APPS row said "Free My TV", not our name. Ours
+   is the same TV mark as `launcher/res/drawable/banner.xml`, in the launcher's own colours,
+   with our wordmark. The picture is ours, so it is listed in `our-files.txt`, and the design
+   is kept as an SVG next to it in `variant/artwork/` so the PNG can be re-made and looked at
+   in a review.
 
 Upstream's comments are trimmed: they describe upstream's own screens and its own names.
 
 `tests/test_variant_manifest.py` parses both manifests and asserts that the differences
-between them are exactly these six, and names any difference that is not one of them. A
+between them are exactly these seven, and names any difference that is not one of them. A
 manifest that drifted away from upstream's — a permission added, an attribute dropped —
 fails the test suite rather than the reviewer.
 
@@ -100,6 +107,8 @@ means, in this order:
    `assets/`, the two tools, `LICENSE.free-my-tv` and `upstream/AndroidManifest.xml`.
 5. Re-apply our two adapted tools (the paths in `variant/local-changes.txt`) and our own
    files (the paths in `variant/our-files.txt`); adapt them again if upstream changed them.
+   Step 4 replaces `res/` wholesale, so our banner goes with it: re-make it from
+   `variant/artwork/banner_variant.svg` (the command is in `variant/README.md`).
 6. Update the version in `variant/AndroidManifest.xml` (`versionCode`, `versionName`), so the
    new build is a different one on the TV than the old.
 7. Update `variant/local-changes.txt` and `variant/our-files.txt` if upstream's paths moved.
@@ -117,9 +126,10 @@ it fails on a file that differs without being listed as well as on a listed file
 no longer differs.
 
 `our-files.txt` lists the paths in the vendored tree that are ours, not upstream's
-(`tools/gen_config.py`): upstream has no such file, so there is nothing to compare it
-with and the verifier does not call it extra. It is not a loophole — a path upstream
-does have cannot be excused this way, and the verifier says so if one is.
+(`tools/gen_config.py` and `res/drawable-nodpi/banner_variant.png`): upstream has no such
+file, so there is nothing to compare it with and the verifier does not call it extra. It is
+not a loophole — a path upstream does have cannot be excused this way, and the verifier says
+so if one is.
 
 ## The proof
 

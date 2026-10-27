@@ -124,11 +124,22 @@ end to end.
 
 ## What the tile on the TV says
 
-The variant's tile in the launcher's APPS row shows a pink banner reading **"Free My TV"**.
-That is upstream's artwork — `res/drawable-nodpi/banner.png` has the words in the picture —
-not the app's name. The name the package manager holds is `dumbtv home (variant)`, and it
-is what the tile's label says. Stage 2 brings our own artwork; until then, upstream's
-banner is what the variant looks like.
+The launcher draws the app's **banner** as its tile, so the banner is the picture on the
+TV. Upstream's banner has the words *Free My TV* in it, which is not what we want on our
+own TV, so the variant has its own:
+
+- `res/drawable-nodpi/banner_variant.png` — the picture that ships in the APK.
+- `artwork/banner_variant.svg` — the design it was made from, kept so it can be looked at
+  in a review and re-made with one command:
+
+  ```sh
+  rsvg-convert -w 640 -h 360 variant/artwork/banner_variant.svg \
+    -o variant/res/drawable-nodpi/banner_variant.png
+  ```
+
+It is the same TV mark as `launcher/res/drawable/banner.xml`, in the launcher's own
+colours, with our wordmark beside it. The label under the tile is the app's name,
+`dumbtv home (variant)`, which the launcher shows when the tile is focused.
 
 ## What it is not yet
 
@@ -141,6 +152,7 @@ the screen awake while a picture shows. Those are ours and they come in stage 2.
 The build and the APK checks run in CI on every push. The on-TV pass has happened once, on
 the Ember 55 (Fire OS 8): the variant installs beside `tv.dumbtv.home`, opens without a
 crash, fetches live picks from TMDB, the remote drives it, HOME still lands on
-`tv.dumbtv.home`, and `./scripts/verify.sh` passes end to end.
+`tv.dumbtv.home`, its tile in the APPS row carries our own banner, and
+`./scripts/verify.sh` passes end to end.
 
 See `variant/UPSTREAM.md` for the upstream commit and the licence.

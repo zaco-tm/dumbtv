@@ -91,7 +91,7 @@
         android:name="io.freemytv.App"
         android:label="dumbtv home (variant)"
         android:icon="@drawable/icon"
-        android:banner="@drawable/banner"
+        android:banner="@drawable/banner_variant"
         android:allowBackup="false"
         android:usesCleartextTraffic="false">
 

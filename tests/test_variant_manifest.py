@@ -147,6 +147,8 @@ def classify(difference):
             return ('version', upstream, ours)
         if name == '@authorities':
             return ('provider authority', upstream, ours)
+        if name == '@banner':
+            return ('banner', upstream, ours)
         if name == '@taskAffinity':
             return ('task affinity', upstream, ours)
         if name == '@name' and _parent_of(path) in COMPONENT_TAGS:
@@ -182,6 +184,7 @@ EXPECTED = Counter([
     ('component name', '.HomeReceiver', 'io.freemytv.HomeReceiver'),
     ('home category', 'android.intent.category.HOME', None),
     ('home category', 'android.intent.category.DEFAULT', None),
+    ('banner', '@drawable/banner', '@drawable/banner_variant'),
     # The label is on the application and on the seven components that carry one.
     *([('label', 'Free My TV', 'dumbtv home (variant)')] * 8),
     # The task affinity is on two activities.
@@ -221,6 +224,14 @@ class VariantManifestTests(unittest.TestCase):
         self.assertEqual(len(providers), 1)
         self.assertEqual(providers[0].get(ANDROID + 'authorities'), AUTHORITY)
 
+    def test_the_banner_is_ours(self):
+        # The launcher draws the banner as the app's tile, and upstream's banner has the
+        # words "Free My TV" in the picture: the variant's tile in the APPS row said the
+        # wrong name. Ours points at our own drawable, which has to be there.
+        application = manifest_root().find('application')
+        self.assertEqual(application.get(ANDROID + 'banner'), '@drawable/banner_variant')
+        self.assertTrue((ROOT / 'variant' / 'res' / 'drawable-nodpi' / 'banner_variant.png').is_file())
+
     def test_photos_py_writes_to_the_same_authority(self):
         # The photos tool writes to the provider; if the two drift apart, the photos
         # never arrive and nothing says why.
@@ -258,7 +269,7 @@ class ManifestDiffTests(unittest.TestCase):
         # in the manifest, not only allowed by it.
         found = Counter(classify(difference)[0] for difference in manifest_differences())
         for kind in ('label', 'version', 'provider authority', 'task affinity',
-                     'component name', 'home category'):
+                     'component name', 'home category', 'banner'):
             with self.subTest(kind=kind):
                 self.assertTrue(found[kind] > 0, kind)
 
