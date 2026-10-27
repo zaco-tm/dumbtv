@@ -8,3 +8,7 @@ launcher/*.keystore
 video/
 __pycache__/
 *.pyc
+variant/build/
+variant/*.keystore
+variant/config.properties
+.superpowers/
