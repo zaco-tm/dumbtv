@@ -53,12 +53,32 @@ jobs:
           n=$(echo "$dump" | grep -c uses-permission || true)
           [ "$n" -le 3 ] || { echo "expected at most the 3 Fire OS 6 permissions, found $n"; exit 1; }
 
+  variant:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: sdk
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0" >/dev/null
+      - name: the vendored tree is upstream's
+        run: ./variant/verify-vendor.sh
+      - name: "build (generic: no TMDB key is ever baked by CI)"
+        run: ./variant/build.sh --generic
+      - name: the apk is what this repo expects
+        run: ./variant/check-apk.sh
+
   scripts:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: syntax
-        run: for f in scripts/*.sh launcher/*.sh; do bash -n "$f" || exit 1; done
+        run: for f in scripts/*.sh launcher/*.sh variant/*.sh; do bash -n "$f" || exit 1; done
       - name: offline script tests (no device)
         run: python3 -m unittest discover -s tests -v
       - name: launcher version manifest
