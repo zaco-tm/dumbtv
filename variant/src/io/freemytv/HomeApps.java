@@ -566,8 +566,21 @@ final class HomeApps {
         synchronized (HomeApps.class) {
             TILES.keySet().removeIf(k -> k.contains(".") && !seen.contains(k));
         }
-        items.add(special(c, SETTINGS, "freemytv-settings", "AverageTV", "sparkles"));
+        items.add(markItem(c));
         return items;
+    }
+
+    /** Our own entry in the sheet: AverageTV, with our mark on it (not a symbol from upstream's set). */
+    private static Item markItem(Context c) {
+        Item it = shortcut(SETTINGS, "averagetv", "AverageTV", "mark");
+        Bitmap b = darkTile(TILE_W, TILE_H);
+        Mark.draw(new Canvas(b), TILE_W / 2f, TILE_H / 2f, TILE_H * 0.62f, 0xF2FFFFFF);
+        b.setHasMipMap(true);
+        synchronized (HomeApps.class) {
+            TILES.put("averagetv", b);
+        }
+        it.setTile(b);
+        return it;
     }
 
     private static Item special(Context c, int kind, String key, String label, String symbol) {

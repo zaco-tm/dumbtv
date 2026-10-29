@@ -29,6 +29,7 @@ assets/i18n/zh-TW.json
 res/values-ru/strings.xml
 res/values/strings.xml
 res/values/styles.xml
+res/drawable-nodpi/icon.png
 src/io/freemytv/AppLog.java
 src/io/freemytv/Backdrop.java
 src/io/freemytv/Capabilities.java

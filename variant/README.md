@@ -295,21 +295,25 @@ rollback is that one setting, written down above.
 ## What the tile on the TV says
 
 The launcher draws the app's **banner** as its tile, so the banner is the picture on the
-TV. Upstream's banner has the words *Free My TV* in it, which is not what we want on our
-own TV, so the variant has its own:
+TV. Upstream's banner has the words *Free My TV* in it, and upstream's icon has a
+sparkle in it, so the variant has its own:
 
-- `res/drawable-nodpi/banner_variant.png` — the picture that ships in the APK.
-- `artwork/banner_variant.svg` — the design it was made from, kept so it can be looked at
-  in a review and re-made with one command:
+- `res/drawable-nodpi/banner_variant.png` — the tile that ships in the APK.
+- `res/drawable-nodpi/icon.png` — the app's icon.
+- `artwork/banner_variant.svg` and `artwork/icon.svg` — the designs they were made from,
+  kept so they can be looked at in a review and re-made with one command:
 
   ```sh
-  rsvg-convert -w 640 -h 360 variant/artwork/banner_variant.svg \
-    -o variant/res/drawable-nodpi/banner_variant.png
+  python3 variant/tools/mark.py
   ```
 
-It is the same TV mark as the old launcher's banner, in that launcher's own
-colours, with our wordmark beside it. The label under the tile is the app's name,
-`AverageTV`, which the launcher shows when the tile is focused.
+Both carry **our mark**: the letter A as an old rooftop aerial — two rods, three
+horizontal elements — between square brackets. It is the same drawing the app puts on the
+television (`src/io/freemytv/Mark.java`), and `tools/mark.py` keeps the two the same. The
+wordmark beside it is set in the app's own font, `assets/fonts/InterVariable.ttf`.
+
+The label under the tile is the app's name, `AverageTV`, which the launcher shows when
+the tile is focused.
 
 ## The TV's inputs
 

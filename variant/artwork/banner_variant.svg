@@ -1,17 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The variant's banner: our own, in the launcher's visual language.
-     The mark is the old launcher's, scaled and moved to the left;
-     the wordmark is ours. Rendered to res/drawable-nodpi/banner_variant.png with
-     rsvg-convert (see variant/README.md). -->
-<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
-  <rect width="320" height="180" fill="#111214"/>
-  <g transform="translate(-62,20) scale(0.7)">
-    <path fill="none" stroke="#FFFFFF" stroke-width="7"
-          d="M118,52h84a7,7 0,0 1,7 7v52a7,7 0,0 1,-7 7h-84a7,7 0,0 1,-7 -7v-52a7,7 0,0 1,7 -7z"/>
-    <path fill="#3D8BFF" d="M140,130h40v7h-40z"/>
-  </g>
-  <text x="88" y="76" fill="#FFFFFF" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
-        font-size="34" font-weight="700" letter-spacing="-0.5">dumbtv home</text>
-  <text x="90" y="108" fill="#3D8BFF" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
-        font-size="24" font-weight="600" letter-spacing="1.5">variant</text>
+<!-- AverageTV's banner: the tile the launcher draws on the television.
+     Our mark on the left, our name on the right, in the app's own font.
+     Rendered to res/drawable-nodpi/banner_variant.png with rsvg-convert
+     (see variant/README.md); the numbers come from tools/mark.py, which keeps them
+     the same as the mark the app draws on the television (Mark.java). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360">
+  <style>
+    @font-face { font-family: 'Inter'; src: url('../assets/fonts/InterVariable.ttf'); font-weight: 100 900; }
+    text { font-family: 'Inter'; }
+  </style>
+<g fill="none" stroke="#ffffff" stroke-linecap="butt">
+<path d="M 113.00 100.63 L 57.80 212.32" stroke-width="10.12"/>
+<path d="M 113.00 100.63 L 168.20 212.32" stroke-width="10.12"/>
+<path d="M 94.23 138.61 L 131.77 138.61" stroke-width="10.12"/>
+<path d="M 82.09 163.18 L 143.91 163.18" stroke-width="10.12"/>
+<path d="M 69.94 187.75 L 156.06 187.75" stroke-width="10.12"/>
+<path d="M 28.36 91.43 L 28.36 221.52 M 28.36 91.43 L 48.60 91.43 M 28.36 221.52 L 48.60 221.52" stroke-width="11.96"/>
+<path d="M 197.64 91.43 L 197.64 221.52 M 197.64 91.43 L 177.40 91.43 M 197.64 221.52 L 177.40 221.52" stroke-width="11.96"/>
+</g>
+  <text x="228" y="196" font-size="74" font-weight="600" fill="#ffffff">AverageTV</text>
 </svg>

@@ -1,9 +1,11 @@
 tools/gen_config.py
 tools/javac.sh
+tools/mark.py
 res/drawable-nodpi/banner_variant.png
 src/io/freemytv/Guard.java
 src/io/freemytv/Input.java
 src/io/freemytv/KidsView.java
+src/io/freemytv/Mark.java
 src/io/freemytv/ParentLock.java
 src/io/freemytv/SleepBlank.java
 src/io/freemytv/SpaceSky.java

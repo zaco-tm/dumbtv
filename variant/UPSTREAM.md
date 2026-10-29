@@ -93,13 +93,17 @@ Our manifest is upstream's with ten changes, and nothing else that matters:
    being HOME. The activity stays, exported and startable, and the app is still in the
    launcher through `SettingsActivity`'s LEANBACK_LAUNCHER and LAUNCHER filters. The
    Guard gives the variant the HOME key, and it does not need the category.
-7. **The banner** — `@drawable/banner` → `@drawable/banner_variant`. Upstream's banner is a
-   picture with the words *Free My TV* in it, and the launcher draws the banner as the app's
-   tile: the variant's tile in the old launcher's APPS row said "Free My TV", not our
-   name. Ours is the same TV mark as the old launcher's banner, in that launcher's own
-   colours, with our wordmark. The picture is ours, so it is listed in `our-files.txt`, and the design
-   is kept as an SVG next to it in `variant/artwork/` so the PNG can be re-made and looked at
-   in a review.
+7. **The banner and the icon** — `@drawable/banner` → `@drawable/banner_variant`, and
+   `@drawable/icon` is ours now too. Upstream's banner is a picture with the words
+   *Free My TV* in it, and the launcher draws the banner as the app's tile: the variant's
+   tile in the old launcher's APPS row said "Free My TV", not our name. Upstream's icon is
+   the same picture with a sparkle in it. Ours is **our mark** — the letter A as an old
+   rooftop aerial, between square brackets — with our wordmark beside it. The banner is
+   ours, so it is listed in `our-files.txt`; the icon is upstream's file with our picture
+   in it, so it is listed in `local-changes.txt`. Both designs are kept as SVGs next to
+   them in `variant/artwork/`, so the PNGs can be re-made (`python3 variant/tools/mark.py`)
+   and looked at in a review. The mark the app draws on the television is the same drawing:
+   `src/io/freemytv/Mark.java`.
 8. **The Guard** — upstream declares no accessibility service for the home screen; we declare
    `io.freemytv.Guard`, ours. Fire OS gives the HOME key to Amazon's protected launcher and
    lets no third-party app be the home app, so the only way to own HOME there is a Guard: an
@@ -250,8 +254,8 @@ means, in this order:
    files (the paths in `variant/our-files.txt`); adapt them again if upstream changed them.
    Step 4 replaces `src/` wholesale, so our changes to the `src/io/freemytv/` files
    above go with it: re-apply them all (each file's own comment says what ours are, and
-   `variant/UPSTREAM.md` above has the whole of it). Our banner goes with
-   `res/`: re-make it from `variant/artwork/banner_variant.svg` (the command is in
+   `variant/UPSTREAM.md` above has the whole of it). Our banner and our icon go with
+   `res/`: re-make them with `python3 variant/tools/mark.py` (the command is in
    `variant/README.md`). The catalogue assets go with `assets/`: take them from
    `variant/catalog-data/`, which keeps them with their licence.
 6. Update the version in `variant/version.env` (`VERSION`, `VERSION_CODE`, `VERSION_NAME`)
@@ -299,8 +303,10 @@ upstream's. `verify-vendor.sh` proves every other vendored byte is upstream's, a
 on a file that differs without being listed as well as on a listed file that no longer differs.
 
 `our-files.txt` lists the paths in the vendored tree that are ours, not upstream's
-(`tools/gen_config.py`, `tools/javac.sh`, `res/drawable-nodpi/banner_variant.png`,
+(`tools/gen_config.py`, `tools/javac.sh`, `tools/mark.py`,
+`res/drawable-nodpi/banner_variant.png`,
 `src/io/freemytv/Guard.java`, `src/io/freemytv/Input.java`, `src/io/freemytv/KidsView.java`,
+`src/io/freemytv/Mark.java`,
 `src/io/freemytv/ParentLock.java`, `src/io/freemytv/SleepBlank.java`,
 `src/io/freemytv/SpaceSky.java`, `res/xml/guard.xml`,
 `res/values/guard.xml`, `assets/catalog/4-6.json`, `assets/catalog/7-10.json`,
