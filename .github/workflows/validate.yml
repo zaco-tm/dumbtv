@@ -107,13 +107,22 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
       - name: sdk
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;37.0.0" >/dev/null
+          # The NDK and CMake are named here because the new architecture compiles the
+          # app's own C++ (the codegen and the TurboModule glue), and AGP will not
+          # download them on a runner without the licences accepted first.
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-37.0" "build-tools;37.0.0" \
+            "ndk;27.1.12297006" "cmake;3.22.1" >/dev/null
       - run: npm ci
         working-directory: app
       - name: the tokens are the prototype's
+        working-directory: app
         run: |
           node tools/gen-tokens.mjs
           if ! git diff --quiet -- src/ui/charcoal/tokens.ts; then
@@ -124,5 +133,7 @@ jobs:
       - run: npm test
         working-directory: app
       - name: the apk builds
-        run: ./gradlew assembleDebug
+        # One ABI: the television is arm64, and four of them do not fit the runner's
+        # disk with the NDK in them. The build is a check, not a release.
+        run: ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a
         working-directory: app/android

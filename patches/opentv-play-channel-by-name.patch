@@ -1,0 +1,91 @@
+diff --git a/app/src/main/java/app/opentv/MainActivity.kt b/app/src/main/java/app/opentv/MainActivity.kt
+index 4c3fb2a..49f2543 100644
+--- a/app/src/main/java/app/opentv/MainActivity.kt
++++ b/app/src/main/java/app/opentv/MainActivity.kt
+@@ -35,6 +35,8 @@ import androidx.compose.material3.CircularProgressIndicator
+ import androidx.compose.material3.Icon
+ import androidx.compose.material3.MaterialTheme
+ import androidx.compose.material3.Surface
++import androidx.lifecycle.lifecycleScope
++import kotlinx.coroutines.launch
+ import androidx.compose.material3.Text
+ import androidx.compose.ui.Alignment
+ import androidx.compose.runtime.Composable
+@@ -128,6 +130,14 @@ class MainActivity : ComponentActivity() {
+     private fun handlePlayIntent(intent: Intent?) {
+         val id = intent?.getLongExtra(EXTRA_PLAY_CHANNEL, 0L) ?: 0L
+         if (id != 0L) app.opentv.core.PlayRequests.request(id)
++        val name = intent?.getStringExtra(EXTRA_PLAY_CHANNEL_NAME)
++        if (!name.isNullOrBlank()) {
++            // A channel asked for by name: an outside app knows the name, not our id.
++            lifecycleScope.launch {
++                val channel = ServiceLocator.get(this@MainActivity).catalogRepository.channelByName(name)
++                if (channel != null) app.opentv.core.PlayRequests.request(channel.id)
++            }
++        }
+         val recId = intent?.getLongExtra(EXTRA_WATCH_RECORDING, 0L) ?: 0L
+         if (recId != 0L) {
+             app.opentv.core.RecordingSignals.requestWatch(recId, System.currentTimeMillis())
+@@ -177,6 +187,12 @@ class MainActivity : ComponentActivity() {
+         /** A reminder notification carries the channel to tune to in this extra. */
+         const val EXTRA_PLAY_CHANNEL = "opentv.play_channel"
+ 
++        /**
++         * Play a channel by NAME rather than by this app's id. An id means nothing outside
++         * this database; a name does. Used by home screens that keep their own channel list.
++         */
++        const val EXTRA_PLAY_CHANNEL_NAME = "opentv.play_channel_name"
++
+         /** A recording auto-switch notification carries the recording to watch in this extra. */
+         const val EXTRA_WATCH_RECORDING = "opentv.watch_recording"
+     }
+diff --git a/app/src/main/java/app/opentv/data/db/Daos.kt b/app/src/main/java/app/opentv/data/db/Daos.kt
+index 91b69b4..d5f5704 100644
+--- a/app/src/main/java/app/opentv/data/db/Daos.kt
++++ b/app/src/main/java/app/opentv/data/db/Daos.kt
+@@ -122,6 +122,24 @@ interface ChannelDao {
+     )
+     suspend fun channelsInCategoryIncludingHidden(sourceId: Long?, categoryId: String): List<Channel>
+ 
++    /**
++     * One channel by a name another app would know it by: the normalised join key (the same key
++     * the guide matcher joins on) or the channel's own name.
++     *
++     * This is how a home screen that keeps its own channel list asks for a channel without
++     * knowing this app's ids — an id is only meaningful inside this database, a name is not.
++     */
++    @Query(
++        """
++        SELECT * FROM channels
++        WHERE hidden = 0
++          AND (groupKey = :key COLLATE NOCASE OR displayName = :name COLLATE NOCASE)
++        ORDER BY sortIndex, displayName
++        LIMIT 1
++        """
++    )
++    suspend fun byNameOrKey(key: String, name: String): Channel?
++
+     /**
+      * Channel count per (source, category), hidden rows included — the web manager's category list
+      * shows how many channels each holds. Grouped by (sourceId, categoryId) because a category id
+diff --git a/app/src/main/java/app/opentv/data/repo/CatalogRepository.kt b/app/src/main/java/app/opentv/data/repo/CatalogRepository.kt
+index 8f65af7..9bd672b 100644
+--- a/app/src/main/java/app/opentv/data/repo/CatalogRepository.kt
++++ b/app/src/main/java/app/opentv/data/repo/CatalogRepository.kt
+@@ -184,6 +184,16 @@ class CatalogRepository(
+ 
+     suspend fun channel(id: Long): Channel? = channelDao.byId(id)
+ 
++    /**
++     * The channel with this name, if there is one — the play-by-name intent's way in.
++     *
++     * The name is folded to the join key first, so `BBC One`, `BBC1` and `bbc-one` all find
++     * the same channel, exactly as the guide matcher finds it.
++     */
++    suspend fun channelByName(name: String): Channel? = withContext(Dispatchers.IO) {
++        channelDao.byNameOrKey(ChannelNameNormalizer.groupKeyOf(name), name.trim())
++    }
++
+     suspend fun movie(id: Long): Movie? = movieDao.byId(id)
+ 
+     /**
