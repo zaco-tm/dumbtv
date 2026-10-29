@@ -16,6 +16,11 @@
 - `minSdkVersion 26`, `targetSdkVersion 33`.
 - The APK declares exactly upstream's eight permissions, in upstream's order. `variant/permissions.txt` is that list.
 - No Gradle, no libraries, no network in the build. Python 3 standard library only, and only for `variant/tools/gen_config.py` and the tests.
+  - **Amended 2026-10-29.** This promise is about *the vendored tree's* build, and it still
+    holds for it: `aapt2` → `javac` → `d8`, nothing else, and the CI job that proves it
+    stays. The product itself is now built in React Native (stage 4), whose build is npm,
+    Metro, Gradle and the network. See
+    [the stage 4 plan](2026-10-29-averagetv-stage4.md).
 - `variant/config.properties`, `variant/release.keystore` and `variant/build/` are git-ignored. CI builds `--generic`, so no TMDB key is ever baked by CI.
 - The existing `launcher/` tree is untouched in stage 1, with one documented exception:
   `launcher/build.sh` (commit `5ad39da`) now asks the javac to *run* rather than merely to
