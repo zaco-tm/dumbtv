@@ -12,8 +12,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Settings > Sleep Timer: an alarm, then the remote's Sleep key through the TV's own ADB (the one the switch uses):
- * Android lets no other app put the TV to sleep.
+ * Settings > Sleep Timer: an alarm, then the screen goes dark (SleepBlank). Ours, not upstream's: upstream puts the
+ * TV to sleep through the TV's own ADB (the one the switch uses), and the fork has no ADB to use — the fork's Guard
+ * took the key that upstream's sleep went through.
  */
 final class SleepTimer {
     private SleepTimer() {}
@@ -47,7 +48,8 @@ final class SleepTimer {
 
     /**
      * Original mode and the watchdog's revert (main process): the alarm and the pill go. Prefs aren't written here: that
-     * process keeps the settings it read when it started, and writing would bring old ones back.
+     * process keeps the settings it read when it started, and writing would bring old ones back. The screen going dark
+     * (SleepBlank) is not stopped here: it is the timer's end, and it goes when a key brings the picture back.
      */
     static void stop(Context c) {
         cancel(c);
@@ -137,18 +139,11 @@ final class SleepTimer {
         SleepOverlay.update(c);
     }
 
-    /** The alarm went off (main process): sleep, unless the TV is off, or was turned off since (and on again). */
+    /** The alarm went off (main process): the screen goes dark, unless the TV is off already. */
     static void fire(Context c, long setAt) {
         if (!c.getSystemService(PowerManager.class).isInteractive()) return;
-        try (Adb adb = Adb.connect(c, 10_000, null)) {
-            if (sleptSince(adb, setAt)) {
-                AppLog.w("Sleep timer: the TV was turned off since, left on");
-                return;
-            }
-            adb.shell("input keyevent KEYCODE_SLEEP");
-            AppLog.w("Sleep timer: TV off");
-        } catch (IOException e) {
-            AppLog.w("Sleep timer: " + e.getMessage());
-        }
+        stop(c);   // the pill goes: the screen goes dark instead
+        AppLog.w("Sleep timer: the screen goes dark");
+        SleepBlank.start(c);
     }
 }

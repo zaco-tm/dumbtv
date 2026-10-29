@@ -264,5 +264,17 @@
             android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen" />
+
+        <!-- Ours: the sleep timer's end. The screen goes dark over whatever is on it, with a black
+             window over the app that is playing and the panel's brightness at its lowest. It needs no
+             permission the app does not already hold (the overlay one, granted at install) and no
+             ADB, which the fork has none of. It is listed in our-files.txt. See variant/UPSTREAM.md.
+
+             The service is in the sleep timer's own process (:sleep), the one the pill uses, so it does
+             not take memory from the home screen. -->
+        <service
+            android:name="io.freemytv.SleepBlank"
+            android:process=":sleep"
+            android:exported="false" />
     </application>
 </manifest>

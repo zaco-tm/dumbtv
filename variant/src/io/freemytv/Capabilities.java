@@ -22,7 +22,7 @@ final class Capabilities {
 
     /** An option's needs. */
     static final String NEED_ADB = "adb", NEED_REMOTE_BUTTONS = "remote-buttons", NEED_OVERLAY = OVERLAY,
-            NEED_LIVE_TV = "live-tv", NEED_LISTENER = LISTENER;
+            NEED_LIVE_TV = "live-tv", NEED_LISTENER = LISTENER, NEED_BLANK = "blank";
 
     /** null where this TV has what `need` names; else why not, and what would change it, for the person to read. */
     static String missing(Context c, String need) {
@@ -33,6 +33,10 @@ final class Capabilities {
                 return remoteButtons() ? null : Ui.tr("This TV's remote has no app buttons that Free My TV knows.");
             case NEED_OVERLAY:
                 return overlay(c) ? null : Ui.tr("This TV doesn't let apps show over other apps: the time left shows on the home screen.");
+            case NEED_BLANK:
+                // The sleep timer's end: the screen goes dark over whatever is on it. That needs the overlay
+                // permission (the same one the pill needs), and nothing else: no ADB, no root.
+                return overlay(c) ? null : Ui.tr("This TV doesn't let apps show over other apps: the screen cannot go dark.");
             case NEED_LISTENER:
                 return !adb(c) ? Ui.tr("Needs Free My TV mode: turn it on in Home Screen.")
                         : refused(c, LISTENER) ? Ui.tr("This TV doesn't let apps see what's playing.") : null;

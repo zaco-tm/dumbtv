@@ -152,9 +152,9 @@ public class SettingsActivity extends Activity {
         private static final float LIST_ROW_H = 68, LIST_ROW_GAP = 6;
         private static final int PICK_VISIBLE = 9;
         private static final float LIST_X = 1000, LIST_R = 1824, LIST_TOP = 186, ROW_GAP = 8, CHOICE_H = 104;
-        // The main menu: eight rows, then the comparison, the picks (with the Watchmode credit) and two notices, all on
-        // one 1080 px screen: the rows share the 462 px that seven took.
-        private static final float MAIN_TOP = 140, ROW_H = 53.75f, MAIN_GAP = 4;
+        // The main menu: nine rows, then the comparison, the picks (with the Watchmode credit) and two notices, all on
+        // one 1080 px screen: the rows share the space that eight took.
+        private static final float MAIN_TOP = 140, ROW_H = 50, MAIN_GAP = 4;
         private static final int AMBER = 0xFFFFC266, INK = 0xFF1C1C1E;
 
         private final SettingsActivity activity;
@@ -283,6 +283,30 @@ public class SettingsActivity extends Activity {
             invalidate();
         }
 
+        /**
+         * OK on "Change PIN": the PIN in use now, then a new one twice (ParentLock's own steps, chained). The new PIN
+         * goes where the old one was (the parent_pin file, a salted hash, written with commit()), so the settings stay
+         * behind it and the wait after five wrong tries is the same one.
+         */
+        private void changePin() {
+            lock = new ParentLock(this, new ParentLock.Listener() {
+                @Override public void unlocked() {
+                    lock = null;
+                    for (Spring s : pop) s.snap(0);
+                    invalidate();
+                    spoken.focusMoved();
+                    Toast.makeText(getContext(), Ui.tr("The PIN is changed."), Toast.LENGTH_LONG).show();
+                }
+
+                @Override public void cancelled() {
+                    lock = null;   // back to the list: the settings stay open
+                    invalidate();
+                    spoken.focusMoved();
+                }
+            }, Ui.tr("change the PIN"), true);
+            invalidate();
+        }
+
         @Override public AccessibilityNodeProvider getAccessibilityNodeProvider() {
             return spoken;
         }
@@ -304,7 +328,7 @@ public class SettingsActivity extends Activity {
                     }
                     String[] names = {Ui.tr("Screensaver, preview"), Ui.tr("Home Settings"),
                             Ui.tr("Shelf"), Ui.tr("Top Buttons"), Ui.tr("Remote Buttons"), Ui.tr("Sleep Timer"),
-                            Ui.tr("TV Settings")};
+                            Ui.tr("Change PIN"), Ui.tr("TV Settings")};
                     return row - 1 < names.length ? names[row - 1] : "";
                 }
                 case HOME_CHOICE: {
@@ -440,7 +464,7 @@ public class SettingsActivity extends Activity {
         private int rowCount() {
             if (lock != null) return 0;   // nothing behind the PIN for TalkBack to read
             switch (screen) {
-                case MAIN: return 8;
+                case MAIN: return 9;
                 case HOME_CHOICE: return 2;
                 case HOME_SETTINGS: return Math.min(SETTINGS_VISIBLE, settingLabels().length);
                 case PICKER: return Math.min(PICK_VISIBLE, pickLabels.size());
@@ -487,8 +511,8 @@ public class SettingsActivity extends Activity {
             String mode = freeActive() ? "Free My TV" : Ui.tr("Original");
             String[] labels = {Ui.tr("Home Screen"), Ui.tr("Screensaver"),
                     Ui.tr("Home Settings"), Ui.tr("Shelf"), Ui.tr("Top Buttons"),
-                    Ui.tr("Remote Buttons"), Ui.tr("Sleep Timer"), Ui.tr("TV Settings")};
-            String[] values = {working ? "" : mode, Ui.tr("Preview"), "", "", "", "", "", ""};
+                    Ui.tr("Remote Buttons"), Ui.tr("Sleep Timer"), Ui.tr("Change PIN"), Ui.tr("TV Settings")};
+            String[] values = {working ? "" : mode, Ui.tr("Preview"), "", "", "", "", "", "", ""};
             for (int i = 0; i < labels.length; i++) {
                 float y = (MAIN_TOP + i * (ROW_H + MAIN_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
@@ -838,7 +862,9 @@ public class SettingsActivity extends Activity {
         private String need(int i) {
             switch (screen) {
                 case MAIN:
-                    return i == 5 ? Capabilities.NEED_REMOTE_BUTTONS : i == 6 ? Capabilities.NEED_ADB : null;
+                    // The Sleep Timer ends with the screen going dark: that needs the overlay permission, and
+                    // no ADB (the fork has none) — see SleepBlank.
+                    return i == 5 ? Capabilities.NEED_REMOTE_BUTTONS : i == 6 ? Capabilities.NEED_BLANK : null;
                 case HOME_SETTINGS:
                     return pickScroll + i == PLAYING_ROW ? Capabilities.NEED_LISTENER : null;
                 case POWER: {
@@ -1433,6 +1459,9 @@ public class SettingsActivity extends Activity {
                         : RemoteKeys.HISENSE ? Ui.tr("Netflix: the TV itself controls that button.")
                         : RemoteKeys.supported() ? Ui.tr("Disney and Globoplay: the TV itself controls those buttons.")
                         : Ui.tr("TCL remote buttons: on this TV they work as always."), LIST_X * k + 30 * k, hy + 38 * k, hint);
+            } else if (screen == POWER) {
+                // What the timer does at its end: the screen goes dark, and any key brings the picture back.
+                c.drawText(Ui.tr("At the end, the screen goes dark. Any key wakes it."), LIST_X * k + 30 * k, hy + 38 * k, hint);
             }
         }
 
@@ -1515,6 +1544,9 @@ public class SettingsActivity extends Activity {
                 pickScroll = 0;
                 screen = POWER;
                 focus = 0;
+            } else if (focus == 7) {
+                changePin();
+                return;
             } else {
                 activity.startActivity(new Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             }

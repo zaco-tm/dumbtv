@@ -2,6 +2,7 @@ package io.freemytv;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.SystemClock;
 import android.view.KeyEvent;
 
 import java.io.BufferedReader;
@@ -236,7 +237,12 @@ final class Prefs {
     /** A PIN is set (from parent_pin or made on the TV). */
     static boolean hasPin() {
         applyPinPreset();
-        return !pinSp().getString("pin", "").isEmpty();
+        String v = pinSp().getString("pin", "");
+        AppLog.w("PINDBG empty=" + v.isEmpty() + " value=" + v
+                + " fails=" + pinSp().getInt("pinFails", 0)
+                + " waitUntil=" + pinSp().getLong("pinWaitUntil", 0) + " now=" + SystemClock.elapsedRealtime()
+                + " keys=" + pinSp().getAll().keySet());
+        return !v.isEmpty();
     }
 
     static boolean checkPin(String pin) {

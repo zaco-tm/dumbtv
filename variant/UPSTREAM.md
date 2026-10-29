@@ -56,7 +56,7 @@ the other vendored files. It is the record of what our own `variant/AndroidManif
 was made from: without it, the prose below would be the only record of upstream's
 manifest, and prose does not fail a build.
 
-Our manifest is upstream's with nine changes, and nothing else that matters:
+Our manifest is upstream's with ten changes, and nothing else that matters:
 
 1. **The label** — `Free My TV` → `dumbtv home (variant)`, on the application and on every
    component that carries a label. The TV shows our name, not upstream's.
@@ -112,11 +112,19 @@ Our manifest is upstream's with nine changes, and nothing else that matters:
    is the platform's fullscreen one and not `FreeMyTV.Home`: the window's background is
    transparent there, and `FreeMyTV.Home`'s light background would flash before the code can
    clear it.
+10. **The sleep timer's end** — upstream declares no service for it: its timer puts the TV to
+   sleep through the TV's own ADB, which only "Free My TV mode" has, and the fork has no ADB
+   to use. We declare `io.freemytv.SleepBlank`, ours, and the screen goes dark in a window of
+   ours instead: black, over whatever is on it, with the panel's brightness at its lowest. It
+   is a new file of ours listed in `our-files.txt`, it runs in the sleep timer's own process
+   (`:sleep`, the one the pill uses), and it needs no permission the app does not already hold
+   (the overlay one, granted at install). The owner asked for it: the screen goes dark when
+   the timer ends, the TV stays on, and any key brings the picture back.
 
 Upstream's comments are trimmed: they describe upstream's own screens and its own names.
 
 `tests/test_variant_manifest.py` parses both manifests and asserts that the differences
-between them are exactly these nine, and names any difference that is not one of them. A
+between them are exactly these ten, and names any difference that is not one of them. A
 manifest that drifted away from upstream's — a permission added, an attribute dropped —
 fails the test suite rather than the reviewer.
 
@@ -153,8 +161,8 @@ kids face with the HOME key, and `HomeActivity` is `singleTask`, so HOME arrives
 `onNewIntent` and the PIN is asked there.
 
 **The manifest does not change.** `KidsView`, `ParentLock` and `SpaceSky` are classes, not
-components: no new activity, no new permission, no tenth documented difference. The nine
-above are still the nine.
+components: no new activity, no new permission, no new documented difference. The nine of the
+kids face's time are still the nine (the tenth came later, with the sleep timer's end).
 
 ### The dataset, and the credit it owes
 
@@ -182,6 +190,34 @@ Their `catalog/` pipeline (`pipeline.py`, `bands.py`, `tmdb.py`, `hotstar.py`,
 the titles. We take the emitted JSON and the open dataset. Re-building the catalogue is a
 separate decision.
 
+## The sleep timer, and the PIN that can be changed
+
+**The timer's end.** Upstream's sleep timer puts the TV to sleep through the TV's own ADB,
+which only "Free My TV mode" has — and the fork replaced that mode with the Guard in stage 1
+(Amazon's launcher is protected on Fire OS, so upstream's ADB takeover cannot run there at
+all). Android lets no ordinary app put a TV to sleep, so upstream's timer is greyed out in
+the fork, as it is in my-kids-tv.
+
+The owner's decision was that the screen goes dark when the timer ends: the TV stays on, any
+key brings the picture back, and nothing has to be accepted on the TV. That is
+`src/io/freemytv/SleepBlank.java`, ours: a black window over whatever is on it, in the sleep
+timer's own process, with the overlay permission the app already holds.
+
+The brief for this stage named `FLAG_KEEP_SCREEN_OFF` as the way to take the display off.
+**There is no such flag** — `WindowManager.LayoutParams` has `FLAG_KEEP_SCREEN_ON` and no
+opposite (`android.jar` for API 34, and the API reference, agree), and the other ways to put
+a display to sleep need a permission no ordinary app has. So the window is black and the
+panel's brightness goes to its lowest (`screenBrightness`, the public way to do it), which
+is as dark as an app can make a TV without ADB or root. The TV stays powered.
+
+**The PIN.** Upstream has no PIN at all; the one here is my-kids-tv's, and it could only be
+set once (on the TV, or from `parent_pin` in `variant/config.properties` at build time).
+There is now a "Change PIN" row in the settings, behind the PIN: the PIN in use comes first,
+then a new one twice — `ParentLock`'s own `ENTER`, `CREATE` and `CONFIRM` steps, chained. The
+new PIN goes where the old one was: a salted hash in the app's own `parent_pin` file, written
+with `commit()`, never in the shared settings file. Five wrong tries wait 30 seconds, and the
+wait is kept in the prefs, as it is at the door.
+
 ## Re-syncing upstream
 
 Upstream ships daily, so a re-sync is a deliberate piece of work and not an accident. It
@@ -197,7 +233,7 @@ means, in this order:
    `assets/`, the two tools, `LICENSE.free-my-tv` and `upstream/AndroidManifest.xml`.
 5. Re-apply our adapted files (the paths in `variant/local-changes.txt`) and our own
    files (the paths in `variant/our-files.txt`); adapt them again if upstream changed them.
-   Step 4 replaces `src/` wholesale, so our changes to the ten `src/io/freemytv/` files
+   Step 4 replaces `src/` wholesale, so our changes to the twelve `src/io/freemytv/` files
    above go with it: re-apply them all (each file's own comment says what ours are, and
    `variant/UPSTREAM.md` above has the whole of it). Our banner goes with
    `res/`: re-make it from `variant/artwork/banner_variant.svg` (the command is in
@@ -215,8 +251,8 @@ means, in this order:
 ## Local changes
 
 `local-changes.txt` lists the files that differ from upstream: the two adapted tools and
-the ten `src/io/freemytv/` files the port touched. The tools are upstream's with our paths
-and application id changed. The ten are upstream's files with our changes to them:
+the twelve `src/io/freemytv/` files the port touched. The tools are upstream's with our paths
+and application id changed. The twelve are upstream's files with our changes to them:
 
 | File | What we changed in it |
 |---|---|
@@ -225,7 +261,9 @@ and application id changed. The ten are upstream's files with our changes to the
 | `src/io/freemytv/HomeApps.java` | the always-present Kids button, the `KIDS` kind, and the hiding of the apps the current band's titles are not on |
 | `src/io/freemytv/Prefs.java` | the parent's PIN (a salted SHA-256 hash, never the PIN, in a prefs file of its own so another process's write of the settings cannot take it away), the age band, the child's name, the kids mode and the PIN's wait; the age band, the child's name and the kids mode are in a prefs file of their own (`kids_settings`) for the same reason, written with `commit()` so an app update cannot lose them |
 | `src/io/freemytv/Recs.java` | the catalogue machinery and the vetted picks in the kids mode, upstream's TMDB picks in the normal one, and the mapping from a title to the app that carries it |
-| `src/io/freemytv/SettingsActivity.java` | the PIN in front of the settings, and the age band row behind it |
+| `src/io/freemytv/SettingsActivity.java` | the PIN in front of the settings, the age band row behind it, the "Change PIN" row (the current PIN, then a new one twice), and the Sleep Timer's row, which needs the overlay permission and no ADB |
+| `src/io/freemytv/Capabilities.java` | `NEED_BLANK`: what the Sleep Timer's row needs here — the overlay permission, not upstream's Free My TV mode, which the fork does not have |
+| `src/io/freemytv/SleepTimer.java` | the timer's end: the screen goes dark (`SleepBlank`) instead of the TV's own ADB putting the TV to sleep, which the fork cannot do |
 | `src/io/freemytv/Backdrop.java` | `ambient()`, the backdrop the kids face draws behind its story window |
 | `src/io/freemytv/Click.java` | the kids face's click sound |
 | `src/io/freemytv/Shadows.java` | the `under` overload the kids face's cards use |
@@ -238,7 +276,8 @@ on a file that differs without being listed as well as on a listed file that no 
 `our-files.txt` lists the paths in the vendored tree that are ours, not upstream's
 (`tools/gen_config.py`, `tools/javac.sh`, `res/drawable-nodpi/banner_variant.png`,
 `src/io/freemytv/Guard.java`, `src/io/freemytv/Input.java`, `src/io/freemytv/KidsView.java`,
-`src/io/freemytv/ParentLock.java`, `src/io/freemytv/SpaceSky.java`, `res/xml/guard.xml`,
+`src/io/freemytv/ParentLock.java`, `src/io/freemytv/SleepBlank.java`,
+`src/io/freemytv/SpaceSky.java`, `res/xml/guard.xml`,
 `res/values/guard.xml`, `assets/catalog/4-6.json`, `assets/catalog/7-10.json`,
 `assets/catalog/11-13.json` and `assets/catalog/LICENSE`): upstream has no such files, so
 there is nothing to compare them with and the verifier does not call them extra. It is

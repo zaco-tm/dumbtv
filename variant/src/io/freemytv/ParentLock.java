@@ -13,6 +13,8 @@ import android.view.View;
  * where the remote has them; the keypad (arrows and OK) works on every remote. The first time, with no PIN yet, it
  * asks for a new one twice. Back cancels. After 5 wrong tries it waits 30 s (kept in Prefs, so closing and opening
  * again doesn't reset it).
+ *
+ * It also changes the PIN: with `changing`, the PIN in use comes first, and then a new one twice, in the same steps.
  */
 final class ParentLock {
     interface Listener {
@@ -33,6 +35,8 @@ final class ParentLock {
     private final Listener listener;
     /** What the PIN opens, in the sentence under the title ("... to open the settings"). */
     private final String purpose;
+    /** The PIN is being changed: the one in use first, then a new one twice. */
+    private final boolean changing;
     private final Spring[] pop = new Spring[KEYS.length];
     private final StringBuilder typed = new StringBuilder();
     private final RectF r = new RectF();
@@ -52,9 +56,18 @@ final class ParentLock {
      * parent PIN" (the kids face's own sentence says what the PIN is for).
      */
     ParentLock(View host, Listener listener, String purpose) {
+        this(host, listener, purpose, false);
+    }
+
+    /**
+     * `changing`: the PIN is being changed, so the one in use comes first and then a new one twice. With no PIN yet
+     * there is nothing to change, and it asks for a new one twice, as the first time does.
+     */
+    ParentLock(View host, Listener listener, String purpose, boolean changing) {
         this.host = host;
         this.listener = listener;
         this.purpose = purpose;
+        this.changing = changing;
         for (int i = 0; i < pop.length; i++) pop[i] = new Spring(0.28f, 0.85f, i == focus ? 1 : 0);
         step = Prefs.hasPin() ? ENTER : CREATE;
     }
@@ -70,10 +83,14 @@ final class ParentLock {
     }
 
     private String title() {
+        if (changing) return step == CREATE ? Ui.tr("Create a new parent PIN")
+                : step == CONFIRM ? Ui.tr("Enter the new PIN again") : Ui.tr("Enter the current parent PIN");
         return step == CREATE ? Ui.tr("Create a parent PIN") : step == CONFIRM ? Ui.tr("Enter the same PIN again") : Ui.tr("Parent PIN");
     }
 
     private String subtitle() {
+        if (changing) return step == CREATE ? Ui.tr("Pick 4 digits that only grown-ups know.")
+                : step == CONFIRM ? Ui.tr("To be sure you remember it.") : Ui.tr("The PIN in use now.");
         return step == CREATE ? Ui.tr("Pick 4 digits that only grown-ups know.")
                 : step == CONFIRM ? Ui.tr("To be sure you remember it.")
                 : purpose.isEmpty() ? Ui.tr("Enter the parent PIN.")
@@ -248,8 +265,13 @@ final class ParentLock {
             message = Ui.tr("The PINs didn't match. Start again.");
         } else if (Prefs.checkPin(pin)) {
             Prefs.setPinFails(0, 0);
-            listener.unlocked();
-            return;
+            if (changing) {   // the PIN in use was right: now the new one, twice
+                step = CREATE;
+                first = "";
+            } else {
+                listener.unlocked();
+                return;
+            }
         } else {
             int fails = Prefs.pinFails() + 1;
             if (fails >= TRIES) Prefs.setPinFails(0, SystemClock.elapsedRealtime() + WAIT);

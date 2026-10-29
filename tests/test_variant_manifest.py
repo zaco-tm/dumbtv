@@ -165,6 +165,11 @@ def classify(difference):
         # BACK comes back to the home screen and the panel stays awake. Upstream opens an
         # input in the TV's own app and declares no activity of its own for it.
         return ('input activity', upstream, ours)
+    if kind == 'added' and ours == 'service io.freemytv.SleepBlank':
+        # Ours, and ours only: the sleep timer's end. The screen goes dark over whatever
+        # is on it, with a black window and the screen kept off. Upstream puts the TV to
+        # sleep through the TV's own ADB, and declares no service of its own for it.
+        return ('blank service', upstream, ours)
     return ('UNDOCUMENTED', f'{path}: {upstream} -> {ours}', kind)
 
 
@@ -198,6 +203,8 @@ EXPECTED = Counter([
     ('guard service', None, 'service io.freemytv.Guard'),
     # Ours, and ours only: the input screen, with the picture in a window of ours.
     ('input activity', None, 'activity io.freemytv.Input'),
+    # Ours, and ours only: the sleep timer's end, which puts the screen in the dark.
+    ('blank service', None, 'service io.freemytv.SleepBlank'),
     # The label is on the application and on the seven components that carry one.
     *([('label', 'Free My TV', 'dumbtv home (variant)')] * 8),
     # The task affinity is on two activities.

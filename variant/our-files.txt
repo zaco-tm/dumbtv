@@ -5,6 +5,7 @@ src/io/freemytv/Guard.java
 src/io/freemytv/Input.java
 src/io/freemytv/KidsView.java
 src/io/freemytv/ParentLock.java
+src/io/freemytv/SleepBlank.java
 src/io/freemytv/SpaceSky.java
 res/xml/guard.xml
 res/values/guard.xml
