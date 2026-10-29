@@ -133,5 +133,5 @@ fi
 
 [[ $DRY_RUN == 1 ]] && { note "[dry-run] done"; exit 0; }
 reboot_wait
-note "restored. dumbtv home, personalDNSfilter and SmartTube (if you added it) are still"
+note "restored. AverageTV, personalDNSfilter and SmartTube (if you added it) are still"
 note "installed; remove them in Settings > Applications if you want them gone too."

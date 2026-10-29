@@ -1,6 +1,6 @@
 # Security
 
-dumbtv runs commands on someone's television, and dumbtv home runs as their home
+dumbtv runs commands on someone's television, and AverageTV runs as their home
 screen. If you find a way either could harm a TV, leak data, or be abused by
 someone else on the network, report it privately.
 
@@ -15,7 +15,7 @@ Please do not open a public issue for a security problem until it is fixed.
 ## In scope
 
 - The scripts in `scripts/` and `variant/`
-- dumbtv home, the home screen app: the fork in `variant/`, and the fallback
+- AverageTV, the home screen app: the fork in `variant/`, and the fallback
   launcher's APK published in this repository's releases
 - The blocklists in `data/blocklists/`
 

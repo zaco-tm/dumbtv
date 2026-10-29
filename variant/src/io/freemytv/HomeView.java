@@ -398,7 +398,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             v.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);   // TalkBack reads the items (Spoken)
             addView(v);
         }
-        setContentDescription("Free My TV");
+        setContentDescription("AverageTV");
         drawerLayer.setVisibility(INVISIBLE);
         for (int i = 0; i < topFocus.length; i++) {
             topFocus[i] = new Spring(0.26f, 0.85f, 0);
@@ -2537,7 +2537,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                 text = Ui.trf("Removed from the shelf: {app}", "app", it.label);
             } else {
                 if (shown >= max) {
-                    handler.post(() -> showToast(Ui.tr("The shelf is full. Make room in Free My TV › Shelf.")));
+                    handler.post(() -> showToast(Ui.tr("The shelf is full. Make room in AverageTV › Shelf.")));
                     return;
                 }
                 list.add(it.pkg);

@@ -81,7 +81,9 @@ is_ours() {
 # git-ignored, so it is never part of the tree; only the real files are compared.
 # tools/translate.py writes its own cache next to it (tools/.i18n-cache.json), also
 # git-ignored and not upstream's: the same case, and the same exclusion.
-find_args=(-type f ! -name '.DS_Store' ! -name '.i18n-cache.json')
+# Python leaves __pycache__ behind when a module of ours is imported (it is
+# git-ignored too): a .pyc is never upstream's and never ours.
+find_args=(-type f ! -name '.DS_Store' ! -name '.i18n-cache.json' ! -path '*/__pycache__/*')
 
 rc=0
 

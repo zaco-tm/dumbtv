@@ -151,6 +151,8 @@ def classify(difference):
             return ('banner', upstream, ours)
         if name == '@taskAffinity':
             return ('task affinity', upstream, ours)
+        if name == '@theme':
+            return ('theme', upstream, ours)
         if name == '@name' and _parent_of(path) in COMPONENT_TAGS:
             return ('component name', upstream, ours)
     if kind == 'removed' and upstream in ('category android.intent.category.HOME',
@@ -206,7 +208,9 @@ EXPECTED = Counter([
     # Ours, and ours only: the sleep timer's end, which puts the screen in the dark.
     ('blank service', None, 'service io.freemytv.SleepBlank'),
     # The label is on the application and on the seven components that carry one.
-    *([('label', 'Free My TV', 'dumbtv home (variant)')] * 8),
+    *([('label', 'Free My TV', 'AverageTV')] * 8),
+    # The theme is ours now too: upstream's style is called FreeMyTV.Home.
+    *([('theme', '@style/FreeMyTV.Home', '@style/AverageTV.Home')] * 3),
     # The task affinity is on two activities.
     *([('task affinity', 'io.freemytv.settings', 'tv.dumbtv.variant.settings')] * 2),
 ])
@@ -336,8 +340,8 @@ class ManifestDiffTests(unittest.TestCase):
         # in the manifest, not only allowed by it.
         found = Counter(classify(difference)[0] for difference in manifest_differences())
         for kind in ('label', 'version', 'provider authority', 'task affinity',
-                     'component name', 'home category', 'banner', 'guard service',
-                     'input activity'):
+                     'component name', 'home category', 'banner', 'theme',
+                     'guard service', 'input activity'):
             with self.subTest(kind=kind):
                 self.assertTrue(found[kind] > 0, kind)
 

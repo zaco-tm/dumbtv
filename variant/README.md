@@ -1,7 +1,7 @@
-# dumbtv home (variant)
+# AverageTV
 
 The variant: free-my-tv's app, vendored, with our application id
-(`tv.dumbtv.variant`) and our own signing key. It is dumbtv home — the one home
+(`tv.dumbtv.variant`) and our own signing key. It is AverageTV — the one home
 screen app this repository ships.
 
 It installs beside the old launcher (`tv.dumbtv.home`), which stays on the television
@@ -101,9 +101,14 @@ adb shell appops get tv.dumbtv.variant SYSTEM_ALERT_WINDOW
 
 `./variant/install.sh` sets the first two; the commands are here for a TV where the
 app was installed by hand. `SYSTEM_ALERT_WINDOW` is the sleep timer's overlay, and
-`REQUEST_INSTALL_PACKAGES` belongs to upstream's self-updater. Both are granted over adb
+`REQUEST_INSTALL_PACKAGES` belongs to the self-updater. Both are granted over adb
 here rather than by making the owner click through an installer's warning. Stage 3
 removes both permissions along with the code that wanted them.
+
+The self-updater looks at **this** repository's releases (github.com/zaco-tm/dumbtv),
+never at another project's. It stays off as it stands: only an APK signed with the
+release key is taken, and this fork is signed with its own key, so the check finds
+nothing and says nothing.
 
 The third line is upstream's exact-alarm permission. `SCHEDULE_EXACT_ALARM` became an
 appop in Android 12, so on Fire OS 8 (Android 11) `appops` may answer
@@ -133,6 +138,18 @@ which leaves the window focus on the paused launcher and drops remote key events
 home screen shows but the remote does not drive it, that is this known quirk rather than a
 fault here — upstream keeps a separate `FireHomeActivity` for exactly this reason.
 
+The settings screen has one row that switches the home screen between **AverageTV** and
+**Original** (the TV's factory home screen). On Fire TV the switch is refused, and it
+says why: the HOME key belongs to Amazon's home screen, and AverageTV takes it with its
+guard, so the switch cannot change it. On a board where the TV's own home screen can be
+replaced, the switch is what does it.
+
+The app's log tag is `AverageTV`, so its own log is:
+
+```sh
+adb logcat -s AverageTV
+```
+
 ## The fork takes the HOME key
 
 Fire OS protects Amazon's launcher and lets no third-party app be the home app, so HOME
@@ -160,14 +177,14 @@ adb shell settings --user 0 get secure enabled_accessibility_services
 adb shell dumpsys accessibility | grep -o 'Service\[label=[^,]*'
 ```
 
-The fork's service is `dumbtv home (variant) button`, the old launcher's is
+The fork's service is `AverageTV guard`, the old launcher's is
 `dumbtv home button`. The two labels differ on purpose, so the two guards can be told
 apart there and in the TV's accessibility settings.
 
-The dump cuts a long label short at 22 characters: the fork's comes out as
-`Service[label=dumbtv home (variant) b…`, with an ellipsis where the rest was. The two
-labels part at the eleventh character, so what is left of the cut still says which
-service it is — the old launcher's is short enough to print whole.
+The dump cuts a long label short at 22 characters. Both labels are shorter than that,
+so both print whole: `Service[label=AverageTV guard]` is the fork's and
+`Service[label=dumbtv home button]` is the old launcher's. They part at the first
+character, so a cut label could never be read as the other one.
 
 **HOME has to land on the fork's home screen.** That is the proof, and it is the only
 one: a bound service says nothing about whether the key arrives.
@@ -179,7 +196,7 @@ adb shell dumpsys window | grep mCurrentFocus
 ```
 
 Both must name `tv.dumbtv.variant/io.freemytv.HomeActivity`. `./scripts/verify.sh`
-checks all of it and says which product it is about: `dumbtv home (variant)` when the
+checks all of it and says which product it is about: `AverageTV` when the
 fork is in front, `the old launcher (fallback)` when the old launcher is.
 
 Do **not** use `resolve-activity` for this. On the Ember 55 it answers
@@ -292,13 +309,13 @@ own TV, so the variant has its own:
 
 It is the same TV mark as the old launcher's banner, in that launcher's own
 colours, with our wordmark beside it. The label under the tile is the app's name,
-`dumbtv home (variant)`, which the launcher shows when the tile is focused.
+`AverageTV`, which the launcher shows when the tile is focused.
 
 ## The TV's inputs
 
 The home screen's Inputs row lists the TV's HDMI inputs, and a tile named after a device that
 talks HDMI-CEC (an Apple TV on the Ember 55) carries that device's own name. Tapping a tile
-opens the input on **our** screen — `io.freemytv.Input`, the port of `tv.dumbtv.home`'s input
+opens the input on **our** screen — `io.freemytv.Input`, the port of the old launcher's input
 screen — with the picture in a window of ours:
 
 - BACK returns to the home screen, because the input is our own screen and not another app's.

@@ -74,7 +74,7 @@ saved as `YOUTUBE=0` unless you said yes, and `all.sh` only runs this when it is
    Appstore can hand it back. `--remove` uninstalls it instead: it lives in
    `/data`, so that is a real deletion, and the Appstore is the way back.
 4. The fork shows the apps the television lists, so SmartTube is picked in the TV's
-   own settings: dumbtv home has no app-order file of its own.
+   own settings: AverageTV has no app-order file of its own.
 
 The stock app has to be disabled, not just hidden: Amazon's launcher and any
 voice-search intent still resolve to it otherwise, and a child who finds the "all

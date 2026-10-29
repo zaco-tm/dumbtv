@@ -38,7 +38,7 @@ target=$(printf '%s\n' "$badging" | sed -nE "s/^targetSdkVersion:'([0-9]+)'.*/\1
 [ "$target" = 33 ] || { echo "expected targetSdkVersion 33, found $target"; exit 1; }
 # The label is ours, not upstream's: the TV shows our name.
 label=$(printf '%s\n' "$badging" | sed -nE "s/^application-label:'(.*)'$/\1/p" | head -1)
-[ "$label" = "dumbtv home (variant)" ] || { echo "expected the label 'dumbtv home (variant)', found '$label'"; exit 1; }
+[ "$label" = "AverageTV" ] || { echo "expected the label 'AverageTV', found '$label'"; exit 1; }
 # The banner is ours too, and it is the picture the launcher draws as the app's tile:
 # upstream's has the words "Free My TV" in it, which is not what the tile on the TV says.
 banner=$(printf '%s\n' "$badging" | sed -nE "s/^application:.*banner='([^']*)'.*/\1/p" | head -1)

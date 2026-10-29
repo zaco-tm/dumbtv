@@ -51,7 +51,10 @@ class TranslateToolTests(unittest.TestCase):
             self.assertNotIn('Traceback', done.stderr)
             # It read our catalogues: it says which ones are out of date.
             self.assertIn('obsolete key', done.stdout)
-            self.assertIn('en:', done.stdout)
+            self.assertTrue([l for l in done.stdout.splitlines() if l.startswith('de:')])
+            # en.json is ours and in sync with the code, so the check has nothing to
+            # say about it. A rename that misses a string in the code shows up here.
+            self.assertFalse([l for l in done.stdout.splitlines() if l.startswith('en:')])
 
     def test_the_check_mode_writes_nothing(self):
         # --check only reads. The write modes rewrite assets/i18n/en.json, and the

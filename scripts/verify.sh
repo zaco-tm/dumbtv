@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Proof that it worked: blocked hosts must answer 0.0.0.0 or NXDOMAIN, everyday
-# hosts must still resolve, and HOME must land on dumbtv home unless the user kept
+# hosts must still resolve, and HOME must land on AverageTV unless the user kept
 # Amazon's. Exit code 0 means every enabled check passed.
 # Usage: ./scripts/verify.sh
 set -uo pipefail
@@ -67,7 +67,7 @@ if [[ $LAUNCHER == 0 ]]; then
 elif [[ $SDK -lt 26 ]]; then
   # Fire OS 6 is below the fork's floor: it needs Android 8, and the home screen
   # there is the old launcher's. There is nothing of ours to check.
-  printf '%-10s %-38s %s\n' skip home "Fire OS 6: dumbtv home does not run on this TV; the old launcher is the home screen"
+  printf '%-10s %-38s %s\n' skip home "Fire OS 6: AverageTV does not run on this TV; the old launcher is the home screen"
 else
   # An enabled setting can outlive the process/binding. Check the current user's
   # exact component AND the live bound-service section, without sending HOME.
@@ -107,7 +107,7 @@ else
     fail=1
   elif [[ -z $product ]]; then
     if [[ $user_ok == 1 ]]; then
-      printf '%-10s %-38s %s\n' FAIL home "no dumbtv home is in charge; no dumbtv guard is enabled"; fail=1
+      printf '%-10s %-38s %s\n' FAIL home "no AverageTV is in charge; no AverageTV guard is enabled"; fail=1
     else
       printf '%-10s %-38s %s\n' FAIL home "cannot verify accessibility binding; inspect dumpsys accessibility"; fail=1
     fi
@@ -126,7 +126,7 @@ else
     printf '%-10s %-38s %s\n' FAIL home-speed "min_futurity=0 missing; re-run $install_cmd"; fail=1
   fi
   if [[ -z $product ]]; then
-    printf '%-10s %-38s %s\n' skip home-key "no dumbtv home is in charge"
+    printf '%-10s %-38s %s\n' skip home-key "no AverageTV is in charge"
   else
     # A bound accessibility service proves nothing about the swap: on Fire OS 8 the
     # launch can be refused by the background-activity-start rule even when the
@@ -207,9 +207,9 @@ fi
 if [[ $LAUNCHER == 0 ]]; then
   printf '%-10s %-38s %s\n' skip alarm "LAUNCHER=0, not checked"
 elif [[ $SDK -lt 26 ]]; then
-  printf '%-10s %-38s %s\n' skip alarm "Fire OS 6: dumbtv home does not run on this TV"
+  printf '%-10s %-38s %s\n' skip alarm "Fire OS 6: AverageTV does not run on this TV"
 else
-  # dumbtv home needs this to answer HOME immediately; an update can drop it.
+  # AverageTV needs this to answer HOME immediately; an update can drop it.
   if [[ $futurity == 0 ]]; then
     printf '%-10s %-38s %s\n' ok alarm "min_futurity=0"
   else

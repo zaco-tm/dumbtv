@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs dumbtv home (the free-my-tv fork in variant/) and gives it the HOME
+# Installs AverageTV (the free-my-tv fork in variant/) and gives it the HOME
 # button. Fire OS ignores "default home" and protects Amazon's launcher, so the
 # takeover runs through a small accessibility service, the Guard. variant/README.md
 # has the details. Usage: ./scripts/variant.sh [--dry-run] [-y]
@@ -17,7 +17,7 @@ fi
 PKG=tv.dumbtv.variant
 
 step "plan"
-note "install dumbtv home: open source, no internet permission, no ad ID"
+note "install AverageTV: open source, no ad ID, the internet only for the film picks"
 note "the APK is built from the sources in this repo, not downloaded"
 note "Amazon's launcher stays installed, so the TV can always go back to it"
 if [[ $DRY_RUN == 1 ]]; then
@@ -34,7 +34,7 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
   [[ $home == "$PKG"/* ]] && break
 done
 if [[ $home == "$PKG"/* ]]; then
-  note "home screen is dumbtv home"
+  note "home screen is AverageTV"
 elif [[ -z $home ]]; then
   note "could not read which app is in front; ./scripts/verify.sh checks the takeover"
 else

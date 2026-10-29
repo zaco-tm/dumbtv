@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LABEL = 'Service[label=dumbtv home button, feedbackType[FEEDBACK_GENERIC]]'
 # The fork's guard has its own label on purpose: the dump names a bound service by
 # its label, never by its component, and the two guards are never bound at once.
-FORK_LABEL = 'Service[label=dumbtv home (variant) button, feedbackType[FEEDBACK_GENERIC]]'
+FORK_LABEL = 'Service[label=AverageTV guard, feedbackType[FEEDBACK_GENERIC]]'
 FORK_GUARD = 'tv.dumbtv.variant/io.freemytv.Guard'
 FORK_HOME = 'tv.dumbtv.variant/io.freemytv.HomeActivity'
 OLD_GUARD = 'tv.dumbtv.home/tv.dumbtv.home.Guard'
@@ -125,13 +125,13 @@ class VerifyTests(VerifyHarness):
 
     def test_bound_android9_class_name_after_update(self):
         # Seen on a Fire OS 7 TV right after adb install -r: the label is not loaded yet.
-        by_class = FORK_LABEL.replace('dumbtv home (variant) button', 'io.freemytv.Guard')
+        by_class = FORK_LABEL.replace('AverageTV guard', 'io.freemytv.Guard')
         dump = f'User state[attributes:{{id=0, currentUser=true}}\n services:{{{by_class}}}]'
         result, _ = self.run_verify(dump)
         self.assertEqual(result.returncode, 0, result.stdout)
 
     def test_other_class_name_does_not_pass(self):
-        other = FORK_LABEL.replace('dumbtv home (variant) button', 'io.freemytv.GuardX')
+        other = FORK_LABEL.replace('AverageTV guard', 'io.freemytv.GuardX')
         dump = f'User state[attributes:{{id=0, currentUser=true}}\n services:{{{other}}}]'
         result, _ = self.run_verify(dump)
         self.assertEqual(result.returncode, 1)
@@ -155,7 +155,10 @@ class VerifyTests(VerifyHarness):
         self.assertEqual(result.returncode, 0, result.stdout)
 
     def test_similar_labels_or_components_do_not_pass(self):
-        for dump, component in [(self.modern(FORK_LABEL.replace('button,', 'button fake,')),
+        # The label has to be ours and only ours: a label that merely looks like
+        # ours is another service, and so is a component that merely looks like
+        # ours.
+        for dump, component in [(self.modern(FORK_LABEL.replace('guard,', 'guard fake,')),
                                  'tv.dumbtv.variant/.io.freemytv.Guard'),
                                 (self.modern(FORK_LABEL), 'tv.dumbtv.variant.fake/io.freemytv.Guard')]:
             with self.subTest(component=component):
@@ -290,7 +293,7 @@ class FallbackTests(VerifyHarness):
         # Something else's accessibility service is enabled: no dumbtv home screen.
         result, _ = self.run_verify(self.modern(''), component='example.reader/.Service')
         self.assertEqual(result.returncode, 1, result.stdout)
-        self.assertIn('no dumbtv home is in charge', result.stdout)
+        self.assertIn('no AverageTV is in charge', result.stdout)
 
     def test_the_fork_s_guard_must_be_the_one_bound(self):
         # The setting names the fork's guard, but the fallback's service is the
@@ -299,7 +302,7 @@ class FallbackTests(VerifyHarness):
                                     component=FORK_GUARD,
                                     landed=FORK_HOME)
         self.assertEqual(result.returncode, 1)
-        self.assertIn('dumbtv home (variant): enabled but not bound', result.stdout)
+        self.assertIn('AverageTV: enabled but not bound', result.stdout)
 
     def test_home_on_the_fallback_is_a_failure_for_the_fork(self):
         # The fork's guard is bound, but HOME still lands on the fallback.

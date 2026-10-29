@@ -10,14 +10,14 @@
 #
 # Usage: guard_bound <user> [label] [class]
 #   label  what the bound service is called in the dump. The default is this repo's
-#          product's: "dumbtv home (variant) button". The fallback launcher's is
+#          product's: "AverageTV guard". The fallback launcher's is
 #          "dumbtv home button".
 #   class  what the bound service is called before its resources load. The default is
 #          this repo's product's: "io.freemytv.Guard". The fallback launcher's is
 #          "tv.dumbtv.home.Guard".
 # Return 0 = bound, 1 = a recognized empty/other-service section, 2 = unknown.
 guard_bound() {
-  local uid=$1 wanted=${2:-dumbtv home (variant) button} klass=${3:-io.freemytv.Guard}
+  local uid=$1 wanted=${2:-AverageTV guard} klass=${3:-io.freemytv.Guard}
   awk -v uid="$uid" -v wanted="$wanted" -v klass="$klass" '
     /User state\[/ { user = ""; inside = 0 }
     /attributes:\{id=[0-9]+[,}]/ {
@@ -41,9 +41,9 @@ guard_bound() {
       # If they were, a dump that cut the shorter one short would still leave the
       # beginning of the longer one, and the check for one guard would answer for
       # the other. The fallback is "dumbtv home button" and the fork is
-      # "dumbtv home (variant) button": they part at the eleventh character, so a
-      # dump would have to cut a label to ten characters to confuse them, and the
-      # cut on this television is at twenty-two.
+      # "AverageTV guard": they part at the first character, so a dump would have
+      # to cut a label to nothing to confuse them, and the cut on this television
+      # is at twenty-two.
       rest = $0
       while ((p = index(rest, "Service[label=")) > 0) {
         rest = substr(rest, p + 14)

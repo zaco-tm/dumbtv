@@ -4,7 +4,7 @@
 # The product table at the end is shared: scripts/verify.sh and variant/install.sh both
 # need to know which dumbtv product owns HOME, and what tells the two apart.
 
-# Starts dumbtv home at the end of the install.
+# Starts AverageTV at the end of the install.
 #
 # `am start -W` waits until the activity has drawn, and a sleeping TV never draws it, so
 # an install that ran while the TV fell asleep hung for ever. The TV is woken first (a
@@ -26,7 +26,7 @@ start_home() {
   # "am start -W" that never draws waits for ever - on the host and on the television.
   pkill -P "$pid" 2>/dev/null || true
   kill "$pid" 2>/dev/null || true
-  echo "note: dumbtv home did not draw within $bound s; is the TV asleep? Press a button on the remote."
+  echo "note: AverageTV did not draw within $bound s; is the TV asleep? Press a button on the remote."
   return 0
 }
 
@@ -108,7 +108,7 @@ set_futurity() {
 dumbtv_home_product() {
   case $1 in
     tv.dumbtv.variant)
-      printf '%s\n' 'tv.dumbtv.variant|io.freemytv.Guard|dumbtv home (variant) button|tv.dumbtv.variant/io.freemytv.HomeActivity|dumbtv home (variant)|tv.dumbtv.variant/io.freemytv.Guard tv.dumbtv.variant/.io.freemytv.Guard' ;;
+      printf '%s\n' 'tv.dumbtv.variant|io.freemytv.Guard|AverageTV guard|tv.dumbtv.variant/io.freemytv.HomeActivity|AverageTV|tv.dumbtv.variant/io.freemytv.Guard tv.dumbtv.variant/.io.freemytv.Guard' ;;
     tv.dumbtv.home)
       printf '%s\n' 'tv.dumbtv.home|tv.dumbtv.home.Guard|dumbtv home button|tv.dumbtv.home/.Home|the old launcher (fallback)|tv.dumbtv.home/tv.dumbtv.home.Guard tv.dumbtv.home/.Guard' ;;
     *) return 1 ;;

@@ -28,7 +28,7 @@ asked to have uninstalled come back from the Appstore.
 
 **Does the project itself phone home?**
 No. On your computer the scripts download the personalDNSfilter app from F-Droid
-and the HaGeZi tracker list; SmartTube too, if you ask for it. dumbtv home is built
+and the HaGeZi tracker list; SmartTube too, if you ask for it. AverageTV is built
 from this repository, not downloaded, and the fallback launcher's APK comes from this
 repository's releases, checked against a pinned SHA-256. Nothing is uploaded. The
 old launcher had no internet permission at all; the fork has one, for its film picks.
@@ -82,7 +82,7 @@ Only to run the scripts. After that the TV works on its own.
 Wi-Fi: `adb connect <tv-ip>:5555`.
 
 **Pressing HOME shows Amazon's home for a few seconds.**
-It should land on dumbtv home in about a quarter of a second. Run
+It should land on AverageTV in about a quarter of a second. Run
 `./scripts/variant.sh -y`; see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ## Other TVs
@@ -111,7 +111,7 @@ permission to install apps. It asked for no permissions at all on Fire OS 7 and 
 Check it yourself: `aapt2 dump permissions dumbtv-home.apk` lists three, each limited
 to Android 8.1 and earlier, which only Fire OS 6's Keeper uses.
 
-dumbtv home is now the fork of the free-my-tv app, built from this repository rather
+AverageTV is now the fork of the free-my-tv app, built from this repository rather
 than downloaded. It takes the internet for its film picks, so it asks for upstream's
 eight permissions and nothing else; `variant/check-apk.sh` checks that list against
 the built APK.

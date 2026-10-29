@@ -96,7 +96,7 @@ prints `Success` and changes nothing: HOME still resolves to
 `com.amazon.tv.launcher`, which Amazon protects, as it does
 `com.amazon.firehomestarter`.
 
-So dumbtv home ([variant/](../variant/README.md)) watches for Amazon's home
+So AverageTV ([variant/](../variant/README.md)) watches for Amazon's home
 instead and replaces it.
 
 **Fire OS 7 and 8: an accessibility service, `Guard`.** It receives window changes
@@ -111,8 +111,8 @@ only and reads no screen content.
   at once: in `settings global alarm_manager_constants` up to Android 11, and in
   `device_config` namespace `alarm_manager` on Android 12 and later, which ignore
   the global setting.
-- A plain overlay covers Amazon's home before it draws and is removed once dumbtv
-  home is on screen. HOME from an app shows about 0.3 s of black.
+- A plain overlay covers Amazon's home before it draws and is removed once AverageTV
+  is on screen. HOME from an app shows about 0.3 s of black.
 - Fire OS 8 (Android 11) only lets an app start an activity while it has a visible
   window. The cover is that window, so `Guard` fires the launch after the cover has
   drawn. No permission is involved.

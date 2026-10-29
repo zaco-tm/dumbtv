@@ -132,6 +132,13 @@ elif words[:4] == ['pm', 'uninstall', '--user', '0']:
     print('Success')
 elif words[:2] == ['dumpsys', 'package']:
     print('    userId=10050')
+elif words[:3] == ['dumpsys', 'activity', 'services']:
+    # A foreground service of a package, the way the old launcher's keeper shows up
+    # on Fire OS 6 (the one that holds HOME there, without an accessibility service).
+    pkg = words[3] if len(words) > 3 else ''
+    if pkg in apps:
+        print(f'ServiceRecord{{4f3a2b u0 {pkg}/.Keeper}}')
+        print('  isForeground=true')
 elif command == 'dumpsys accessibility':
     # The bound services are the enabled ones whose package is installed. AOSP names
     # a bound service by its label, never by its component, so the labels come from

@@ -32,7 +32,7 @@ import java.security.MessageDigest;
 
 /**
  * Updates from GitHub's releases (Android only). Once a week, and from Home Settings > Updates, the latest release is
- * looked up; a newer one's FreeMyTV.apk is downloaded and checked (GitHub's size and SHA-256, a newer version, the
+ * looked up; a newer one's AverageTV.apk is downloaded and checked (GitHub's size and SHA-256, a newer version, the
  * project's key), then handed on OK to Android's installer, which asks before installing. Only the APK from the
  * releases (--generic, the project's key) takes them: a build made on a computer has its own key and config, so it's
  * only told that a new version is out, and only when asked (nothing in the background could come of it).
@@ -43,12 +43,17 @@ import java.security.MessageDigest;
 final class Updates {
     private Updates() {}
 
-    private static final String LATEST = "https://api.github.com/repos/simbasjungles/free-my-tv/releases/latest";
+    // Our own releases, never another project's: this fork is not built from upstream's
+    // repository, so an APK from there would be an app we did not ship. (The fork's
+    // own releases are not published yet, so the check finds nothing and stays quiet.)
+    private static final String LATEST = "https://api.github.com/repos/zaco-tm/dumbtv/releases/latest";
     // The only place the APK may come from: this repository's releases (github.com redirects to its download host).
-    private static final String RELEASES = "https://github.com/simbasjungles/free-my-tv/releases/download/";
+    private static final String RELEASES = "https://github.com/zaco-tm/dumbtv/releases/download/";
     // The release key's certificate, as `apksigner verify --print-certs` shows it: only APKs signed with it come in.
+    // This is still upstream's key, which this fork is not signed with, so the check stays off. It is turned on by
+    // putting our own key's digest here, when we publish releases of our own.
     private static final String RELEASE_CERT = "b85d4ff69cb42bfb1837ee0279506363954470b16402a4165f2f095886d19204";
-    private static final String ASSET = "FreeMyTV.apk";
+    private static final String ASSET = "AverageTV.apk";
     private static final long MAX_SIZE = 30L << 20;   // the APK is about 1.5 MB
     private static final long WEEK = 7 * 24 * 3600_000L;
     static final int JOB = 2900;
@@ -179,7 +184,7 @@ final class Updates {
             out.write(v.getBytes(StandardCharsets.UTF_8));
         } catch (IOException ignored) {
         }
-        Toast.makeText(a, Ui.trf("Free My TV {version} is ready: Home Settings > Updates.", "version", v), Toast.LENGTH_LONG).show();
+        Toast.makeText(a, Ui.trf("AverageTV {version} is ready: Home Settings > Updates.", "version", v), Toast.LENGTH_LONG).show();
     }
 
     // MARK: - Check and download
@@ -218,7 +223,7 @@ final class Updates {
                 throw new IOException("unexpected " + ASSET + ": " + url + ", " + size + " bytes");
             }
             // One name per upload: an asset replaced under the same tag is fetched again.
-            String name = "FreeMyTV-" + version + "-" + Integer.toHexString((digest + size).hashCode()) + ".apk";
+            String name = "AverageTV-" + version + "-" + Integer.toHexString((digest + size).hashCode()) + ".apk";
             if (name.equals(before.optString("refused"))) {   // this upload was already found not to fit
                 set(c, FAILED, version, OTHER);
                 return false;
@@ -450,7 +455,7 @@ final class Updates {
         HttpURLConnection h = (HttpURLConnection) new URL(url).openConnection();
         h.setConnectTimeout(10000);
         h.setReadTimeout(30000);
-        h.setRequestProperty("User-Agent", "FreeMyTV");
+        h.setRequestProperty("User-Agent", "AverageTV");
         return h;
     }
 

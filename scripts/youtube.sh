@@ -104,13 +104,13 @@ fi
 
 step "home screen"
 if present tv.dumbtv.variant; then
-  # dumbtv home takes its app list from the television, not from a file of its own:
+  # AverageTV takes its app list from the television, not from a file of its own:
   # the TV's own picker decides which apps are on the home screen, and SmartTube
   # has to be picked there before it shows up on the shelf.
-  note "dumbtv home shows the apps the TV lists: pick SmartTube in the TV's own"
+  note "AverageTV shows the apps the TV lists: pick SmartTube in the TV's own"
   note "Settings > Apps on home screen, and it appears on the shelf."
 else
-  note "dumbtv home is not installed; skipping the home-screen step"
+  note "AverageTV is not installed; skipping the home-screen step"
 fi
 
 step "one-time settings (remote, on the TV)"

@@ -184,8 +184,8 @@ fighting, no OTA risk, nothing to re-apply after an update.
 
 1. **Android TV in the scripts.** The package list has started; `debloat.sh` and
    `variant.sh` still only run on Fire OS.
-2. **Launcher takeover on Android TV** by disabling the stock launcher, so dumbtv
-   home works there the way it does on Fire OS.
+2. **Launcher takeover on Android TV** by disabling the stock launcher, so AverageTV
+   works there the way it does on Fire OS.
 3. **A `dumb-panel.sh` script** that sets the vendor's own boot-to-HDMI option
    where it exists (Samsung hospitality, LG installer menu, VIDAA hotel mode) and
    tells you the remote sequence on models where it does not.

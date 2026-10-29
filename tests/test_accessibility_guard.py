@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ACCESSIBILITY = ROOT / 'scripts' / 'accessibility.sh'
-FORK_LABEL = 'dumbtv home (variant) button'
+FORK_LABEL = 'AverageTV guard'
 OLD_LABEL = 'dumbtv home button'
 
 
@@ -95,26 +95,24 @@ class GuardBoundTests(unittest.TestCase):
 
     def test_a_label_the_dump_cut_short_still_counts(self):
         # The dump cuts a long label short and prints an ellipsis: the fork's label
-        # is "dumbtv home (variant) button" and the dump shows
-        # "dumbtv home (variant) b…". What is left of it is still the beginning of
-        # the label, so the fork's guard is found.
-        dump = dump_of('Service[label=dumbtv home (variant) b…, feedbackType[FEEDBACK_GENERIC]]')
+        # is "AverageTV guard" and the dump shows "AverageTV gu…". What is left of it
+        # is still the beginning of the label, so the fork's guard is found.
+        dump = dump_of('Service[label=AverageTV gu…, feedbackType[FEEDBACK_GENERIC]]')
         self.assertEqual(guard_bound(dump, '0', FORK_LABEL, 'io.freemytv.Guard'), 0)
 
     def test_a_cut_short_label_of_the_fallback_is_not_the_fork_s_guard(self):
         # The other way round, and the one that matters: the dump cuts the fallback's
         # label short, and what is left of it must not be taken for the fork's. The
-        # two labels part at the eleventh character, so a cut to ten characters or
-        # fewer is all it would take to confuse them; the cut on this television is at
-        # twenty-two. If the labels ever grew into one another again, this test is
-        # what would say so.
+        # two labels part at the first character, so no cut can make one look like
+        # the other; the cut on this television is at twenty-two. If the labels ever
+        # grew into one another again, this test is what would say so.
         dump = dump_of('Service[label=dumbtv home bu…, feedbackType[FEEDBACK_GENERIC]]')
         self.assertEqual(guard_bound(dump, '0', FORK_LABEL, 'io.freemytv.Guard'), 1)
 
     def test_a_cut_short_label_that_is_only_a_few_characters_does_not_count(self):
         # A cut of a few characters is a common word and could be the beginning of
         # any label at all, so it must not be taken for ours.
-        dump = dump_of('Service[label=dumbtv…, feedbackType[FEEDBACK_GENERIC]]')
+        dump = dump_of('Service[label=Averag…, feedbackType[FEEDBACK_GENERIC]]')
         self.assertEqual(guard_bound(dump, '0', FORK_LABEL, 'io.freemytv.Guard'), 1)
 
     def test_the_whole_label_of_the_fallback_is_not_the_fork_s_guard(self):

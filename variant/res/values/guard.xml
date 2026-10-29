@@ -8,8 +8,8 @@
 
          The dump also cuts a long label short and prints an ellipsis, so the label
          that is left has to be enough to tell the two apart: this one and the old
-         launcher's ("dumbtv home button") part at the eleventh character, and the
-         cut on this television is at twenty-two. -->
-    <string name="guard_label">dumbtv home (variant) button</string>
-    <string name="guard_description">Sends the HOME button to the dumbtv home screen instead of Amazon\'s. It reads no screen content and has no internet access.</string>
+         launcher's ("dumbtv home button") part at the first character, and the cut on
+         this television is at twenty-two. -->
+    <string name="guard_label">AverageTV guard</string>
+    <string name="guard_description">Sends the HOME button to AverageTV instead of Amazon\'s. It reads no screen content and sends nothing out.</string>
 </resources>

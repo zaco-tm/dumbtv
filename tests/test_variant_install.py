@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FORK_GUARD = 'tv.dumbtv.variant/io.freemytv.Guard'
 OLD_GUARD = 'tv.dumbtv.home/tv.dumbtv.home.Guard'
 LABELS = {
-    FORK_GUARD: 'dumbtv home (variant) button',
+    FORK_GUARD: 'AverageTV guard',
     OLD_GUARD: 'dumbtv home button',
 }
 
@@ -126,6 +126,24 @@ class VariantInstallTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn('Android 8', result.stderr)
         self.assertEqual(state['settings']['secure/enabled_accessibility_services'], OLD_GUARD)
+
+    def test_the_rollback_arms_the_keeper_on_fire_os_6(self):
+        # Fire OS 6 refuses third-party accessibility services, so the fallback holds
+        # HOME there with a keeper of its own. The rollback has to arm that, not bind
+        # a guard that would never bind.
+        result, commands, state = self.run_install(self.state(sdk=25), '--undo')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('appops set tv.dumbtv.home GET_USAGE_STATS allow', commands)
+        self.assertIn('keeper', result.stdout)
+
+    def test_the_rollback_says_so_when_the_keeper_does_not_start(self):
+        # The fallback is not installed: nobody can hold HOME, and the rollback has to
+        # say that instead of claiming it worked.
+        state = self.state(sdk=25)
+        del state['packages']['tv.dumbtv.home']
+        result, _, _ = self.run_install(state, '--undo')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('keeper did not start', result.stderr)
 
     def test_the_full_undo_takes_both_guards_out(self):
         # scripts/restore.sh needs the undo that gives HOME back to Amazon's

@@ -25,7 +25,7 @@ if is_fireos; then
   if [[ $SDK -lt 28 ]]; then
     note "fire os 6     own package lists, no RUN_ANY_IN_BACKGROUND, and HOME is held by the"
     note "              old launcher's Keeper because 6.7 refuses accessibility services"
-    note "              dumbtv home itself needs Android 8: on this TV the old launcher stays"
+    note "              AverageTV itself needs Android 8: on this TV the old launcher stays"
   fi
 else
   note "platform      NOT Amazon hardware — read docs/OTHER-TVS.md before running debloat.sh"
@@ -37,7 +37,7 @@ note "third-party   $(dev 'pm list packages -3' | sed 's/package://' | grep -vc 
 note "home screen   $(front_activity | awk -F/ '{print $1}')"
 note "free ram      $(dev 'dumpsys meminfo' | sed -n 's/.*Free RAM: *\([0-9,]*K\).*/\1/p' | head -1)"
 note "dns filter    $(present dnsfilter.android && echo installed || echo 'not installed')"
-note "home app     $(present tv.dumbtv.variant && echo 'dumbtv home installed' || echo 'not installed')"
+note "home app     $(present tv.dumbtv.variant && echo 'AverageTV installed' || echo 'not installed')"
 
 step "the pass would"
 note "disable $(cleanup_list | wc -l | tr -d ' ') Amazon packages, minus anything in never-disable.txt"
@@ -50,12 +50,12 @@ if [[ $DNSFILTER == 1 ]]; then
   note "install a DNS filter that blocks Amazon telemetry$([[ $ALEXA == 0 ]] && printf ', Alexa') and the OTA servers"
 fi
 if [[ $LAUNCHER == 1 ]]; then
-  note "replace the home screen with dumbtv home (the free-my-tv fork in variant/, no internet access)"
+  note "replace the home screen with AverageTV (the free-my-tv fork in variant/, the internet only for the film picks)"
 fi
 note "reboot twice (about 5 minutes)"
 
 step "not touched, ever"
-note "/system (dm-verity), the bootloader, dumbtv home's own package (tv.dumbtv.variant), settings, TV input, device control, Bluetooth pairing"
+note "/system (dm-verity), the bootloader, AverageTV's own package (tv.dumbtv.variant), settings, TV input, device control, Bluetooth pairing"
 note "see ${DATA#$ROOT/}/$(basename "$(dirname "$(fos never-disable.txt)")")/never-disable.txt"
 
 step "snapshot before anything changes"

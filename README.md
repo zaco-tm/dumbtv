@@ -17,11 +17,11 @@ Ads, tracking and clutter out of your Fire TV. Your apps and HDMI inputs stay.</
 </p>
 
 <p align="center">
-  <a href="https://github.com/humblemuzzu/dumbtv/stargazers"><img src="https://img.shields.io/github/stars/humblemuzzu/dumbtv?style=flat&color=4C8DFF" alt="Stars"></a>
-  <a href="https://github.com/humblemuzzu/dumbtv/releases/latest"><img src="https://img.shields.io/github/v/release/humblemuzzu/dumbtv?label=dumbtv%20home&color=4C8DFF" alt="Latest release"></a>
-  <a href="https://github.com/humblemuzzu/dumbtv/actions/workflows/validate.yml"><img src="https://github.com/humblemuzzu/dumbtv/actions/workflows/validate.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/zaco-tm/dumbtv/stargazers"><img src="https://img.shields.io/github/stars/zaco-tm/dumbtv?style=flat&color=4C8DFF" alt="Stars"></a>
+  <a href="https://github.com/zaco-tm/dumbtv/releases/latest"><img src="https://img.shields.io/github/v/release/zaco-tm/dumbtv?label=AverageTV&color=4C8DFF" alt="Latest release"></a>
+  <a href="https://github.com/zaco-tm/dumbtv/actions/workflows/validate.yml"><img src="https://github.com/zaco-tm/dumbtv/actions/workflows/validate.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4C8DFF" alt="MIT licence"></a>
-  <a href="#thanks"><img src="https://img.shields.io/github/contributors/humblemuzzu/dumbtv?color=4C8DFF" alt="Contributors"></a>
+  <a href="#thanks"><img src="https://img.shields.io/github/contributors/zaco-tm/dumbtv?color=4C8DFF" alt="Contributors"></a>
 </p>
 
 <p align="center">
@@ -66,7 +66,7 @@ no root:
 - **Blocks what cannot be disabled.** A small open-source DNS filter on the TV
   stops Amazon's telemetry and automatic updates from reaching their servers.
   Everything else, including your streaming apps, works as before.
-- **Replaces the home screen** with [dumbtv home](variant/README.md): your apps,
+- **Replaces the home screen** with [AverageTV](variant/README.md): your apps,
   your inputs, film picks and a clock. Open source. It takes over from the old
   launcher, which stays installed on the television as the fallback.
 - **Leaves your apps alone.** Nothing you watch is removed unless you name it.
@@ -113,7 +113,7 @@ we will help.
 |---|---|
 | Do you watch Prime Video? | yes: its servers stay reachable |
 | Keep Alexa and the voice button? | yes |
-| Replace Amazon's home screen with dumbtv home? | yes |
+| Replace Amazon's home screen with AverageTV? | yes |
 | Run the DNS filter on the TV? | yes |
 | Any apps you want removed? | none |
 | Replace the YouTube app with SmartTube (no ads, no Shorts)? | no |
@@ -128,16 +128,16 @@ Your answers are saved in `dumbtv.conf`; run `configure.sh` again to change them
 | **Protected packages** | The few Amazon will not let anyone disable lose background running; the DNS filter blocks what they upload. |
 | **Settings** | Ad tracking limited, interest-based ads off, usage reporting off, home-screen autoplay off. |
 | **DNS** | [personalDNSfilter](https://github.com/IngoZenz/personaldnsfilter) runs on the TV and blocks about 400 Amazon telemetry, ad and update hosts. YouTube, the Appstore and your other apps are not blocked. |
-| **Home screen** | dumbtv home instead of Amazon's: no promo tiles, no sponsored rows. |
+| **Home screen** | AverageTV instead of Amazon's: no promo tiles, no sponsored rows. |
 | **Your apps** | Untouched. |
 
 [How it works](docs/HOW-IT-WORKS.md) explains each part and why it is needed.
 [dumbtv.org/blocked](https://dumbtv.org/blocked) lists every package, what it does
 and what you lose without it.
 
-## dumbtv home
+## AverageTV
 
-dumbtv home is the fork of the free-my-tv app, in [variant/](variant/): your apps,
+AverageTV is the fork of the free-my-tv app, in [variant/](variant/): your apps,
 your HDMI inputs and film picks, and a kids face behind a parent's PIN. It has our
 own application id (`tv.dumbtv.variant`) and our own sign key, so it installs beside
 the old launcher instead of replacing it. HOME lands on it in a fraction of a second.
@@ -250,7 +250,7 @@ back from the Appstore.
 | [Other TVs](docs/OTHER-TVS.md) | Android TV, Samsung, LG, Roku and the rest |
 | [YouTube](docs/YOUTUBE.md) | why its ads cannot be blocked, and SmartTube |
 | [Why not replace the OS](docs/WHY-NOT-REPLACE-OS.md) | the locked boot chain |
-| [dumbtv home](variant/README.md) | the home screen app |
+| [AverageTV](variant/README.md) | the home screen app |
 | [Device catalog](catalog/README.md) | per-model notes |
 | [AGENTS.md](AGENTS.md) | instructions for coding agents |
 | [Press](docs/PRESS.md) | coverage |
@@ -340,7 +340,7 @@ not affiliated with or endorsed by Amazon. Use it at your own risk.
 
 ## Licence
 
-Scripts, docs and dumbtv home are [MIT](LICENSE). The device catalog is
+Scripts, docs and AverageTV are [MIT](LICENSE). The device catalog is
 [CC BY-SA 4.0](catalog/LICENSE).
 
 dumbtv bundles none of these, but downloads them when you ask for them:

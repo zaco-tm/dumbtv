@@ -62,7 +62,7 @@ manifest, and prose does not fail a build.
 
 Our manifest is upstream's with ten changes, and nothing else that matters:
 
-1. **The label** — `Free My TV` → `dumbtv home (variant)`, on the application and on every
+1. **The label** — `Free My TV` → `AverageTV`, on the application and on every
    component that carries a label. The TV shows our name, not upstream's.
 2. **The version** — `versionCode 3`, `versionName 1.2` → `versionCode 1`, `versionName 1.0`.
    Ours is a different app with its own key; upstream's numbers say nothing about ours.
@@ -119,8 +119,8 @@ Our manifest is upstream's with ten changes, and nothing else that matters:
    a new file of ours listed in `our-files.txt`.
    It runs in the home screen's process and task (`android:process=":home"`, the same
    `android:taskAffinity` as `HomeActivity`), so BACK returns to the home screen, and its theme
-   is the platform's fullscreen one and not `FreeMyTV.Home`: the window's background is
-   transparent there, and `FreeMyTV.Home`'s light background would flash before the code can
+   is the platform's fullscreen one and not `AverageTV.Home`: the window's background is
+   transparent there, and `AverageTV.Home`'s light background would flash before the code can
    clear it.
 10. **The sleep timer's end** — upstream declares no service for it: its timer puts the TV to
    sleep through the TV's own ADB, which only "Free My TV mode" has, and the fork has no ADB
@@ -208,6 +208,11 @@ which only "Free My TV mode" has — and the fork replaced that mode with the Gu
 all). Android lets no ordinary app put a TV to sleep, so upstream's timer is greyed out in
 the fork, as it is in my-kids-tv.
 
+Upstream's mode is "Free My TV mode", and it is the one thing the fork cannot have as it
+was: its switch is **AverageTV** against **Original** (the TV's factory home screen), and
+on Fire TV it is refused — the HOME key belongs to Amazon's home screen, and AverageTV
+takes it with its guard, so the switch cannot change it.
+
 The owner's decision was that the screen goes dark when the timer ends: the TV stays on, any
 key brings the picture back, and nothing has to be accepted on the TV. That is
 `src/io/freemytv/SleepBlank.java`, ours: a black window over whatever is on it, in the sleep
@@ -243,7 +248,7 @@ means, in this order:
    `assets/`, the two tools, `LICENSE.free-my-tv` and `upstream/AndroidManifest.xml`.
 5. Re-apply our adapted files (the paths in `variant/local-changes.txt`) and our own
    files (the paths in `variant/our-files.txt`); adapt them again if upstream changed them.
-   Step 4 replaces `src/` wholesale, so our changes to the twelve `src/io/freemytv/` files
+   Step 4 replaces `src/` wholesale, so our changes to the `src/io/freemytv/` files
    above go with it: re-apply them all (each file's own comment says what ours are, and
    `variant/UPSTREAM.md` above has the whole of it). Our banner goes with
    `res/`: re-make it from `variant/artwork/banner_variant.svg` (the command is in
@@ -262,8 +267,9 @@ means, in this order:
 ## Local changes
 
 `local-changes.txt` lists the files that differ from upstream: the two adapted tools and
-the twelve `src/io/freemytv/` files the port touched. The tools are upstream's with our paths
-and application id changed. The twelve are upstream's files with our changes to them:
+the `src/io/freemytv/` files the port and the rename touched. The tools are upstream's with
+our paths and application id changed. The others are upstream's files with our changes to
+them:
 
 | File | What we changed in it |
 |---|---|
@@ -279,6 +285,14 @@ and application id changed. The twelve are upstream's files with our changes to 
 | `src/io/freemytv/Click.java` | the kids face's click sound |
 | `src/io/freemytv/Shadows.java` | the `under` overload the kids face's cards use |
 | `src/io/freemytv/Spoken.java` | `on()`, the spoken name the kids face reads |
+| `src/io/freemytv/AppLog.java` | the log tag: `AverageTV`, so the app's own log is `adb logcat -s AverageTV` |
+| `src/io/freemytv/HomeMode.java` | the fork's own mode switch, **AverageTV** against **Original** (the TV's factory home screen); on Fire TV it is refused, because the HOME key belongs to Amazon's home screen and AverageTV takes it with its guard |
+| `src/io/freemytv/Updates.java` | the self-updater's source: this repository's releases (github.com/zaco-tm/dumbtv), never another project's, and only an APK signed with the release key is taken, so the check stays off while this fork is signed with its own key |
+
+Every file that named the app was renamed with it: the label is `AverageTV`, the log tag
+is `AverageTV`, and the mode is AverageTV mode. The files that carry the name — the
+label, the strings, the two i18n catalogues and the upstream files whose own text names
+the app — are in `local-changes.txt` as well.
 
 The file says in its own comment what ours are, because a re-sync replaces it with
 upstream's. `verify-vendor.sh` proves every other vendored byte is upstream's, and it fails

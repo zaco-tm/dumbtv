@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs the dumbtv home variant (the free-my-tv fork) on the TV and gives it the
+# Installs AverageTV (the free-my-tv fork in variant/) on the TV and gives it the
 # HOME key.
 #
 # Fire OS protects Amazon's launcher and lets no third-party app be the home app, so
@@ -30,7 +30,7 @@ GUARD=tv.dumbtv.variant/io.freemytv.Guard
 GUARD_CLASS=io.freemytv.Guard
 # What "dumpsys accessibility" names the bound service by: it prints the label, never
 # the component. Keep it in sync with variant/res/values/guard.xml.
-GUARD_LABEL='dumbtv home (variant) button'
+GUARD_LABEL='AverageTV guard'
 HOME_ACTIVITY=tv.dumbtv.variant/io.freemytv.HomeActivity
 # The old launcher. Its guard must not be bound at the same time as ours: two Guards
 # would fight over the HOME key. Putting its guard back into
@@ -100,6 +100,23 @@ set_guard() {
 }
 
 if [[ $mode == undo ]]; then
+  if [[ $dev_sdk -lt 28 ]]; then
+    # Fire OS 6 refuses third-party accessibility services, so the old launcher holds
+    # HOME there with a keeper instead: a foreground service of its own that watches
+    # Amazon's home through UsageStats. A guard would be bound to nothing, so the
+    # keeper is what has to be armed.
+    sh_ appops set $OLD_PKG GET_USAGE_STATS allow >/dev/null 2>&1 || true
+    start_home $OLD_PKG/.Home
+    sleep 3
+    if ! sh_ dumpsys activity services $OLD_PKG 2>/dev/null | grep -q 'isForeground=true'; then
+      echo "error: the Fire OS 6 home keeper did not start ($OLD_PKG/.Keeper)" >&2
+      echo "  the fallback is installed but it is not holding HOME; check the TV's own screen." >&2
+      exit 1
+    fi
+    echo "home: the old launcher (keeper, no accessibility; sdk $dev_sdk)"
+    echo "put the variant back in front with: ./variant/install.sh"
+    exit 0
+  fi
   # The rollback is one setting: the old launcher's guard goes back into
   # enabled_accessibility_services, and the launcher that works today is the home
   # screen again. The fork stays installed; it is simply not in charge.
@@ -228,4 +245,4 @@ fi
 sleep 2
 printf 'accessibility: %s\n' "$(sh_ settings get secure enabled_accessibility_services)"
 printf 'front window:  %s\n' "$(sh_ dumpsys window | grep -m1 mCurrentFocus | sed 's/.* u0 //; s/}$//')"
-echo "home: dumbtv home (variant) $VERSION_NAME"
+echo "home: AverageTV $VERSION_NAME"

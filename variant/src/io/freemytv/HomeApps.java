@@ -330,7 +330,7 @@ final class HomeApps {
         return shortcut(kind, key, label, symbol);
     }
 
-    /** Free My TV settings, in the corner of the home screen. */
+    /** AverageTV settings, in the corner of the home screen. */
     /** The TV's own settings (android.settings.SETTINGS). */
     static Item tvSettings() {
         return shortcut(ANDROID_SETTINGS, "tv-settings", Ui.tr("TV Settings"), "tv_settings");
@@ -564,7 +564,7 @@ final class HomeApps {
         synchronized (HomeApps.class) {
             TILES.keySet().removeIf(k -> k.contains(".") && !seen.contains(k));
         }
-        items.add(special(c, SETTINGS, "freemytv-settings", "Free My TV", "sparkles"));
+        items.add(special(c, SETTINGS, "freemytv-settings", "AverageTV", "sparkles"));
         return items;
     }
 

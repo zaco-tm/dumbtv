@@ -13,7 +13,7 @@ To put the TV back the way it was: `./scripts/restore.sh`.
 
 ### Amazon's home screen came back
 
-dumbtv home's HOME hook is an accessibility service, and it can be switched off
+AverageTV's HOME hook is an accessibility service, and it can be switched off
 by an update, a settings reset, or a force-stop of the app (which every APK
 update does). Check:
 
@@ -30,20 +30,20 @@ what makes Android bind it.
 Enabled is a setting; bound means the service is actually running. `verify.sh`
 reads `dumpsys accessibility` and only passes when the label of the product that is in
 charge is in the current user's bound services — "dumbtv home button" for the old
-launcher, "dumbtv home (variant) button" for the fork. Run the install path of that
+launcher, "AverageTV guard" for the fork. Run the install path of that
 product: `./scripts/variant.sh -y` or `./variant/install.sh`.
 
-Note that the dump cuts a long label short (at 22 characters on a Fire OS 8 set), so
-the fork's comes out as `Service[label=dumbtv home (variant) b…`. That is the fork's:
-the old launcher's label is short enough to print whole, and the two part at the
-eleventh character.
+Note that the dump cuts a long label short (at 22 characters on a Fire OS 8 set).
+Both labels are shorter than that, so both print whole: `Service[label=AverageTV guard]`
+is the fork's and `Service[label=dumbtv home button]` is the old launcher's. They part
+at the first character, so a cut label could never be read as the other one.
 
 On a TCL G08 the service stayed unbound because TCL's `TclAppBoot` refused it
 (`callee doesn't have OP_AUTO_START permission`). Granting the app's `AUTO_START`
 app-op fixed it. That is a TCL rule, not something to grant on every TV; see
 [docs/devices/tcl-g08.md](devices/tcl-g08.md).
 
-### Amazon's home shows for about five seconds before dumbtv home
+### Amazon's home shows for about five seconds before AverageTV
 
 The `min_futurity=0` alarm setting was lost (an update or a settings reset). Check
 with `adb shell settings get global alarm_manager_constants` (Fire OS 7 and 8), or
@@ -55,7 +55,7 @@ moves the home screen to the front without an alarm.
 ### Settings bounces back to the home screen
 
 On Fire OS, `android.settings.SETTINGS` opens a stub that forwards to Amazon's
-home, which dumbtv home then replaces. The old launcher's Settings button already
+home, which AverageTV then replaces. The old launcher's Settings button already
 avoided this. From adb, open settings with:
 
 ```sh
@@ -215,11 +215,11 @@ run `./scripts/all.sh`.
 Found on a Fire TV Stick 4K (AFTMM, Fire OS 6.7.1.1). The scripts read the API
 level and switch to `data/fireos6/` on their own.
 
-- **HOME never switches to dumbtv home.** Fire OS 6.7 refuses third-party
+- **HOME never switches to AverageTV.** Fire OS 6.7 refuses third-party
   accessibility services (`A11yAuthorizer ... "trust"#"false"` in
   `logcat -b all`). The old launcher uses its Keeper service there instead; run
   `./scripts/variant.sh -y` to re-arm it.
-- **dumbtv home will not install.** The old launcher's releases up to 1.1 needed
+- **AverageTV will not install.** The old launcher's releases up to 1.1 needed
   Android 9; 1.2 and later install. The fork needs Android 8, and Fire OS 6 is
   Android 7.1, so the fork does not run there: the old launcher stays the home
   screen. Its release APK is the one `variant/version.env` names.

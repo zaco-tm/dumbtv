@@ -89,7 +89,7 @@
 
     <application
         android:name="io.freemytv.App"
-        android:label="dumbtv home (variant)"
+        android:label="AverageTV"
         android:icon="@drawable/icon"
         android:banner="@drawable/banner_variant"
         android:allowBackup="false"
@@ -99,13 +99,13 @@
             android:name="io.freemytv.SettingsActivity"
             android:process=":home"
             android:exported="true"
-            android:label="dumbtv home (variant)"
+            android:label="AverageTV"
             android:launchMode="singleTask"
             android:taskAffinity="tv.dumbtv.variant.settings"
             android:excludeFromRecents="true"
             android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
-            android:theme="@style/FreeMyTV.Home">
+            android:theme="@style/AverageTV.Home">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
@@ -117,7 +117,7 @@
             android:name="io.freemytv.HomeActivity"
             android:process=":home"
             android:exported="true"
-            android:label="dumbtv home (variant)"
+            android:label="AverageTV"
             android:launchMode="singleTask"
             android:taskAffinity=""
             android:stateNotNeeded="true"
@@ -126,7 +126,7 @@
             android:excludeFromRecents="true"
             android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
-            android:theme="@style/FreeMyTV.Home">
+            android:theme="@style/AverageTV.Home">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <!-- Upstream declares HOME (and DEFAULT) here. We do not: on this TV
@@ -141,20 +141,20 @@
             android:name="io.freemytv.FireHomeActivity"
             android:process=":home"
             android:exported="false"
-            android:label="dumbtv home (variant)"
+            android:label="AverageTV"
             android:launchMode="singleTask"
             android:taskAffinity="tv.dumbtv.variant.settings"
             android:excludeFromRecents="true"
             android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
-            android:theme="@style/FreeMyTV.Home" />
+            android:theme="@style/AverageTV.Home" />
 
         <service
             android:name="io.freemytv.Screensaver"
             android:process=":home"
             android:enabled="@bool/dream_in_home"
             android:exported="true"
-            android:label="dumbtv home (variant)"
+            android:label="AverageTV"
             android:permission="android.permission.BIND_DREAM_SERVICE">
             <intent-filter>
                 <action android:name="android.service.dreams.DreamService" />
@@ -166,7 +166,7 @@
             android:name="io.freemytv.ScreensaverAlone"
             android:enabled="@bool/dream_alone"
             android:exported="true"
-            android:label="dumbtv home (variant)"
+            android:label="AverageTV"
             android:permission="android.permission.BIND_DREAM_SERVICE">
             <intent-filter>
                 <action android:name="android.service.dreams.DreamService" />
@@ -183,7 +183,7 @@
             android:name="io.freemytv.RemoteKeyService"
             android:process=":keys"
             android:exported="true"
-            android:label="dumbtv home (variant)"
+            android:label="AverageTV"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
@@ -206,7 +206,7 @@
         <service
             android:name="io.freemytv.NowPlaying"
             android:exported="true"
-            android:label="dumbtv home (variant)"
+            android:label="AverageTV"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
@@ -252,8 +252,8 @@
 
              Same process and task affinity as HomeActivity: the input screen belongs to the home
              screen's task, so BACK returns to it. The theme is the platform's fullscreen one and
-             not FreeMyTV.Home: the window's background is transparent here (the video is a layer
-             behind it), and FreeMyTV.Home's light background would flash before the code can
+             not AverageTV.Home: the window's background is transparent here (the video is a layer
+             behind it), and AverageTV.Home's light background would flash before the code can
              clear it. -->
         <activity
             android:name="io.freemytv.Input"
