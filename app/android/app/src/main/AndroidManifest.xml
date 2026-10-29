@@ -1,0 +1,42 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- A television: the app is a Leanback one, and it does not need a touchscreen. -->
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <application
+      android:name=".MainApplication"
+      android:label="@string/app_name"
+      android:icon="@drawable/icon"
+      android:banner="@drawable/banner"
+      android:allowBackup="false"
+      android:theme="@style/AppTheme"
+      android:usesCleartextTraffic="${usesCleartextTraffic}"
+      android:supportsRtl="true">
+      <!--
+        The host activity. Its simple class name is "HomeActivity" on purpose: the Guard (an
+        accessibility service) compares the focused window's simple class name against that
+        literal, so the name may not change when the Java app is replaced by this one.
+
+        No HOME category here. The home key on this television belongs to the Guard, not to a
+        home-app candidate, and the preview app is an ordinary app in the television's list.
+      -->
+      <activity
+        android:name=".HomeActivity"
+        android:label="@string/app_name"
+        android:screenOrientation="landscape"
+        android:banner="@drawable/banner"
+        android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+        android:launchMode="singleTask"
+        android:windowSoftInputMode="adjustResize"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+      </activity>
+    </application>
+</manifest>
