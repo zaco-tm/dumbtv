@@ -110,7 +110,13 @@ the network for the dependencies. Stage 1's plan says so at the top (amended on
 | Job | What it does |
 |---|---|
 | `prototype` | `npm ci && npm run build` in `prototype/`. Proves the design tree still builds. |
-| `app` | The release APK in `app/`. Added with task 6, when the app tree exists. |
+| `app` | The app's tokens, its types, its tests, and a debug APK. Added with task 6. |
+
+The `app` job regenerates the tokens and fails if `tokens.ts` is not what the generator
+makes: the app's colours come from the prototype's CSS, and a hand-edited token is a broken
+token. It installs the NDK and CMake by name (the new architecture compiles the app's own
+C++) and builds **one** ABI, `arm64-v8a` — the television's, and four of them do not fit a
+CI runner's disk.
 
 The CI greps are extended to the new file types (`.ts`, `.tsx`, `.js`, `.jsx`, `.java`,
 `.kt`, `.gradle`, `.kts`), so a private address or the TMDB key still cannot get in.
@@ -336,6 +342,15 @@ There are two ways out, and only one of them is ours to take:
        )
    }
    ```
+
+   The patch is in `patches/opentv-play-channel-by-name.patch`: 44 added lines across
+   three files, no deletions. It is **verified** — it applies cleanly to a pristine
+   clone of upstream, it compiles against upstream's own tree, Room accepts the new
+   query and generates the implementation for it, upstream's own unit tests still pass
+   with it applied, and the SQL behaves as it should against SQLite (a hidden channel is
+   not found; `BBC One` and `bbc-one` meet in the middle through the group key).
+   Sending it upstream is the owner's call: it is a public action on another project's
+   repository, and the exact hand-off needs an OpenTV release to take effect.
 
    OpenTV is GPL and takes contributions, so this can go upstream as a pull request. It
    needs an OpenTV release before the hand-off is exact.
