@@ -158,24 +158,17 @@ Measure: every destination is reachable with the remote alone, in a few presses;
 focus never lands nowhere; the kids face is still one press away; the sleep timer and
 the PIN keep working.
 
-### Step 5 — the app's own mark
+### Step 5 — the app's own mark (done)
 
-The four-pointed sparkle next to the app's name (in the settings, and as the tile that
-opens them) is upstream's mark, and it is exactly the kind of decorative glyph the owner
-has ruled out. Now that the product has a name of its own, the mark should be AverageTV's
-too — or there should not be one, and the word alone carries it.
+Upstream's sparkle is gone. The mark is the letter A drawn as an old rooftop aerial —
+two rods, three horizontal elements — between square brackets, and it is drawn on the
+television (`src/io/freemytv/Mark.java`) rather than being a picture, so it is sharp at
+every size.
 
-That is the owner's call: a wordmark on its own, or a simple mark of ours.
-
-The two places that draw it are ours to change:
-
-- `SettingsActivity` draws it as the big symbol next to the wordmark
-  (`Symbols.draw(getContext(), c, "sparkles", cx, 400 * k, 150 * k, 0xEBFFFFFF)`).
-- `HomeApps.others()` puts it on our own tile in the "All Apps" sheet
-  (`special(c, SETTINGS, "freemytv-settings", "AverageTV", "sparkles")`).
-
-Both are upstream's `Symbols` bitmaps, drawn by the same `Canvas` that would draw a mark
-of our own.
+It is in the two places the sparkle was: the settings screen and our own tile in the
+"All Apps" sheet. The app's banner and icon carry it too, and both now say AverageTV —
+the banner used to read "dumbtv home / variant". The designs are kept as SVGs in
+`variant/artwork/` and re-made with `python3 variant/tools/mark.py`.
 
 ### What is not in this stage
 
