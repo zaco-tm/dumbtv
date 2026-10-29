@@ -17,8 +17,9 @@ Charcoal components ported to it.
 
 The rule that keeps the two honest: **every Charcoal component used in the prototype has a
 named port in `app/src/ui/charcoal/`, and a port is done when the prototype's behaviour is
-matched.** The table that says which is which is `app/src/ui/charcoal/PARITY.md`, and it is
-part of the deliverable, not a note.
+matched.** The table that says which is which is
+[docs/superpowers/averagetv-parity.md](../averagetv-parity.md), and it is part of the
+deliverable, not a note.
 
 The vendored Java app in `variant/` stops being the product and becomes the **reference
 for the functions and ideas**: the guard, the mode switch, the inputs, the sleep timer, the
@@ -162,7 +163,7 @@ remember.
 
 Each task is a brief for a worker, and each ends with something measured.
 
-### Task 1 — the prototype tree
+### Task 1 — the prototype tree (done)
 
 Vite + React 19 + TypeScript, Tailwind 4, the Charcoal theme and the shadcn CLI
 (`CHARCOAL_LICENSE_KEY` from `~/.zshrc.local`; the key is **never** committed, and
@@ -171,7 +172,7 @@ Vite + React 19 + TypeScript, Tailwind 4, the Charcoal theme and the shadcn CLI
 Risk: low. Measure: `npm run dev` shows the theme; `npm run build` succeeds; the build
 has no key in it; the tree is committed with a lockfile.
 
-### Task 2 — the rail and the shell
+### Task 2 — the rail and the shell (done)
 
 The `line-sidebar` rail (Home / Live TV / Apps / Inputs, the gear and the kids face at the
 bottom) beside the content column, with the focus model: up and down inside the rail, left
@@ -180,27 +181,53 @@ and right between the rail and the content.
 Risk: medium. The focus model is the whole of it. Measure: with the keyboard alone, every
 destination is reachable in a few presses, and the focus is never nowhere.
 
-### Task 3 — the greeting and the weather
+### Task 3 — the greeting and the weather (done)
 
 "Good morning" and the weather, with no name. The same pieces the kids face already draws.
 
 Risk: low. Measure: the header reads correctly at 08:00 and at 21:00, and with the network
 off it still reads.
 
-### Task 4 — Favorites
+### Task 4 — Favorites (done)
 
 A row that mixes apps and inputs, in the order the household put them.
 
 Risk: low in the prototype (mock data). Measure: a row of six, mixed, with the input tiles
 visibly different from the app tiles.
 
-### Task 5 — Trending
+### Task 5 — Trending (done)
 
 One large feature on the left (poster, title, metadata) and a ranked list beside it, each
 with a thumb, a title, a second line and a star rating.
 
 Risk: low in the prototype. Measure: the ranking matches the mock data's order, and the
 rating stars match the mock ratings.
+
+### The prototype, as it stands
+
+The five tasks above are done. `prototype/` is a Vite + React 19 + TypeScript + Tailwind 4
+tree with the real Charcoal theme and three Charcoal components installed
+(`line-sidebar`, `rating`, `carousel`), and the screen it draws is the owner's sketch: the
+rail on the left with the gear and the children's face at the bottom, the greeting and the
+weather in the header, the Favorites row, and Trending with the feature and the ranked
+list.
+
+Three things were decided while building it, and they are the ones the app has to keep:
+
+- **The type is the television's.** A television is read from across a room: the greeting
+  is 72px, the section titles 32px, the rail's labels 22px. Charcoal's own sidebar is
+  browser-sized, so the prototype's copy of it was edited — the rows, the icons, the
+  labels — and the port carries those numbers over.
+- **The focus is a grid.** Every focusable says where it is (`data-row`, `data-col`), and
+  an arrow key moves to the nearest one in that direction: the rail is column 0, so right
+  from the rail enters the content and left from the content's left edge goes back. The
+  measured behaviour: right from *Home* lands on the first Favorite, down from it lands
+  on the Trending feature.
+- **The carousel was not needed.** The sketch has no carousel: its rows are driven by the
+  focus, not by dragging. It stays installed in the prototype (it is free) and is not
+  ported.
+
+The parity table is [docs/superpowers/averagetv-parity.md](../averagetv-parity.md).
 
 ### Task 6 — the parity table, the tokens, and the app tree
 

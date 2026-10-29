@@ -11,3 +11,8 @@ variant/*.keystore
 variant/config.properties
 variant/tools/.i18n-cache.json
 .superpowers/
+node_modules/
+dist/
+.env.local
+.env*.local
+*.tsbuildinfo
