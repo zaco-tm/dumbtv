@@ -27,6 +27,8 @@ colour changes in one, it changes in both, and there is nothing to remember.
 | `src/lib/fit.ts` — the 1920×1080 stage | `app/src/ui/stage.ts` | The television's screen is the stage; there is no scaling there. The numbers in the prototype are the television's pixels, and the app's density decides how many of them a dp is. |
 | `src/data/mock.ts` | the native modules | The prototype's data is mock data. The app's comes from the same places the Java app uses: open-meteo for the weather, TMDB for the picks, the native modules for the apps and the inputs. |
 | `src/sections/*` | `app/src/screens/Home.tsx` | The greeting, the Favorites row, the Trending section. |
+| `src/pages/LiveTv.tsx` | `app/src/screens/LiveTv.tsx` | The guide: "On now" (the channel's number, its name, what is on it, and a bar showing how far through the programme we are) and "Tonight" (the coming events, their times, their channels, and the badges). |
+| `src/pages/Apps.tsx`, `src/pages/Inputs.tsx` | `app/src/screens/Apps.tsx`, `Inputs.tsx` | The television's own apps in a grid, and its inputs as a list with the empty ones dimmed. |
 
 ## What the app has that the prototype does not
 
@@ -51,6 +53,7 @@ The native modules the app's JavaScript calls:
 | `sleep` | `start(minutes)`, `cancel()` — the sleep timer. |
 | `prefs` | `get`/`set` for `settings` and `home-ui` (the Favorites list). |
 | `night` | `isNight()` — for the Guard's cover colour, which must match the sky the home screen is about to paint. |
+| `iptv` | `saveProvider(host, user, password)`, `savePlaylist(url)`, `channels()`, `guide()`, `watch(channel)` — the owner's IPTV login (kept on the television, sent nowhere but the provider), the channel list, the guide, and the hand-off to OpenTV. |
 
 ## The preferences are a contract
 

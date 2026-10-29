@@ -2,9 +2,9 @@ import * as React from "react"
 import { Rail } from "@/components/Rail"
 import { STAGE_H, STAGE_W, useFit } from "@/lib/fit"
 import { useStageFocus } from "@/lib/tvFocus"
-import { Favorites } from "@/sections/Favorites"
-import { Greeting } from "@/sections/Greeting"
-import { Trending } from "@/sections/Trending"
+import { Apps, Inputs } from "@/pages/Apps"
+import { Home } from "@/pages/Home"
+import { LiveTv } from "@/pages/LiveTv"
 
 /**
  * The prototype of the home screen, at the television's own size.
@@ -35,9 +35,15 @@ export default function App() {
       >
         <Rail active={destination} onSelect={setDestination} />
         <main className="flex-1 overflow-hidden">
-          <Greeting />
-          <Favorites />
-          <Trending />
+          {destination === "live-tv" ? (
+            <LiveTv />
+          ) : destination === "apps" ? (
+            <Apps />
+          ) : destination === "inputs" ? (
+            <Inputs />
+          ) : (
+            <Home />
+          )}
         </main>
       </div>
     </div>

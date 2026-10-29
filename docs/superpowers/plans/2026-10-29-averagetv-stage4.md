@@ -269,6 +269,111 @@ AverageTV, the PIN, the kids face, the sleep timer, the inputs, `scripts/verify.
 Risk: high, and the rollback must be ready before it starts: the Java app's last good APK
 and the keystore, and `variant/install.sh` to put it back.
 
+## Live TV — the OpenTV integration
+
+The owner's decision: the **Live TV** tab is a page that integrates with OpenTV
+(`app.opentv`, the GPL IPTV player), showing what is on now and what is coming tonight —
+the schedules and the sports events.
+
+Two things were decided:
+
+- **The guide comes from the provider, with the public feeds as the fallback.** The same
+  IPTV login OpenTV uses (Xtream Codes or an M3U playlist), entered in AverageTV once, and
+  the provider's EPG fills the guide. When there is no login, or the provider's guide is
+  empty or unreachable, the **public EPG feeds OpenTV already ships** are used instead:
+  `dp247/Freeview-EPG` for the UK, and `epgshare01` for the US, Canada and Australia.
+  The credentials stay on the television and go nowhere but the provider.
+- **OpenTV plays it for now; AverageTV plays it later.** Pressing a programme opens
+  OpenTV on that channel. Later, AverageTV becomes the player too (Media3 in React
+  Native), and OpenTV becomes optional.
+
+### What OpenTV actually gives us
+
+Measured from the APK (`app.opentv` 0.11.7) and its source:
+
+| | |
+|---|---|
+| Exported | `app.opentv.MainActivity` only — `MAIN`/`LAUNCHER` and `MAIN`/`LEANBACK_LAUNCHER`, `launchMode="singleTask"` |
+| The one thing it accepts | the extra **`opentv.play_channel`**, a Long: play that channel. `opentv.watch_recording` also works. |
+| Not exported | every provider (`androidx.core.content.FileProvider`, `androidx.startup.InitializationProvider`), the media session, the recording service, the reminder receiver |
+| The guide | XMLTV EPG, merged over "feeds": the provider's own, the built-in public ones, and any the user adds. It lives in OpenTV's Room database — `channels`, `programmes`, `epg_channels`, `epg_feeds`. |
+| The channels | `Channel(id, sourceId, streamId, displayName, groupKey, epgChannelId, matchedEpgId, logoUrl, tvArchive…)`. `streamId` is the provider's own id, stable per source. `groupKey` is the normalised name OpenTV's matcher joins the guide on. |
+
+So: **there is no way for another app to read OpenTV's channels or its guide.** The data is
+in another app's private database, and the providers that exist are not exported.
+
+### The one thing that has to change, and it is not in our repository
+
+`opentv.play_channel` takes **OpenTV's own internal channel id** — the `channels.id`
+autoincrement from its own database. AverageTV, which gets its channel list from the
+provider, knows the provider's `streamId` and the names; it cannot know OpenTV's id.
+Reading OpenTV's database is not possible without root.
+
+There are two ways out, and only one of them is ours to take:
+
+1. **A small change upstream to OpenTV** (recommended): let it accept a channel by name,
+   the way it already accepts one by id. The patch is small and belongs in
+   `MainActivity.handlePlayIntent` and the repository lookup beside it:
+
+   ```kotlin
+   const val EXTRA_PLAY_CHANNEL_NAME = "opentv.play_channel_name"
+
+   // in handlePlayIntent, next to the id branch
+   val name = intent?.getStringExtra(EXTRA_PLAY_CHANNEL_NAME)
+   if (!name.isNullOrBlank()) {
+       app.opentv.core.PlayRequests.request(
+           ServiceLocator.get(this).channelRepository.idForName(name)   // groupKey first, then displayName
+       )
+   }
+   ```
+
+   OpenTV is GPL and takes contributions, so this can go upstream as a pull request. It
+   needs an OpenTV release before the hand-off is exact.
+2. **The hand-off without a channel**: AverageTV opens OpenTV and the viewer picks the
+   channel. It works today with the installed OpenTV, and it is what the app does until
+   (1) lands. AverageTV sends the name extra as well, so nothing has to change in the app
+   when OpenTV learns to read it.
+
+The app therefore sends both, and degrades:
+
+```kotlin
+Intent().setClassName("app.opentv", "app.opentv.MainActivity")
+    .putExtra("opentv.play_channel", id)        // when the id is known
+    .putExtra("opentv.play_channel_name", name)  // always; ignored by today's OpenTV
+```
+
+### The app's side of it
+
+A native module `iptv`, because the parsing and the credentials are not JavaScript's job:
+
+| Call | What it does |
+|---|---|
+| `saveProvider(host, user, password)` / `savePlaylist(url)` | stores the source, encrypted in the app's own preferences; never leaves the television |
+| `channels()` | the channel list with the provider's ids, the logos and the guide ids |
+| `guide()` | the programmes for the next days, from the provider's EPG, or from the public feeds when there is no provider guide |
+| `watch(channel)` | the hand-off to OpenTV, as above |
+
+And a `page` in the app: `app/src/screens/LiveTv.tsx`, the port of the prototype's
+`prototype/src/pages/LiveTv.tsx`.
+
+### The prototype
+
+The page is already drawn: `prototype/src/pages/LiveTv.tsx`. "On now" is a row of channel
+tiles (the channel's number, its name, what is on it, and a bar showing how far through
+the programme we are), and "Tonight" is a list of the coming events with their times and
+their channels — a **Live** badge in ember for what is on now, and an outline badge for
+Sports and New. The rail's **Apps** and **Inputs** destinations are drawn too, so the
+sketch's four destinations all go somewhere.
+
+### Task 10 — the Live TV page in the app
+
+The port of the prototype's page, the `iptv` module, and the hand-off.
+
+Risk: medium for the page, high for the credentials (they are the owner's IPTV login, in
+a second app). Measure: the preview app shows the guide with the owner's own provider
+login; pressing a programme opens OpenTV; with no login, the public feed fills the guide
+for the UK; a failed provider fetch leaves the public feed in place instead of an error.
+
 ## What is not in this stage
 
 - The **kids face's strings are still English** in the twenty-five other languages (thirty-

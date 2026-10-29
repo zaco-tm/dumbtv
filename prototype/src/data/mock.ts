@@ -94,3 +94,30 @@ export const TRENDING: Trend[] = [
     feature: false,
   },
 ]
+
+export type AppEntry2 = { key: string; label: string }
+
+export const TV_APPS: AppEntry2[] = [
+  { key: "com.netflix.ninja", label: "Netflix" },
+  { key: "com.amazon.avod", label: "Prime Video" },
+  { key: "com.disney.disneyplus", label: "Disney+" },
+  { key: "com.amazon.amazonvideo.livingroomplus", label: "YouTube" },
+  { key: "com.spotify.tv.android", label: "Spotify" },
+  { key: "com.plexapp.android", label: "Plex" },
+  { key: "org.jellyfin.androidtv", label: "Jellyfin" },
+  { key: "tv.dumbtv.variant", label: "AverageTV" },
+  { key: "com.twitch.android.app", label: "Twitch" },
+  { key: "org.kodi.team.android", label: "Kodi" },
+  { key: "com.retro.arch", label: "RetroArch" },
+  { key: "app.opentv", label: "OpenTV" },
+]
+
+export type TvInput = { key: string; label: string; detail: string; connected: boolean }
+
+export const TV_INPUTS: TvInput[] = [
+  { key: "live-tv", label: "Live TV", detail: "Antenna or cable", connected: true },
+  { key: "hdmi1", label: "HDMI 1", detail: "PlayStation", connected: true },
+  { key: "hdmi2", label: "HDMI 2", detail: "Nothing plugged in", connected: false },
+  { key: "hdmi3", label: "HDMI 3", detail: "Nothing plugged in", connected: false },
+  { key: "hdmi4", label: "HDMI 4", detail: "Nothing plugged in", connected: false },
+]
