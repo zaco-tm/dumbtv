@@ -229,7 +229,7 @@ Three things were decided while building it, and they are the ones the app has t
 
 The parity table is [docs/superpowers/averagetv-parity.md](../averagetv-parity.md).
 
-### Task 6 — the parity table, the tokens, and the app tree
+### Task 6 — the parity table, the tokens, and the app tree (done)
 
 `app/src/ui/charcoal/PARITY.md` (every Charcoal component → its port, or "not ported, and
 why"), `app/tools/gen-tokens.mjs` and the generated `tokens.ts`, and the React Native tree:
@@ -240,6 +240,16 @@ stubbed (`parent_pin`, `home_mode`, `inputs`, `sleep`, `prefs`, `night`).
 Risk: medium. This is the first time the two trees meet. Measure: the preview app builds,
 installs on the television as an ordinary app, opens, and shows the prototype's shell with
 the generated tokens.
+
+**Done, except the installation.** `app/` is React Native 0.88.1, Android only, and it
+builds: `app/android/app/build/outputs/apk/debug/app-debug.apk`, package `tv.dumbtv.preview`,
+launcher `io.freemytv.HomeActivity`. The six modules are in the APK. The PIN is stored the
+way `Prefs.java` stores it, so the settings survive the swap. The tokens are generated from
+the prototype's CSS by `app/tools/gen-tokens.mjs`, and CI checks that they are what the
+generator makes.
+
+What is **not** done: the APK has never been on the television, and the app's screen is
+still the wiring screen — the ports are task 7.
 
 ### Task 7 — the ports
 
