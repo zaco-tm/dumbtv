@@ -20,12 +20,14 @@ The owner renamed the product: **AverageTV**, "a play between smart and dumb".
 
 Two things had to move with it, and both would have broken silently:
 
-- **The Turkish translation** (`variant/assets/i18n/tr.json`) keys on the English string.
-  Renaming the English without renaming the keys leaves those strings untranslated. The
-  keys and the values moved together, and the two sentences that were rewritten (the Fire
-  TV refusal and the TV-model refusal) were translated by hand.
-- **`variant/local-changes.txt`**: the rename touched thirteen files that are upstream's.
-  The vendor check fails on a file that differs from upstream and is not listed, and also
+- **The twenty-six translations** (`variant/assets/i18n/*.json`). A catalogue is keyed on
+  the English text in the code, so renaming the English without renaming the keys leaves
+  those strings untranslated on a set in any language but English — and nothing says so.
+  The keys and the values moved together, and the two sentences that were rewritten (the
+  Fire TV refusal and the TV-model refusal) were translated by hand in every language.
+  `en.json` is regenerated from the code, so it cannot drift.
+- **`variant/local-changes.txt`**: the rename touched files that are upstream's — the
+  vendor check fails on a file that differs from upstream and is not listed, and also
   on a file that is listed but no longer differs. The list now says what it should.
 
 The guard label must stay different from the fallback launcher's (`dumbtv home button`),
@@ -46,6 +48,10 @@ look like the other.
   says that, and that the switch cannot change it.
 - **The style name** `FreeMyTV.Home` → `AverageTV.Home`, and the app's `User-Agent`
   string with it.
+- **The kids face still said "dumbtv home"** in two of its strings, and the retired
+  launcher showed up in our own "All Apps" sheet next to AverageTV. The tile is hidden
+  now: the app stays installed for the rollback, but it is not a second product on our
+  screen — and it had no PIN, so it was a way around the kids face.
 
 ### Measured on the television (Ember 55)
 
@@ -161,6 +167,16 @@ too — or there should not be one, and the word alone carries it.
 
 That is the owner's call: a wordmark on its own, or a simple mark of ours.
 
+The two places that draw it are ours to change:
+
+- `SettingsActivity` draws it as the big symbol next to the wordmark
+  (`Symbols.draw(getContext(), c, "sparkles", cx, 400 * k, 150 * k, 0xEBFFFFFF)`).
+- `HomeApps.others()` puts it on our own tile in the "All Apps" sheet
+  (`special(c, SETTINGS, "freemytv-settings", "AverageTV", "sparkles")`).
+
+Both are upstream's `Symbols` bitmaps, drawn by the same `Canvas` that would draw a mark
+of our own.
+
 ### What is not in this stage
 
 - The app id stays `tv.dumbtv.variant`. Renaming it would make the app a different app
@@ -169,3 +185,8 @@ That is the owner's call: a wordmark on its own, or a simple mark of ours.
   so it is not worth the migration unless the owner wants it.
 - The screenshots in `docs/assets/` still show the old launcher. New ones come with the
   overhaul.
+- **The kids face's strings are still English in the twenty-five other languages.** The
+  kids face and the PIN came in with stage 2 and were never translated — thirty-eight
+  keys per language, so a set in German reads "Kids" and "Age" in English. This is not a
+  rename gap; it is older. It is left for after the overhaul, which changes those
+  strings anyway, so that they are translated once and not twice.

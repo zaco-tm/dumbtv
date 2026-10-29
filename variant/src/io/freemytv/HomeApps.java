@@ -164,6 +164,8 @@ final class HomeApps {
             "com.Smartdevice.emanual",              // Skyworth: user manual
             "com.google.android.videos",            // Google Play Movies (discontinued)
             "com.disney.starplus",                  // Star+ (merged into Disney+)
+            "tv.dumbtv.home",                       // our own fallback: it stays installed for the rollback,
+                                                    // but it is not a second product on this screen
             "com.tcl.exhibit"));                    // TCL: T-Exhibition
 
     /**
