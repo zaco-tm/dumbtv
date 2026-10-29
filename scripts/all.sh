@@ -29,6 +29,6 @@ fi
 run "$DIR/debloat.sh"   || exit 1
 run "$DIR/lockdown.sh"  || exit 1
 run "$DIR/dnsfilter.sh" || exit 1
-run "$DIR/launcher.sh"  || exit 1
+run "$DIR/variant.sh"   || exit 1
 if [[ ${YOUTUBE:-0} == 1 ]]; then run "$DIR/youtube.sh" || exit 1; fi
 "$DIR/verify.sh"

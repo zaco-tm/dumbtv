@@ -42,10 +42,10 @@ quirks:
     injected events did not validate the accessibility mapping.
 notes: >-
   Manual partial session: removed six owner-selected third-party apps,
-  installed checksum-verified repository-pinned dumbtv home and SmartTube
+  installed the checksum-verified, repository-pinned old launcher and SmartTube
   stable, and disabled stock YouTube rather than deleting it. Four analytics
-  and feedback packages disabled for user 0. HOME resolved to dumbtv after
-  disabling com.google.android.tvlauncher and the setup handler. After a
+  and feedback packages disabled for user 0. HOME resolved to the old launcher
+  after disabling com.google.android.tvlauncher and the setup handler. After a
   reboot, HOME selection and all seven disabled package states persisted;
   Wi-Fi and ADB returned. Android Private DNS using a public resolver with the HaGeZi Normal
   list blocked pagead2.googlesyndication.com and

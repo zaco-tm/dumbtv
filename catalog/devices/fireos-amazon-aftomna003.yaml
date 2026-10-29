@@ -30,10 +30,10 @@ quirks:
   - "Driving that screen over adb: the on-screen keyboard is a floating overlay over the right half of the dialog, so screen taps land on the keyboard. Use input keyevent 61 (TAB) to move focus between the fields and 62 (SPACE) for the Active checkbox; clear a field with small batches of input keyevent 67 and check the result with uiautomator dump"
   - "36 of the 40 Amazon packages in data/fireos/packages.txt were disabled; absent on this set: com.amazon.shoptv.firetv.client, com.amazon.tv.fw.metrics, com.amazon.tigris and com.android.nfc. Nothing came back PROTECTED and nothing came back SUSPECT"
   - "com.amazon.neo.minerva.logcat and com.amazon.tv.developer.dataservice keep running after their disable; the residual-process pass turns their ops off and blocks their data"
-  - "This is a television: the four HDMI inputs, the tuner and the MediaTek input packages are all in never-disable.txt and were left untouched, and the launcher HOME takeover (accessibility service plus min_futurity=0) works as on Fire OS 7/8"
-  - "The on-TV input row resolves to Amazon's Live TV app, which drops into a channel-scan screen when no channels are scanned; launcher 1.2 opens inputs on its own screen instead, via Options > Open inputs with"
+  - "This is a television: the four HDMI inputs, the tuner and the MediaTek input packages are all in never-disable.txt and were left untouched, and the old launcher's HOME takeover (accessibility service plus min_futurity=0) works as on Fire OS 7/8"
+  - "The on-TV input row resolves to Amazon's Live TV app, which drops into a channel-scan screen when no channels are scanned; the old launcher 1.2 opens inputs on its own screen instead, via Options > Open inputs with"
   - "Plex for Fire TV 2026.20.0 reports 'Audio codec banned on device' and transcodes TrueHD down to EAC3 on this hardware. Fix inside Plex: Settings > Audio > Passthrough: HDMI with TrueHD and EAC3 enabled"
-notes: "Fire OS 8.0 (Android 11) on an Ember 55 television: debloat, lockdown, the DNS filter and the dumbtv home takeover all work and verify.sh exits 0. The DNS filter needs the on-screen step in the quirks, because Android 11 hides the app's folder from adb."
+notes: "Fire OS 8.0 (Android 11) on an Ember 55 television: debloat, lockdown, the DNS filter and the old launcher takeover all work and verify.sh exits 0. The DNS filter needs the on-screen step in the quirks, because Android 11 hides the app's folder from adb."
 verify:
   blocked: data/blocklists/verify-blocked.txt
   allowed: data/blocklists/verify-allowed.txt

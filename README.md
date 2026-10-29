@@ -18,14 +18,14 @@ Ads, tracking and clutter out of your Fire TV. Your apps and HDMI inputs stay.</
 
 <p align="center">
   <a href="https://github.com/humblemuzzu/dumbtv/stargazers"><img src="https://img.shields.io/github/stars/humblemuzzu/dumbtv?style=flat&color=4C8DFF" alt="Stars"></a>
-  <a href="https://github.com/humblemuzzu/dumbtv/releases/latest"><img src="https://img.shields.io/github/v/release/humblemuzzu/dumbtv?label=dumbtv%20home&color=4C8DFF" alt="Latest launcher release"></a>
+  <a href="https://github.com/humblemuzzu/dumbtv/releases/latest"><img src="https://img.shields.io/github/v/release/humblemuzzu/dumbtv?label=dumbtv%20home&color=4C8DFF" alt="Latest release"></a>
   <a href="https://github.com/humblemuzzu/dumbtv/actions/workflows/validate.yml"><img src="https://github.com/humblemuzzu/dumbtv/actions/workflows/validate.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4C8DFF" alt="MIT licence"></a>
   <a href="#thanks"><img src="https://img.shields.io/github/contributors/humblemuzzu/dumbtv?color=4C8DFF" alt="Contributors"></a>
 </p>
 
 <p align="center">
-  <img src="docs/assets/hero.png" alt="dumbtv home on a television: a clock, an Apps row and an Inputs row" width="880">
+  <img src="docs/assets/hero.png" alt="the old launcher on a television: a clock, an Apps row and an Inputs row" width="880">
 </p>
 
 <p align="center"><sub>As seen in
@@ -66,8 +66,9 @@ no root:
 - **Blocks what cannot be disabled.** A small open-source DNS filter on the TV
   stops Amazon's telemetry and automatic updates from reaching their servers.
   Everything else, including your streaming apps, works as before.
-- **Replaces the home screen** with [dumbtv home](launcher/README.md): your apps,
-  your inputs and a clock. 54 KB, open source, no internet access, no permissions.
+- **Replaces the home screen** with [dumbtv home](variant/README.md): your apps,
+  your inputs, film picks and a clock. Open source. It takes over from the old
+  launcher, which stays installed on the television as the fallback.
 - **Leaves your apps alone.** Nothing you watch is removed unless you name it.
 - **Can all be undone** with one command.
 
@@ -136,25 +137,32 @@ and what you lose without it.
 
 ## dumbtv home
 
-| Rows | Grid | Options |
-|---|---|---|
-| ![Rows layout](docs/assets/screens/home.png) | ![Grid layout](docs/assets/screens/grid.png) | ![Options](docs/assets/screens/options.png) |
+dumbtv home is the fork of the free-my-tv app, in [variant/](variant/): your apps,
+your HDMI inputs and film picks, and a kids face behind a parent's PIN. It has our
+own application id (`tv.dumbtv.variant`) and our own sign key, so it installs beside
+the old launcher instead of replacing it. HOME lands on it in a fraction of a second.
 
-A home screen that shows your apps and your HDMI inputs, and nothing else. Accent
-colours, tile sizes, rows or a grid, wallpapers, adaptive backgrounds, renaming and
-hiding, all from the remote. HOME lands on it in a fraction of a second.
-
-It is plain Java with no libraries and no internet permission, so it cannot send
-anything anywhere. On Fire OS 7 and 8 it asks for no permissions at all. It works
-on its own, without the rest of dumbtv:
+It works on its own, without the rest of dumbtv:
 
 ```sh
 adb connect <tv-ip>:5555
-./launcher/install.sh
+./variant/install.sh
 ```
 
-[launcher/README.md](launcher/README.md) covers the settings, wallpapers and how
-it takes over the HOME button.
+[variant/README.md](variant/README.md) covers the settings, the kids face and how it
+takes over the HOME button.
+
+The old launcher, `tv.dumbtv.home`, was 54 KB of plain Java with no internet access
+and no permissions at all. It showed your apps and your HDMI inputs and nothing else,
+with accent colours, tile sizes, rows or a grid, wallpapers, adaptive backgrounds,
+renaming and hiding, all from the remote.
+
+| The old launcher | Its grid | Its options |
+|---|---|---|
+| ![Rows layout](docs/assets/screens/home.png) | ![Grid layout](docs/assets/screens/grid.png) | ![Options](docs/assets/screens/options.png) |
+
+It is not built from this repository any more. It stays installed on a television as
+the fallback, and `./variant/install.sh --undo` gives HOME back to it.
 
 ## Tested on
 
@@ -242,7 +250,7 @@ back from the Appstore.
 | [Other TVs](docs/OTHER-TVS.md) | Android TV, Samsung, LG, Roku and the rest |
 | [YouTube](docs/YOUTUBE.md) | why its ads cannot be blocked, and SmartTube |
 | [Why not replace the OS](docs/WHY-NOT-REPLACE-OS.md) | the locked boot chain |
-| [dumbtv home](launcher/README.md) | the launcher |
+| [dumbtv home](variant/README.md) | the home screen app |
 | [Device catalog](catalog/README.md) | per-model notes |
 | [AGENTS.md](AGENTS.md) | instructions for coding agents |
 | [Press](docs/PRESS.md) | coverage |
@@ -332,7 +340,7 @@ not affiliated with or endorsed by Amazon. Use it at your own risk.
 
 ## Licence
 
-Scripts, docs and the launcher are [MIT](LICENSE). The device catalog is
+Scripts, docs and dumbtv home are [MIT](LICENSE). The device catalog is
 [CC BY-SA 4.0](catalog/LICENSE).
 
 dumbtv bundles none of these, but downloads them when you ask for them:

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The interview. Writes dumbtv.conf (git-ignored), which debloat.sh, dnsfilter.sh,
-# launcher.sh and youtube.sh read. Every default is the safe one: no app is removed
+# variant.sh and youtube.sh read. Every default is the safe one: no app is removed
 # unless it is named, and Prime Video and Alexa keep working.
 # Usage: ./scripts/configure.sh [--remove "pkg pkg"] [--keep "pkg pkg"] [--prime 0|1]
 #          [--alexa 0|1] [--launcher 0|1] [--dnsfilter 0|1] [--youtube 0|1]
@@ -61,7 +61,7 @@ else
   PRIME=0; note "prime: its servers are blocked, so it will not play"
 fi
 ALEXA=$(answer "$ALEXA_ARG" "Keep Alexa and the remote's voice button? (no = Alexa and the microphone app are switched off)" 1)
-LAUNCHER=$(answer "$LAUNCHER_ARG" "Replace Amazon's home screen with dumbtv home (open source, no ads, no internet access)?" 1)
+LAUNCHER=$(answer "$LAUNCHER_ARG" "Replace Amazon's home screen with dumbtv home (open source, no ads; the internet is used only for the film picks)?" 1)
 DNSFILTER=$(answer "$DNSFILTER_ARG" "Run the DNS filter on the TV (blocks Amazon telemetry and stops automatic updates)?" 1)
 SYSTEM_DNS=$(answer "$SYSTEM_DNS_ARG" "Fire OS 6 only: let system apps bypass the filter so the clock syncs? Amazon's system-user apps go unfiltered too" 0)
 # Default no: YouTube is the app people actually watch. scripts/youtube.sh is the
@@ -130,6 +130,8 @@ REMOVE_EXTRA="$EXTRA"
 KEEP_APPS="$KEEP"
 PRIME=$PRIME
 ALEXA=$ALEXA
+# LAUNCHER=1: dumbtv home is the home screen. It is the fork in variant/; the old
+# launcher is not installed by this repo any more, only the fallback on the TV.
 LAUNCHER=$LAUNCHER
 DNSFILTER=$DNSFILTER
 SYSTEM_DNS=$SYSTEM_DNS

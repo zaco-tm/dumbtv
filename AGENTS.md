@@ -88,7 +88,7 @@ people take them.
 |---|---|---|---|
 | 1 | "Do you watch Prime Video?" No blocks the servers it needs. | yes | `--prime 0\|1` |
 | 2 | "Do you use Alexa or the voice button on the remote?" No switches off Alexa and the app that owns the microphone. | keep | `--alexa 0\|1` |
-| 3 | "Replace Amazon's home screen with dumbtv home?" Open source, apps and inputs only, no ads, no internet access. | yes | `--launcher 0\|1` |
+| 3 | "Replace Amazon's home screen with dumbtv home?" Open source, no ads. Your apps and inputs, film picks and a kids face behind a PIN. The internet is used only for the film picks. | yes | `--launcher 0\|1` |
 | 4 | "Run the DNS filter on the TV?" It is what stops telemetry and automatic updates. Without it, the protected Amazon packages keep reporting. | yes | `--dnsfilter 0\|1` |
 | 5 | "Are there apps you want removed?" Get names, map them to packages with `data/apps.txt` and `adb shell pm list packages -3`, and read the list back before recording it. | none | `--remove "pkg pkg"` |
 | 6 | "Do you want the YouTube app replaced with SmartTube?" No ads and no Shorts, a different app, same Google account. Ask once; if no, drop it. | no | `--youtube 0\|1` |
@@ -123,7 +123,7 @@ Step by step instead, in this order:
 1. `./scripts/debloat.sh -y`, then reboot and check the TV reaches a home screen.
 2. `./scripts/lockdown.sh -y`
 3. `./scripts/dnsfilter.sh -y` (reboots and tests itself)
-4. `./scripts/launcher.sh -y`
+4. `./scripts/variant.sh -y`
 5. `./scripts/youtube.sh -y`, only if `YOUTUBE=1`
 6. `./scripts/verify.sh`
 
@@ -151,7 +151,7 @@ and changes nothing.
 ```
 ok         softwareupdates.amazon.com   blocked
 ok         www.youtube.com              resolves
-ok home bound, front is tv.dumbtv.home/.Home
+ok         home                         dumbtv home (variant): bound, front is tv.dumbtv.variant/io.freemytv.HomeActivity
 packages 51 disabled
 ok filter 416 entries
 ok vpn dnsfilter.android
@@ -165,8 +165,8 @@ path. Use the table below; do not disable more packages.
 
 | What the owner sees | Fix |
 |---|---|
-| Amazon's home screen is back | `./scripts/launcher.sh -y` |
-| Amazon's home shows for ~5 s before dumbtv home | `./scripts/launcher.sh -y` (an update reset the alarm setting) |
+| Amazon's home screen is back | `./scripts/variant.sh -y` |
+| Amazon's home shows for ~5 s before dumbtv home | `./scripts/variant.sh -y` (an update reset the alarm setting) |
 | Nothing is blocked, but the filter is running | reboot the TV |
 | "Unable to Detect Your Remote" over everything | `adb shell pm enable --user 0 com.amazon.vizzini`, then reboot |
 | An app stopped working | find the host it needs and remove it from `data/blocklists/extra-hosts.txt`, then `./scripts/dnsfilter.sh -y` |

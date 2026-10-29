@@ -36,7 +36,7 @@ launcher:
   mechanism: set_home_activity
   package: tv.dumbtv.home
   reason: >-
-    dumbtv home 1.1 release APK (checksum-verified) installed and launched
+    The old launcher 1.1 release APK (checksum-verified) installed and launched
     fine. HOME only moved to it after the stock launcher was disabled:
     pm disable-user --user 0 com.google.android.tvlauncher, then
     cmd package set-home-activity tv.dumbtv.home/.Home.
@@ -51,8 +51,8 @@ launcher:
     boot and is the likely cause. Shell cannot disable that receiver alone
     (SecurityException: Shell cannot change component state). Disabling the
     whole setupwraith package and disabling tvlauncher again held: setupwraith
-    came back enabled by itself, but tvlauncher stayed disabled and dumbtv
-    home stayed HOME across two further reboots. The exact trigger is not
+    came back enabled by itself, but tvlauncher stayed disabled and the old
+    launcher stayed HOME across two further reboots. The exact trigger is not
     proven.
 quirks:
   - >-
@@ -61,7 +61,7 @@ quirks:
   - >-
     1 GB RAM. With stock Google TV home about 180 MB was available; the
     stock launcher alone used about 108 MB PSS. After the debloat below,
-    dumbtv home and SmartTube in place of the YouTube app, about 370-380 MB
+    the old launcher and SmartTube in place of the YouTube app, about 370-380 MB
     was available after boot (MemAvailable).
   - >-
     Disabled with pm disable-user --user 0 without side effects seen in this

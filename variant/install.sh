@@ -11,10 +11,18 @@
 #   ./variant/install.sh            install the APK in variant/build
 #   ./variant/install.sh --build    build it from source first (needs a JDK and the Android SDK)
 #   ./variant/install.sh --undo     hand HOME back to the old launcher (tv.dumbtv.home)
+#   ./variant/install.sh --undo-amazon
+#                                   hand HOME back to Amazon's launcher and undo every
+#                                   change this fork made (what scripts/restore.sh needs)
 #
 # Pick the device with ADB_SERIAL when more than one is connected.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
+
+# The version of what is being installed, so the television and the terminal agree
+# on what is on them.
+# shellcheck disable=SC1091
+source version.env
 
 PKG=tv.dumbtv.variant
 # The fork's class is not in the app's own package, so the component is written out.
@@ -45,7 +53,8 @@ case ${1:-} in
   "") ;;
   --build) mode=build ;;
   --undo) mode=undo ;;
-  *) echo "usage: $0 [--build | --undo]" >&2; exit 2 ;;
+  --undo-amazon) mode=undo-amazon ;;
+  *) echo "usage: $0 [--build | --undo | --undo-amazon]" >&2; exit 2 ;;
 esac
 
 command -v "$ADB" >/dev/null || { echo "error: adb not found — install Android platform-tools" >&2; exit 1; }
@@ -54,14 +63,6 @@ state=$(adb_ get-state 2>/dev/null || true)
 
 dev_sdk=$(sh_ getprop ro.build.version.sdk | tr -d '\r')
 case $dev_sdk in ''|*[!0-9]*) dev_sdk=28 ;; esac
-# The fork needs Android 8 (sdk 26) or newer. Fire OS 6's Keeper, which is how the
-# old launcher takes HOME there, is not ours: on such a TV the old launcher stays the
-# home screen.
-if [[ $dev_sdk -lt 26 ]]; then
-  echo "error: the variant needs Android 8 (sdk 26) or newer; this TV is sdk $dev_sdk." >&2
-  echo "  on Fire OS 6 the home screen is $OLD_PKG, which is installed already." >&2
-  exit 1
-fi
 
 # Fire OS 6's `settings` command silently drops writes to enabled_accessibility_services
 # (exit code 0, value unchanged); the settings content provider still takes them.
@@ -126,6 +127,41 @@ if [[ $mode == undo ]]; then
   exit 0
 fi
 
+if [[ $mode == undo-amazon ]]; then
+  # The full undo, the one scripts/restore.sh needs: HOME goes back to Amazon's
+  # launcher, and every change this fork made goes with it - the guard comes out
+  # of the enabled services, the alarm setting goes back to what it was, and the
+  # app ops and the doze exemption it added go too. The fork stays installed: it
+  # is in charge of nothing, and uninstalling it is one command away.
+  sh_ appops set $PKG SYSTEM_ALERT_WINDOW default >/dev/null 2>&1 || true
+  sh_ appops set $PKG REQUEST_INSTALL_PACKAGES default >/dev/null 2>&1 || true
+  set_futurity off
+  # Neither guard stays enabled: ours goes, and the fallback's goes with it,
+  # because a fallback that is still holding HOME is not a fallback, it is a
+  # second product.
+  set_guard ""
+  sh_ dumpsys deviceidle whitelist -$PKG >/dev/null 2>&1 || true
+  # Fire OS 6 holds HOME with a UsageStats keeper inside the fallback's package,
+  # not with an accessibility service, so the service setting says nothing there.
+  # Force-stopping the package is what stops the keeper from starting again at the
+  # next boot.
+  sh_ am force-stop $OLD_PKG >/dev/null 2>&1 || true
+  sh_ appops set $OLD_PKG GET_USAGE_STATS default >/dev/null 2>&1 || true
+  sh_ am start -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1 || true
+  echo "HOME handed back to Amazon's launcher (the variant stays installed: adb uninstall $PKG)"
+  exit 0
+fi
+
+# The fork needs Android 8 (sdk 26) or newer. Fire OS 6's Keeper, which is how the
+# old launcher takes HOME there, is not ours: on such a TV the old launcher stays the
+# home screen. The undo paths above are not blocked by this - they have to work on
+# every television, including the ones the fork does not run on at all.
+if [[ $dev_sdk -lt 26 ]]; then
+  echo "error: the variant needs Android 8 (sdk 26) or newer; this TV is sdk $dev_sdk." >&2
+  echo "  on Fire OS 6 the home screen is $OLD_PKG, which is installed already." >&2
+  exit 1
+fi
+
 if [[ $mode == build ]]; then
   ./build.sh
 fi
@@ -138,7 +174,7 @@ APK=build/variant.apk
 # that error is not the result.
 out=$(adb_ install -r "$APK" 2>&1 | grep -E '^[[:space:]]*(Success|Failure)' | tail -1 || true)
 case $out in
-  *Success*) echo "installed $PKG" ;;
+  *Success*) echo "installed $PKG $VERSION_NAME" ;;
   *INSTALL_FAILED_UPDATE_INCOMPATIBLE*)
     echo "error: the installed variant was signed with a different key (a release vs your own build)." >&2
     echo "  replacing it means uninstalling it (adb uninstall $PKG), which deletes its settings." >&2
@@ -192,4 +228,4 @@ fi
 sleep 2
 printf 'accessibility: %s\n' "$(sh_ settings get secure enabled_accessibility_services)"
 printf 'front window:  %s\n' "$(sh_ dumpsys window | grep -m1 mCurrentFocus | sed 's/.* u0 //; s/}$//')"
-echo "home: dumbtv home (variant)"
+echo "home: dumbtv home (variant) $VERSION_NAME"

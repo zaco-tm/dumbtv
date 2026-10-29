@@ -98,12 +98,19 @@ set_futurity() {
 # - The home activity is what the HOME key has to land on.
 # - The enabled components are the forms the setting may hold: the full class, and the
 #   shorthand with a leading dot.
+#
+# There is one product: the fork, tv.dumbtv.variant. The old launcher
+# (tv.dumbtv.home) is not built or shipped from this repo any more, but it stays
+# installed on a television as the fallback, and ./variant/install.sh --undo hands
+# HOME back to it. Its row below is that fallback: it is here so the scripts can
+# recognise the old guard, say which one is in charge, and say what to do about it —
+# not because the repo builds it.
 dumbtv_home_product() {
   case $1 in
     tv.dumbtv.variant)
       printf '%s\n' 'tv.dumbtv.variant|io.freemytv.Guard|dumbtv home (variant) button|tv.dumbtv.variant/io.freemytv.HomeActivity|dumbtv home (variant)|tv.dumbtv.variant/io.freemytv.Guard tv.dumbtv.variant/.io.freemytv.Guard' ;;
     tv.dumbtv.home)
-      printf '%s\n' 'tv.dumbtv.home|tv.dumbtv.home.Guard|dumbtv home button|tv.dumbtv.home/.Home|dumbtv home|tv.dumbtv.home/tv.dumbtv.home.Guard tv.dumbtv.home/.Guard' ;;
+      printf '%s\n' 'tv.dumbtv.home|tv.dumbtv.home.Guard|dumbtv home button|tv.dumbtv.home/.Home|the old launcher (fallback)|tv.dumbtv.home/tv.dumbtv.home.Guard tv.dumbtv.home/.Guard' ;;
     *) return 1 ;;
   esac
 }
@@ -133,10 +140,11 @@ home_activity_is() {
   return 0
 }
 
-# The command that installs the product again, for the messages that say what to do.
+# The command that puts this repo's product in front of the TV. There is one
+# product now, so both rows name the same script: for the fork it installs it,
+# and for the fallback it takes HOME back from the fallback.
 dumbtv_home_install_cmd() {
   case $1 in
-    tv.dumbtv.variant) printf '%s\n' './variant/install.sh' ;;
-    tv.dumbtv.home) printf '%s\n' './scripts/launcher.sh' ;;
+    tv.dumbtv.variant|tv.dumbtv.home) printf '%s\n' './variant/install.sh' ;;
   esac
 }

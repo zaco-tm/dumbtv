@@ -14,8 +14,9 @@ Please do not open a public issue for a security problem until it is fixed.
 
 ## In scope
 
-- The scripts in `scripts/` and `launcher/`
-- dumbtv home, the APK published in this repository's releases
+- The scripts in `scripts/` and `variant/`
+- dumbtv home, the home screen app: the fork in `variant/`, and the fallback
+  launcher's APK published in this repository's releases
 - The blocklists in `data/blocklists/`
 
 personalDNSfilter, SmartTube and HaGeZi's lists are separate projects; report

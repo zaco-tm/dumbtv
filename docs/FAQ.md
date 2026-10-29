@@ -15,7 +15,7 @@ The scripts never write to `/system`, never remount it, never touch the bootload
 and refuse to disable anything on `data/fireos/never-disable.txt`: the home screen,
 settings, inputs, the tuner, remote pairing and Prime Video. The realistic worst
 case is a TV that boots to Amazon's home screen, which `./scripts/restore.sh` or
-`./scripts/launcher.sh` fixes.
+`./scripts/variant.sh` fixes.
 
 **Does it need root?**
 No. Everything runs as the `shell` user that ADB debugging gives you.
@@ -27,10 +27,11 @@ network rules, puts back the settings your TV had before (saved by
 asked to have uninstalled come back from the Appstore.
 
 **Does the project itself phone home?**
-No. On your computer the scripts download the personalDNSfilter app from F-Droid,
-dumbtv home from this repository's releases (checked against a pinned SHA-256),
-and the HaGeZi tracker list; SmartTube too, if you ask for it. Nothing is
-uploaded. The launcher has no internet permission.
+No. On your computer the scripts download the personalDNSfilter app from F-Droid
+and the HaGeZi tracker list; SmartTube too, if you ask for it. dumbtv home is built
+from this repository, not downloaded, and the fallback launcher's APK comes from this
+repository's releases, checked against a pinned SHA-256. Nothing is uploaded. The
+old launcher had no internet permission at all; the fork has one, for its film picks.
 
 ## Your apps
 
@@ -82,7 +83,7 @@ Wi-Fi: `adb connect <tv-ip>:5555`.
 
 **Pressing HOME shows Amazon's home for a few seconds.**
 It should land on dumbtv home in about a quarter of a second. Run
-`./scripts/launcher.sh -y`; see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+`./scripts/variant.sh -y`; see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ## Other TVs
 
@@ -104,12 +105,16 @@ the rest of the cleanup: the packages, the settings and the home screen.
 
 ## The project
 
-**Why its own launcher?**
-A home screen needs no internet access, no advertising ID and no permission to
-install apps. dumbtv home is 54 KB, open source and asks for no permissions on
-Fire OS 7 and 8. Check it yourself: `aapt2 dump permissions dumbtv-home.apk`
-lists three, each limited to Android 8.1 and earlier, which only Fire OS 6's Keeper
-uses.
+**Why its own home screen?**
+The old launcher was 54 KB of plain Java: no internet access, no advertising ID and no
+permission to install apps. It asked for no permissions at all on Fire OS 7 and 8.
+Check it yourself: `aapt2 dump permissions dumbtv-home.apk` lists three, each limited
+to Android 8.1 and earlier, which only Fire OS 6's Keeper uses.
+
+dumbtv home is now the fork of the free-my-tv app, built from this repository rather
+than downloaded. It takes the internet for its film picks, so it asks for upstream's
+eight permissions and nothing else; `variant/check-apk.sh` checks that list against
+the built APK.
 
 **Who made this?**
 [Muzzammil](https://x.com/DevMuzzammil), with people who ran it on their own TVs

@@ -11,7 +11,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-STEPS = ["preflight", "debloat", "lockdown", "dnsfilter", "launcher"]
+STEPS = ["preflight", "debloat", "lockdown", "dnsfilter", "variant"]
 
 
 class AllTest(unittest.TestCase):

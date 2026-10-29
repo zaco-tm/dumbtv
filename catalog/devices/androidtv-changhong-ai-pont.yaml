@@ -15,7 +15,7 @@ ip_location: "Observed in the Wireless debugging screen; navigation path not est
 prompts:
   - name: "Play Protect older Android target warning"
     blocks_automation: true
-    fix: "Expand More details and choose Install anyway for the checksum-verified dumbtv home release. Play Protect was not disabled."
+    fix: "Expand More details and choose Install anyway for the checksum-verified old launcher release. Play Protect was not disabled."
 data:
   packages: data/androidtv/packages.txt
   protected: data/androidtv/protected.txt
@@ -25,10 +25,10 @@ quirks:
   - "Android 14 SDK 34. Fire OS scripts are inappropriate. No verified debloat profile exists for this model."
 notes: >-
   Partial manual session: five advertising, personalization and feedback
-  packages disabled for user 0; dumbtv home and SmartTube installed from
+  packages disabled for user 0; the old launcher and SmartTube installed from
   repository-pinned checksum-verified APKs. Google TV launcher and setup
-  handler disabled after dumbtv home launched. After an owner-performed
-  reboot, HOME still resolved to dumbtv and the disabled states persisted.
+  handler disabled after the old launcher launched. After an owner-performed
+  reboot, HOME still resolved to the old launcher and the disabled states persisted.
   Wi-Fi settings were lost during the session; the owner reconnected Wi-Fi,
   restoring ADB. The cause was not established. Android Private DNS with
   a public resolver serving the HaGeZi Normal list was validated by Android;

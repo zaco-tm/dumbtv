@@ -5,10 +5,10 @@ run commands on it, without root and without opening the case?
 
 | Platform | Disable vendor apps | Replace the home screen | On-device DNS filter | Status |
 |---|---|---|---|---|
-| **Fire OS 5** (Android 5.1, e.g. Fire TV Stick 2nd gen) | no, `pm disable-user` is refused | no, the launcher needs Android 7.1 | yes, privacy settings work too | not supported: the scripts stop on it (issue #42) |
-| **Fire OS 6** (2017–2018 devices) | yes, some are protected | yes, `Keeper` + usage stats | yes | tested on a Stick 4K (AFTMM); own lists in `data/fireos6/` |
+| **Fire OS 5** (Android 5.1, e.g. Fire TV Stick 2nd gen) | no, `pm disable-user` is refused | no, the home screen app needs Android 8 | yes, privacy settings work too | not supported: the scripts stop on it (issue #42) |
+| **Fire OS 6** (2017–2018 devices) | yes, some are protected | yes, the old launcher's `Keeper` + usage stats | yes | tested on a Stick 4K (AFTMM); own lists in `data/fireos6/` |
 | **Fire OS 7** (Android 9) | yes, some are protected | yes, accessibility `Guard` | yes | **tested end to end, what this repo was built on** |
-| **Fire OS 8** (Android 11) | yes, protected list differs | yes, accessibility `Guard` (launcher 1.2 and later) | yes, with one step in the app | tested end to end on a Fire TV Edition television (AFTOLCBC82), plus four stick reports |
+| **Fire OS 8** (Android 11) | yes, protected list differs | yes, accessibility `Guard` (the fork's, and the old launcher's from 1.2 on) | yes, with one step in the app | tested end to end on a Fire TV Edition television (AFTOLCBC82), plus four stick reports |
 | **Android TV / Google TV** (Sony, TCL, Philips, Hisense, Xiaomi, onn…) | yes, by hand with `pm disable-user` | yes, by hand: disable the stock launcher | yes, Private DNS or a local-VPN app | nine devices done by hand in the catalog; the scripts are Fire OS only |
 | **Samsung Tizen** | store apps only | no | no | a wall without root |
 | **LG webOS** | no | no | no | dev mode installs apps, nothing else |
@@ -56,14 +56,15 @@ Same shell, same `pm disable-user`, different targets.
   working sequence is: install the new launcher first, then
   `pm disable-user` the stock one (`com.google.android.tvlauncher` on older
   builds, `com.google.android.apps.tv.launcherx` on newer ones).
-  `launcher/install.sh` is not the tool here: its Guard watches for Amazon's
-  launcher. Check the release APK against `launcher/version.env`, `adb install`
-  it, then disable the stock launcher.
+  `variant/install.sh` is not the tool here: its Guard watches for Amazon's
+  launcher. Build the fork's APK (`variant/build.sh`), check its version against
+  `variant/version.env`, `adb install` it, then disable the stock launcher.
 - **Play Protect holds `adb install`.** The TV asks whether to install an app
   "built for an older version of Android" and the command waits until someone
-  answers on the remote. Press Install anyway. dumbtv home targets sdk 28 on
+  answers on the remote. Press Install anyway. The old launcher targeted sdk 28 on
   purpose: at 30, Android 11's package visibility rules would hide the
-  installed apps from it.
+  installed apps from it. The fork targets sdk 33 and names the apps it needs in its
+  manifest.
 - **Wait before rebooting.** On low-memory sets `pm disable-user` prints
   `disabled-user` but the state is saved later, and an `adb reboot` sent a few
   seconds after it brings the package back. Give it about 40 seconds (seen on a
@@ -182,7 +183,7 @@ fighting, no OTA risk, nothing to re-apply after an update.
 ## What we are working on
 
 1. **Android TV in the scripts.** The package list has started; `debloat.sh` and
-   `launcher.sh` still only run on Fire OS.
+   `variant.sh` still only run on Fire OS.
 2. **Launcher takeover on Android TV** by disabling the stock launcher, so dumbtv
    home works there the way it does on Fire OS.
 3. **A `dumb-panel.sh` script** that sets the vendor's own boot-to-HDMI option

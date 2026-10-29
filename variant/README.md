@@ -1,8 +1,14 @@
 # dumbtv home (variant)
 
-The variant launcher: free-my-tv's app, vendored, with our application id
-(`tv.dumbtv.variant`) and our own signing key. It sits beside the current dumbtv home
-(`tv.dumbtv.home`) instead of replacing it, so the launcher that works today keeps working.
+The variant: free-my-tv's app, vendored, with our application id
+(`tv.dumbtv.variant`) and our own signing key. It is dumbtv home — the one home
+screen app this repository ships.
+
+It installs beside the old launcher (`tv.dumbtv.home`), which stays on the television
+as the fallback, so the home screen that works today keeps working. The old launcher
+is not built or shipped from this repository any more. `./variant/install.sh --undo`
+gives HOME back to it, and `./variant/install.sh --undo-amazon` gives HOME back to
+Amazon's own launcher and undoes everything this fork changed.
 
 The Java package stays `io.freemytv` — that is where upstream's code lives, and renaming it
 would mean editing every vendored file. Only the application id is ours, so the two apps
@@ -22,6 +28,39 @@ cp variant/config.example.properties variant/config.properties   # add your TMDB
 
 The key goes in `variant/config.properties`, which is git-ignored. The build bakes it into
 the APK, so the installed app has working picks; never copy that file anywhere.
+
+## Version
+
+The fork's version lives in `variant/version.env`, next to the manifest and the built
+APK:
+
+```
+VERSION=1.0
+VERSION_CODE=1
+VERSION_NAME=1.0
+```
+
+`VERSION_NAME` and `VERSION_CODE` have to match `variant/AndroidManifest.xml`. An APK
+whose manifest says one version and a version file that says another is how an update
+gets refused on the television, so change all three together and build again.
+
+The same file holds the fallback launcher's version and hash, as `FALLBACK_VERSION` and
+`FALLBACK_APK_SHA256`. The old launcher is not built here, so its APK comes from the
+`launcher-v<FALLBACK_VERSION>` release; the fallback is only worth having if the file it
+comes from is the file that was checked.
+
+`variant/release-check.sh` checks all of it:
+
+```sh
+./variant/release-check.sh            # the built APK (if present) and the fallback release
+./variant/release-check.sh --manifest # only the version files, against the manifest
+./variant/release-check.sh --local    # only the built APK
+./variant/release-check.sh --remote   # only the fallback's release APK
+```
+
+`--remote` downloads the fallback's release APK and compares its hash with
+`FALLBACK_APK_SHA256`, so a release that has moved is caught before it is recorded as
+the way back.
 
 ## Install
 
@@ -48,7 +87,8 @@ adb shell pm list packages | grep dumbtv
 ```
 
 Both `package:tv.dumbtv.home` and `package:tv.dumbtv.variant` should be listed. The variant
-is installed *beside* the launcher that works today; nothing existing is replaced.
+is installed *beside* the old launcher, which is still there as the fallback; nothing
+existing is replaced.
 
 ## Grant the two special permissions
 
@@ -140,7 +180,7 @@ adb shell dumpsys window | grep mCurrentFocus
 
 Both must name `tv.dumbtv.variant/io.freemytv.HomeActivity`. `./scripts/verify.sh`
 checks all of it and says which product it is about: `dumbtv home (variant)` when the
-fork is in front, `dumbtv home` when the old launcher is.
+fork is in front, `the old launcher (fallback)` when the old launcher is.
 
 Do **not** use `resolve-activity` for this. On the Ember 55 it answers
 `com.amazon.tv.launcher/.ui.HomeActivity_vNext`, with `priority=950` and
@@ -209,9 +249,9 @@ One setting. If the fork misbehaves, put the old launcher's Guard back:
 adb shell settings put secure enabled_accessibility_services tv.dumbtv.home/tv.dumbtv.home.Guard
 ```
 
-`accessibility_enabled` is already 1. The launcher that works today is the home screen
+`accessibility_enabled` is already 1. The old launcher is the home screen
 again — HOME lands on `tv.dumbtv.home/.Home` — and `./scripts/verify.sh` passes and
-names the launcher.
+names the old launcher.
 
 That one command replaces the whole list, so any *other* accessibility service on the
 TV is dropped with it. `./variant/install.sh --undo` does the same swap and keeps the
@@ -250,7 +290,7 @@ own TV, so the variant has its own:
     -o variant/res/drawable-nodpi/banner_variant.png
   ```
 
-It is the same TV mark as `launcher/res/drawable/banner.xml`, in the launcher's own
+It is the same TV mark as the old launcher's banner, in that launcher's own
 colours, with our wordmark beside it. The label under the tile is the app's name,
 `dumbtv home (variant)`, which the launcher shows when the tile is focused.
 
@@ -278,7 +318,7 @@ carries our own banner, and it takes the HOME key through its Guard — HOME lan
 `tv.dumbtv.variant/io.freemytv.HomeActivity` and `./scripts/verify.sh` passes end to
 end, naming the fork. The way back was run on the TV as well: with the old launcher's
 Guard back in `enabled_accessibility_services`, HOME landed on `tv.dumbtv.home/.Home`
-and `verify.sh` named the launcher.
+and `verify.sh` named the old launcher.
 
 The inputs were measured on the same TV: the "Apple TV" tile opens our screen and tunes the
 device's own input (`…/HdmiInputService/HDMI100004`, not the port's `HW2`), the picture

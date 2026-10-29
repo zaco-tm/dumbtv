@@ -4,11 +4,16 @@ Fire OS gives the HOME key to Amazon's protected launcher, and no third-party ap
 the home app there, so the only way to own HOME is a Guard: an accessibility service that
 waits for Amazon's home window and covers it with ours. The fork carries one now
 (variant/src/io/freemytv/Guard.java), and these tests read it as text: they cannot run it,
-but they can say that the port is a port and not a copy of the launcher's file.
+but they can say that the port is the fork's own program.
 
 A copy would be a fault that only shows on the TV: a leftover tv.dumbtv.home in the port
 would send the HOME key to the launcher that works today instead of to ours, and a guard
 that starts the wrong activity would open nothing at all.
+
+The old launcher is not in this repo any more - it stays installed on a television as the
+fallback, and its files live in the git history. The tests that compared the two files
+side by side now compare the fork's file with what the scripts still know about the
+fallback, which is the part that still matters: the two guards have to be tellable apart.
 """
 import re
 import unittest
@@ -17,9 +22,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 VARIANT = ROOT / 'variant'
 GUARD = VARIANT / 'src' / 'io' / 'freemytv' / 'Guard.java'
-LAUNCHER_GUARD = ROOT / 'launcher' / 'src' / 'tv' / 'dumbtv' / 'home' / 'Guard.java'
 GUARD_XML = VARIANT / 'res' / 'xml' / 'guard.xml'
 OUR_FILES = VARIANT / 'our-files.txt'
+HOME_SH = ROOT / 'scripts' / 'home.sh'
 
 
 def guard_text():
@@ -38,6 +43,24 @@ def label_of(strings_xml):
     match = re.search(r'<string\s+name="guard_label"\s*>([^<]*)</string>',
                        strings_xml.read_text(encoding='utf-8'))
     return match.group(1) if match else ''
+
+
+def fallback_guard_label():
+    """The label the scripts know the fallback launcher's guard by.
+
+    The fallback is not in this repo any more, so its label is read from the
+    product table in scripts/home.sh - the one place that still names it, and the
+    place the check that recognises the fallback's guard reads it from too.
+    """
+    for line in HOME_SH.read_text(encoding='utf-8').splitlines():
+        if "'tv.dumbtv.home|" not in line:
+            continue
+        for part in line.split("'"):
+            if part.startswith('tv.dumbtv.home|'):
+                fields = part.split('|')
+                if len(fields) > 2:
+                    return fields[2]
+    return ''
 
 
 def body_of(text, signature):
@@ -74,10 +97,15 @@ class GuardPortTests(unittest.TestCase):
         self.assertNotIn('tv.dumbtv.home', guard_text())
         self.assertNotIn('tv.dumbtv.home', GUARD_XML.read_text(encoding='utf-8'))
 
-    def test_the_guard_is_not_a_copy_of_the_launcher_s(self):
-        # The launcher's file is a different program in a different package: the two
-        # must not have been copied over one another.
-        self.assertNotEqual(guard_text(), LAUNCHER_GUARD.read_text(encoding='utf-8'))
+    def test_the_guard_is_the_fork_s_own_program(self):
+        # The old launcher is not in this repo any more, so its file cannot be
+        # compared with the port side by side. What can be checked is the one thing
+        # that matters: the port is a program in the fork's own package, and it
+        # carries none of the old launcher's names.
+        text = guard_text()
+        self.assertTrue(text.startswith('package io.freemytv;'))
+        self.assertIn('class Guard extends AccessibilityService', text)
+        self.assertNotIn('tv.dumbtv.home', text)
 
     def test_the_guard_starts_the_fork_s_own_home_activity(self):
         # The fork's home screen is io.freemytv.HomeActivity. The launcher starts
@@ -156,12 +184,18 @@ class GuardPortTests(unittest.TestCase):
         # component, and the TV's accessibility settings show the same string. Two
         # guards with one label cannot be told apart there, and the check that says
         # which one is bound is the one that decides whether HOME works.
+        #
+        # The fallback launcher's label is not in this repo any more: it lives in
+        # the APK that is installed on the TV. The scripts still know it, because
+        # they have to recognise the fallback's guard, so that is where it is read
+        # from - and that is the point of the test: the fork's label and the
+        # fallback's label must not drift into each other.
         ours = label_of(VARIANT / 'res' / 'values' / 'guard.xml')
-        theirs = label_of(ROOT / 'launcher' / 'res' / 'values' / 'strings.xml')
+        theirs = fallback_guard_label()
         self.assertTrue(ours, 'the fork has no guard label')
-        self.assertTrue(theirs, 'the launcher has no guard label')
+        self.assertTrue(theirs, 'the fallback has no guard label')
         self.assertNotEqual(ours, theirs,
-                            'the fork and the launcher share a guard label')
+                            'the fork and the fallback share a guard label')
         # And neither is the beginning of the other. The dump cuts a long label
         # short, so a label that begins with the other one would be read as this one
         # when the dump cut it short: the check for one guard would answer for the
@@ -178,9 +212,11 @@ class GuardBoundByTheForkTests(unittest.TestCase):
     This class used to say the opposite: until the install path existed, no script
     mentioned tv.dumbtv.variant/io.freemytv.Guard, so that the launcher which works
     today stayed the one in front. The install path exists now, and the test says
-    what it must do instead: the fork's path binds the fork's Guard, and the old
-    launcher's path does not. Two paths that bind Guards would fight over the HOME
-    key.
+    what it must do instead: the fork's path binds the fork's Guard, and nothing
+    else does. Two paths that bind Guards would fight over the HOME key.
+
+    The old launcher's own install path is gone from this repo; it stays installed
+    on a television as the fallback, and the fork's path takes its guard out.
     """
 
     FORK_GUARD = 'tv.dumbtv.variant/io.freemytv.Guard'
@@ -189,13 +225,20 @@ class GuardBoundByTheForkTests(unittest.TestCase):
         text = (VARIANT / 'install.sh').read_text(encoding='utf-8')
         self.assertIn(self.FORK_GUARD, text)
 
-    def test_the_old_launcher_s_path_does_not_bind_the_fork_s_guard(self):
-        for path in (ROOT / 'launcher' / 'install.sh', ROOT / 'scripts' / 'launcher.sh'):
-            with self.subTest(script=path.name):
-                self.assertNotIn(self.FORK_GUARD, path.read_text(encoding='utf-8'))
+    def test_no_other_script_binds_a_guard(self):
+        # Two paths that bind Guards would fight over the HOME key, so the fork's
+        # guard is written into the accessibility setting by one script and one only.
+        writes = ('put_secure enabled_accessibility_services',
+                  'settings put secure enabled_accessibility_services')
+        binders = []
+        for path in sorted(list((ROOT / 'scripts').glob('*.sh')) + list(VARIANT.glob('*.sh'))):
+            text = path.read_text(encoding='utf-8')
+            if 'io.freemytv.Guard' in text and any(w in text for w in writes):
+                binders.append(str(path.relative_to(ROOT)))
+        self.assertEqual(binders, ['variant/install.sh'])
 
     def test_only_one_install_path_binds_a_guard(self):
-        # The old launcher's guard has to go out when the fork's comes in: two Guards
+        # The fallback's guard has to go out when the fork's comes in: two Guards
         # bound at once would fight over the HOME key.
         text = (VARIANT / 'install.sh').read_text(encoding='utf-8')
         self.assertIn('tv.dumbtv.home/tv.dumbtv.home.Guard', text)
@@ -205,7 +248,11 @@ class GuardBoundByTheForkTests(unittest.TestCase):
         # would let the package manager hand the HOME key to the fork on its own.
         text = (VARIANT / 'install.sh').read_text(encoding='utf-8')
         self.assertNotIn('set-home-activity', text)
-        self.assertNotIn('category.HOME', text)
+        # A HOME intent may be started - that is how the whole thing is undone and
+        # HOME goes back to Amazon's launcher - but never one that names the fork.
+        for line in text.splitlines():
+            if 'category.HOME' in line:
+                self.assertNotIn('tv.dumbtv.variant', line)
         manifest = (VARIANT / 'AndroidManifest.xml').read_text(encoding='utf-8')
         self.assertNotIn('android.intent.category.HOME', manifest)
 

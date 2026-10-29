@@ -10,9 +10,14 @@ our own activity, so the picture is in a window of ours. That is what makes BACK
 to the home screen and what holds the panel awake while there is a picture.
 
 These tests read the sources as text. They cannot run them, but they can say that the port
-is a port and not a copy of the launcher's file, that the manifest declares the screen, and
-that the two rules the port has to keep - Amazon's Live TV is refused, and the maker's own
-players still come first - are still in the file.
+is the fork's own program, that the manifest declares the screen, and that the two rules
+the port has to keep - Amazon's Live TV is refused, and the maker's own players still come
+first - are still in the file.
+
+The old launcher is not in this repo any more - it stays installed on a television as the
+fallback, and its files live in the git history - so the port cannot be compared with it
+side by side. What the tests check instead is the part that still matters: the port is a
+program in the fork's own package and carries none of the old launcher's names.
 """
 import unittest
 import xml.etree.ElementTree as ET
@@ -22,7 +27,6 @@ ROOT = Path(__file__).resolve().parents[1]
 VARIANT = ROOT / 'variant'
 INPUT = VARIANT / 'src' / 'io' / 'freemytv' / 'Input.java'
 HOME_APPS = VARIANT / 'src' / 'io' / 'freemytv' / 'HomeApps.java'
-LAUNCHER_INPUT = ROOT / 'launcher' / 'src' / 'tv' / 'dumbtv' / 'home' / 'Input.java'
 MANIFEST = VARIANT / 'AndroidManifest.xml'
 OUR_FILES = VARIANT / 'our-files.txt'
 LOCAL_CHANGES = VARIANT / 'local-changes.txt'
@@ -97,10 +101,14 @@ class InputPortTests(unittest.TestCase):
         # is the one thing the port must not do.
         self.assertNotIn('tv.dumbtv.home', input_text())
 
-    def test_the_port_is_not_a_copy_of_the_launcher_s(self):
-        # The launcher's file is a different program in a different package: the two
-        # must not have been copied over one another.
-        self.assertNotEqual(input_text(), LAUNCHER_INPUT.read_text(encoding='utf-8'))
+    def test_the_port_is_the_fork_s_own_program(self):
+        # The old launcher is not in this repo any more, so its file cannot be
+        # compared with the port side by side. What can be checked is the one thing
+        # that matters: the port is a program in the fork's own package, and it
+        # carries none of the old launcher's names.
+        text = input_text()
+        self.assertTrue(text.startswith('package io.freemytv;'))
+        self.assertNotIn('tv.dumbtv.home', text)
 
     def test_the_picture_is_in_a_window_of_ours(self):
         # TvView, not an intent to another app: the picture has to be in our own window,

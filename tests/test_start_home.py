@@ -1,7 +1,7 @@
 """Starting dumbtv home at the end of an install, on a TV that may be asleep.
 
 `am start -W` waits until the activity draws, and a sleeping TV never draws it, so
-launcher/install.sh hung for ever when the TV fell asleep during an install.
+the install hung for ever when the TV fell asleep during an install.
 
 Run: python3 -m unittest discover -s tests -v
 """

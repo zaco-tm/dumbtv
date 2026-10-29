@@ -27,11 +27,11 @@ prompts:
     blocks_automation: true
     fix: "tick Always allow from this computer, press Allow on the remote"
   - name: "Google Play Protect: app built for an older version of Android"
-    when: "adb install of the dumbtv home APK"
+    when: "adb install of the old launcher's APK"
     blocks_automation: true
     fix: >-
       adb install waits until someone answers the dialog on the TV. Press
-      Install anyway. The warning comes from dumbtv home's targetSdk 28,
+      Install anyway. The warning comes from the old launcher's targetSdk 28,
       which is deliberate; the app runs normally on Android 11.
 data:
   packages: data/androidtv/packages.txt
@@ -43,16 +43,16 @@ launcher:
   package: tv.dumbtv.home
   reason: >-
     Classic Android TV home (com.google.android.tvlauncher, HOME at
-    priority 2). dumbtv home answers HOME once the stock launcher is disabled.
+    priority 2). The old launcher answers HOME once the stock launcher is disabled.
   fallback: "pm enable --user 0 com.google.android.tvlauncher"
   quirk: >-
-    launcher/install.sh was not used: its Guard is for Fire OS. The release
-    APK was checksum-checked against launcher/version.env, installed with adb
+    variant/install.sh was not used: its Guard is for Fire OS. The release
+    APK was checksum-checked against variant/version.env, installed with adb
     install, then com.google.android.tvlauncher was disabled with
     pm disable-user (it is in never-disable.txt; a deliberate,
     owner-approved exception). Only tvlauncher and Settings answer HOME on
-    this build, so setupwraith did not need touching. HOME stayed on dumbtv
-    home after a reboot.
+    this build, so setupwraith did not need touching. HOME stayed on the old
+    launcher after a reboot.
 quirks:
   - >-
     pm disable-user printed disabled-user, but every package came back

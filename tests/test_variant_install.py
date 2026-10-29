@@ -44,6 +44,8 @@ class VariantInstallTests(unittest.TestCase):
             (tmp / 'variant' / 'build').mkdir(parents=True)
             (tmp / 'variant' / 'build' / 'variant.apk').write_bytes(b'not an apk')
             shutil.copy(ROOT / 'variant' / 'install.sh', tmp / 'variant' / 'install.sh')
+            # The script reads its version from version.env next to it.
+            shutil.copy(ROOT / 'variant' / 'version.env', tmp / 'variant' / 'version.env')
             (tmp / 'scripts').symlink_to(ROOT / 'scripts')
             state_file = tmp / 'state.json'
             state_file.write_text(json.dumps(state))
@@ -124,6 +126,50 @@ class VariantInstallTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn('Android 8', result.stderr)
         self.assertEqual(state['settings']['secure/enabled_accessibility_services'], OLD_GUARD)
+
+    def test_the_full_undo_takes_both_guards_out(self):
+        # scripts/restore.sh needs the undo that gives HOME back to Amazon's
+        # launcher: neither guard stays enabled, because a fallback that is still
+        # holding HOME is not a fallback, it is a second product.
+        result, _, state = self.run_install(
+            self.state(**{'secure/enabled_accessibility_services': FORK_GUARD}), '--undo-amazon')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        enabled = state['settings']['secure/enabled_accessibility_services']
+        self.assertNotIn('tv.dumbtv.variant', enabled)
+        self.assertNotIn('tv.dumbtv.home', enabled)
+
+    def test_the_full_undo_keeps_the_other_accessibility_services(self):
+        result, _, state = self.run_install(
+            self.state(**{'secure/enabled_accessibility_services':
+                          'example.reader/.Service:' + FORK_GUARD}), '--undo-amazon')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(state['settings']['secure/enabled_accessibility_services'],
+                         'example.reader/.Service')
+
+    def test_the_full_undo_puts_the_alarm_setting_back(self):
+        # min_futurity=0 is ours; the undo gives the television the value it had.
+        result, _, state = self.run_install(
+            self.state(**{'global/alarm_manager_constants': 'min_futurity=0',
+                          'global/dumbtv_min_futurity': '5000'}), '--undo-amazon')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(state['settings']['global/alarm_manager_constants'],
+                         'min_futurity=5000')
+
+    def test_the_full_undo_works_on_fire_os_6(self):
+        # The fork does not run there, but the undo has to: it is what gives a
+        # Fire OS 6 television its Amazon home back.
+        result, _, state = self.run_install(self.state(sdk=25), '--undo-amazon')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn('tv.dumbtv.home',
+                         state['settings'].get('secure/enabled_accessibility_services', ''))
+
+    def test_the_fork_stays_installed_after_the_full_undo(self):
+        # The way back to a working TV is not "uninstall the fork": the fork stays,
+        # it is simply not in charge.
+        result, _, state = self.run_install(self.state(), '--undo-amazon')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('tv.dumbtv.variant', state['packages'])
+        self.assertIn('tv.dumbtv.home', state['packages'])
 
     def test_an_unknown_flag_is_refused(self):
         result, _, _ = self.run_install(self.state(), '--generik')

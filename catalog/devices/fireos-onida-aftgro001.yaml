@@ -45,11 +45,11 @@ launcher:
   mechanism: accessibility_service
   package: tv.dumbtv.home
   reason: "com.amazon.tv.launcher and com.amazon.firehomestarter are protected; set-home-activity is ignored"
-  fallback: "holding HOME opens Fire OS's quick menu; launcher Options can open Amazon's home"
+  fallback: "holding HOME opens Fire OS's quick menu; the old launcher's Options can open Amazon's home"
   quirk: "HOME key never reaches accessibility key filters; needs alarm_manager_constants min_futurity=0 to skip the 5 s app-switch delay"
 quirks:
   - "a disabled persistent priv-app can keep running; debloat.sh has a residual-process pass"
-  - "the launcher hook can be cleared, leaving Amazon's home; scripts/launcher.sh restores it"
+  - "the home-screen hook can be cleared, leaving Amazon's home; scripts/variant.sh restores it"
   - "after every boot a blank FallbackHome shows for ~15 s"
   - "the DNS filter must never be force-stopped; reboot instead"
 known_limits:

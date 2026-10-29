@@ -111,7 +111,7 @@ the Latin keyboard, Google text-to-speech, and Google WebView.
 
 ## Home screen and settings
 
-A third-party launcher was set as home; dumbtv home was not installed.
+A third-party launcher was set as home; the old launcher was not installed.
 `cmd package get-home-activities` is not a command on this Android 12 build.
 
 `ro.product.model` is `Smart TV`, with a space. `adb devices -l` prints

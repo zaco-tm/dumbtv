@@ -51,7 +51,7 @@ data:
 launcher:
   mechanism: none
   package: com.google.android.apps.tv.launcherx
-  reason: "Stock Google TV home was retained; dumbtv home was not installed."
+  reason: "Stock Google TV home was retained; the old launcher was not installed."
 quirks:
   - >-
     ro.product.model contains spaces (Smart TV Pro); adb devices -l uses
@@ -86,7 +86,7 @@ notes: >-
 known_limits:
   - "Observed on one G08 build; other TCL models, remotes and firmware may differ."
   - >-
-    dumbtv's all.sh and verify.sh were not run. No dumbtv launcher or DNS
+    dumbtv's all.sh and verify.sh were not run. No dumbtv home screen or DNS
     filter result is claimed. The verify paths below are the catalog's
     existing Fire OS host lists, not a verified Google/TCL DNS policy.
   - >-

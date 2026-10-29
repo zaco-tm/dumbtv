@@ -40,18 +40,18 @@ launcher:
   mechanism: set_home_activity
   package: tv.dumbtv.home
   reason: >-
-    dumbtv home 1.2 release APK (checksum-verified) installed with adb install
+    the old launcher 1.2 release APK (checksum-verified) installed with adb install
     -r. The Google TV launcher (launcherx) and setupwraith were already
     disabled, and a previously installed third-party launcher answered HOME at the same
     priority 0. Disabling that launcher with pm disable-user --user 0 and running
-    cmd package set-home-activity tv.dumbtv.home/.Home made dumbtv home the HOME
+    cmd package set-home-activity tv.dumbtv.home/.Home made the old launcher the HOME
     screen. It came up by itself after a reboot, and HOME from inside an app
     returned to it.
   fallback: >-
     com.android.tv.settings/.system.FallbackHome (priority -1000) stays as the
     HOME of last resort.
   quirk: >-
-    launcher/install.sh was not used: its HOME takeover (accessibility Guard,
+    variant/install.sh was not used: its HOME takeover (accessibility Guard,
     alarm min_futurity) targets Fire OS and is not needed here. The vendor
     already runs its own accessibility service
     (com.sdmc.remotecontrolservice/.service.SdmcAccessibilityService) for the
@@ -73,15 +73,15 @@ quirks:
     com.google.android.katniss (Assistant, voice search and the remote's mic
     button) also survived reboots but not the Input button; see below.
   - >-
-    Remote buttons checked with dumbtv home as HOME: Netflix and YouTube open
-    their apps, HOME returns to dumbtv home from both, and Input opens the
+    Remote buttons checked with the old launcher as HOME: Netflix and YouTube open
+    their apps, HOME returns to the old launcher from both, and Input opens the
     MediaTek inputs panel (com.mediatek.wwtv.tvcenter). With katniss disabled
     the mic button sends android.speech.action.WEB_SEARCH, nothing handles it,
     and nothing appears on screen. The gear (settings) button does nothing: it
     sends android.app.action.TOGGLE_NOTIFICATION_HANDLER_PANEL, which only
     launcherx's DashboardHandler answers, and launcherx is disabled
     ("Could not resolve activityInfo" in logcat). Settings stays reachable from
-    dumbtv home (Up from the top row).
+    the old launcher (Up from the top row).
   - >-
     pm disable-user on com.google.android.katniss does not hold. Pressing Input
     when com.mediatek.wwtv.tvcenter is not running cold-starts it, and within
@@ -125,7 +125,7 @@ quirks:
     Wake config. The menu sets persist.odm.status.wow=on (seen in logcat; the
     global settings network_wow and network_wol stayed 0). With it off, a
     Wake-on-LAN magic packet did nothing. With it on, the same packet woke the
-    projector from standby over Wi-Fi in about 6 s, picture on and dumbtv home
+    projector from standby over Wi-Fi in about 6 s, picture on and the old launcher
     in front. After the wake adb showed the device as offline until adb
     kill-server and adb connect.
   - >-
@@ -135,7 +135,7 @@ notes: >-
   Manual ADB session on 2026-10-23 from Linux. Left disabled with
   pm disable-user --user 0: the five packages above plus the previously
   installed third-party launcher. katniss is enabled again (tvcenter
-  re-enables it) with its microphone revoked. dumbtv home 1.2 installed as
+  re-enables it) with its microphone revoked. The old launcher 1.2 was installed as
   HOME. Private DNS was tried and turned off again; the DNS filter was not
   set up.
 known_limits:

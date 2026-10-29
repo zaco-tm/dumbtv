@@ -64,20 +64,16 @@ else
 fi
 if [[ $LAUNCHER == 0 ]]; then
   printf '%-10s %-38s %s\n' skip home "LAUNCHER=0, not checked"
-elif [[ $SDK -lt 28 ]]; then
-  # Fire OS 6: the Keeper, not the accessibility service, owns HOME.
-  keeper=$(dev 'dumpsys activity services tv.dumbtv.home' | grep -c 'isForeground=true' || true)
-  if [[ ${keeper:-0} -gt 0 ]]; then
-    printf '%-10s %-38s %s\n' ok home "Keeper armed, front is ${home:-unknown}"
-  else
-    printf '%-10s %-38s %s\n' FAIL home "Keeper not running; re-run launcher.sh"; fail=1
-  fi
+elif [[ $SDK -lt 26 ]]; then
+  # Fire OS 6 is below the fork's floor: it needs Android 8, and the home screen
+  # there is the old launcher's. There is nothing of ours to check.
+  printf '%-10s %-38s %s\n' skip home "Fire OS 6: dumbtv home does not run on this TV; the old launcher is the home screen"
 else
   # An enabled setting can outlive the process/binding. Check the current user's
   # exact component AND the live bound-service section, without sending HOME.
   # Which product is in charge is decided by the enabled guard component, and every
-  # check below is about that product: the fork and the old launcher are two home
-  # screens, and the table has to say which one it is talking about.
+  # check below is about that product: the fork and the old launcher it falls back
+  # to are two home screens, and the table has to say which one it is talking about.
   current_user=$(dev 'am get-current-user' | tr -d '\r')
   hook=unknown
   product=""
@@ -104,7 +100,12 @@ else
   esac
   install_cmd=$(dumbtv_home_install_cmd "$product")
   [[ -n $install_cmd ]] || install_cmd='the install script'
-  if [[ -z $product ]]; then
+  if [[ $product == tv.dumbtv.home ]]; then
+    # The fallback launcher is in charge. It works, but it is not this repo's
+    # product any more, so the check says so and says how to change that.
+    printf '%-10s %-38s %s\n' FAIL home "the old launcher (fallback) is in charge; re-run $install_cmd"
+    fail=1
+  elif [[ -z $product ]]; then
     if [[ $user_ok == 1 ]]; then
       printf '%-10s %-38s %s\n' FAIL home "no dumbtv home is in charge; no dumbtv guard is enabled"; fail=1
     else
@@ -205,8 +206,8 @@ fi
 
 if [[ $LAUNCHER == 0 ]]; then
   printf '%-10s %-38s %s\n' skip alarm "LAUNCHER=0, not checked"
-elif [[ $SDK -lt 28 ]]; then
-  printf '%-10s %-38s %s\n' skip alarm "Fire OS 6 Keeper uses moveTaskToFront"
+elif [[ $SDK -lt 26 ]]; then
+  printf '%-10s %-38s %s\n' skip alarm "Fire OS 6: dumbtv home does not run on this TV"
 else
   # dumbtv home needs this to answer HOME immediately; an update can drop it.
   if [[ $futurity == 0 ]]; then

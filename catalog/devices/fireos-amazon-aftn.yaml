@@ -4,7 +4,7 @@ contributors:
   - adi-c
 platform: fireos
 status: tested
-tested_on: "Fire TV 3rd gen (pendant), Fire OS 6.2.8.0 / NS6709: debloat, lockdown, DNS filter and Keeper launcher; verify.sh passed"
+tested_on: "Fire TV 3rd gen (pendant), Fire OS 6.2.8.0 / NS6709: debloat, lockdown, DNS filter and the old launcher's Keeper; verify.sh passed"
 models:
   - AFTN
 adb:
@@ -28,10 +28,10 @@ data:
 launcher:
   mechanism: usage_stats_keeper
   package: tv.dumbtv.home
-  reason: "Fire OS 6 refuses third-party accessibility services (A11yAuthorizer); the Keeper reads UsageStats and calls moveTaskToFront, skipping the 5 s app-switch delay"
-  fallback: "holding HOME opens Fire OS's quick menu; Options > Open Amazon's home screen pauses the Keeper"
+  reason: "Fire OS 6 refuses third-party accessibility services (A11yAuthorizer); the old launcher's Keeper reads UsageStats and calls moveTaskToFront, skipping the 5 s app-switch delay"
+  fallback: "holding HOME opens Fire OS's quick menu; the old launcher's Options > Open Amazon's home screen pauses the Keeper"
 quirks:
-  - "Fire OS 6 refuses third-party accessibility services; HOME is managed by dumbtv home Keeper via GET_USAGE_STATS and moveTaskToFront"
+  - "Fire OS 6 refuses third-party accessibility services; HOME is managed by the old launcher's Keeper via GET_USAGE_STATS and moveTaskToFront"
   - "no cmd package install-existing: system apps are only disabled, never uninstalled"
   - "no RUN_ANY_IN_BACKGROUND app-op; RUN_IN_BACKGROUND ignore blocks background starts only"
   - "always_on_vpn_app is dropped at boot; the DNS filter starts from its own boot receiver once it has been opened"

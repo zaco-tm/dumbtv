@@ -37,6 +37,10 @@ my-kids-tv (see "The kids face" below).
   generating `Config.java` out of `config.properties`; we generate that class ourselves.
 - Not vendored: `config.example.properties` — upstream's settings template; ours is
   `variant/config.properties` (git-ignored, it holds the TMDB key).
+- Ours, and outside the vendored tree: `version.env` and `release-check.sh` — the version
+  file and the release check for this repo's own product. They sit at the top of
+  `variant/`, outside the trees `verify-vendor.sh` compares (`src`, `res`, `assets`,
+  `tools`), so they are listed here rather than in `our-files.txt`.
 - Not vendored: upstream's root files, which are about upstream's own repository:
   - `README.md` — upstream's readme describes upstream's releases and TVs; ours is
     the repo's own readme.
@@ -62,6 +66,12 @@ Our manifest is upstream's with ten changes, and nothing else that matters:
    component that carries a label. The TV shows our name, not upstream's.
 2. **The version** — `versionCode 3`, `versionName 1.2` → `versionCode 1`, `versionName 1.0`.
    Ours is a different app with its own key; upstream's numbers say nothing about ours.
+   The fork's version lives in `variant/version.env` (`VERSION`, `VERSION_CODE`,
+   `VERSION_NAME`), next to the manifest and the built APK, and
+   `variant/release-check.sh` says out loud when the three disagree. The same file holds
+   the fallback launcher's version and hash, as `FALLBACK_VERSION` and
+   `FALLBACK_APK_SHA256`; `variant/release-check.sh --remote` downloads the fallback's
+   release APK and checks it against that hash.
 3. **The provider authority** — `io.freemytv.photos` → `tv.dumbtv.variant.photos`. An
    authority belongs to the app that is installed, and ours is `tv.dumbtv.variant`.
    `tools/photos.py` writes to the same one.
@@ -85,16 +95,16 @@ Our manifest is upstream's with ten changes, and nothing else that matters:
    Guard gives the variant the HOME key, and it does not need the category.
 7. **The banner** — `@drawable/banner` → `@drawable/banner_variant`. Upstream's banner is a
    picture with the words *Free My TV* in it, and the launcher draws the banner as the app's
-   tile: the variant's tile in `dumbtv home`'s APPS row said "Free My TV", not our name. Ours
-   is the same TV mark as `launcher/res/drawable/banner.xml`, in the launcher's own colours,
-   with our wordmark. The picture is ours, so it is listed in `our-files.txt`, and the design
+   tile: the variant's tile in the old launcher's APPS row said "Free My TV", not our
+   name. Ours is the same TV mark as the old launcher's banner, in that launcher's own
+   colours, with our wordmark. The picture is ours, so it is listed in `our-files.txt`, and the design
    is kept as an SVG next to it in `variant/artwork/` so the PNG can be re-made and looked at
    in a review.
 8. **The Guard** — upstream declares no accessibility service for the home screen; we declare
    `io.freemytv.Guard`, ours. Fire OS gives the HOME key to Amazon's protected launcher and
    lets no third-party app be the home app, so the only way to own HOME there is a Guard: an
    accessibility service that waits for Amazon's home window and covers it with ours. It is the
-   port of `tv.dumbtv.home`'s Guard (`launcher/src/tv/dumbtv/home/Guard.java`) — the same
+   port of the old launcher's Guard — the same
    alarm-fired launch, the same cover, the same rules — and it is a new file of ours, listed in
    `our-files.txt`. Its configuration is `res/xml/guard.xml`, with its two strings in
    `res/values/guard.xml`. It is declared `android:exported="true"` behind
@@ -105,8 +115,8 @@ Our manifest is upstream's with ten changes, and nothing else that matters:
    own app. We declare `io.freemytv.Input`, ours, and open the input there instead. Upstream's
    way leaves the picture in another app's window: on this TV that is Amazon's input player, so
    BACK does not come back to the home screen and there is nothing of ours to hold the panel
-   awake with. Ours is the port of `tv.dumbtv.home`'s input screen
-   (`launcher/src/tv/dumbtv/home/Input.java`), a new file of ours listed in `our-files.txt`.
+   awake with. Ours is the port of the old launcher's input screen,
+   a new file of ours listed in `our-files.txt`.
    It runs in the home screen's process and task (`android:process=":home"`, the same
    `android:taskAffinity` as `HomeActivity`), so BACK returns to the home screen, and its theme
    is the platform's fullscreen one and not `FreeMyTV.Home`: the window's background is
@@ -239,7 +249,8 @@ means, in this order:
    `res/`: re-make it from `variant/artwork/banner_variant.svg` (the command is in
    `variant/README.md`). The catalogue assets go with `assets/`: take them from
    `variant/catalog-data/`, which keeps them with their licence.
-6. Update the version in `variant/AndroidManifest.xml` (`versionCode`, `versionName`), so the
+6. Update the version in `variant/version.env` (`VERSION`, `VERSION_CODE`, `VERSION_NAME`)
+   and in `variant/AndroidManifest.xml` (`versionCode`, `versionName`), so the
    new build is a different one on the TV than the old.
 7. Update `variant/local-changes.txt` and `variant/our-files.txt` if upstream's paths moved.
 8. Update `variant/UPSTREAM.md`: the commit, the date, the hash — and the list of manifest

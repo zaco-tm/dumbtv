@@ -36,7 +36,7 @@ launcher:
   mechanism: none
   package: tv.dumbtv.home
   reason: >-
-    dumbtv home 1.1 (release APK, checksum-verified) installed with adb
+    The old launcher 1.1 (release APK, checksum-verified) installed with adb
     install, then pm disable-user com.google.android.tvlauncher. The schema
     has no value for "disable the stock launcher", which is the method
     docs/OTHER-TVS.md describes for Android TV.
@@ -44,7 +44,7 @@ launcher:
   quirk: >-
     Only HOME handlers were tvlauncher (priority 2) and Settings FallbackHome
     (-1000); setupwraith is installed but does not answer HOME on this build,
-    so it was left enabled. HOME stuck to dumbtv home across a reboot.
+    so it was left enabled. HOME stuck to the old launcher across a reboot.
 quirks:
   - >-
     The JointSpace API answers on 1925 (HTTP) and 1926 (HTTPS); GET
@@ -61,7 +61,7 @@ quirks:
     Arte, Megogo, Deezer, Divan.TV, PlayWorks, Toon Goggles, Fishing TV, Flix
     Premiere). The name is only in resources.arsc; dumpsys does not show it.
   - >-
-    Play Protect did not block adb install of dumbtv home or SmartTube.
+    Play Protect did not block adb install of the old launcher or SmartTube.
   - >-
     Private DNS (settings global private_dns_mode hostname) validated on
     first try over Ethernet.
@@ -70,13 +70,13 @@ quirks:
     the same two HOME handlers. 37 packages disabled for user 0 first
     (Philips telemetry and promos, six nettvapp shortcuts, Google feedback
     and partner setup, katniss, Alexa, unused Google and third-party apps),
-    then dumbtv home 1.2 (release APK, checksum-verified) installed with adb
+    then the old launcher 1.2 (release APK, checksum-verified) installed with adb
     install. HOME resolved to it as soon as tvlauncher was disabled, and
     tvlauncher, tvrecommendations and all 37 stayed disabled through two
     reboots. The notification panel goes with tvrecommendations.
   - >-
     org.droidtv.eum has a LEANBACK_LAUNCHER activity (How-to videos), so it
-    shows as a tile in dumbtv home. Hide the tile in Options instead of
+    shows as a tile in the old launcher. Hide the tile in Options instead of
     disabling the package: on other Philips boards xtv binds it and the
     SOURCES drawer stops working without it.
   - >-

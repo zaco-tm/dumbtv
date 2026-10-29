@@ -22,9 +22,9 @@ data:
   never_disable: data/fireos/never-disable.txt
   user_apps: data/fireos/user-apps.txt
 quirks:
-  - "launcher.sh failed on its first run with 'Fire OS did not bind the HOME guard'. logcat showed the Guard service starting about 8 s after it was enabled, just after install.sh's check window, right after a fresh install; there was no A11yAuthorizer denial. Running ./scripts/launcher.sh -y a second time bound it at once, and verify.sh passed."
+  - "The old launcher's script failed on its first run with 'Fire OS did not bind the HOME guard'. logcat showed the Guard service starting about 8 s after it was enabled, just after the install script's check window, right after a fresh install; there was no A11yAuthorizer denial. Running it a second time bound it at once, and verify.sh passed."
   - "com.amazon.aria, com.amazon.whad and com.amazon.whasettings, marked Fire OS 6 in data/fireos/alexa.txt, are present on this Fire OS 7 build and disabled cleanly with ALEXA=0."
-notes: "Fire TV Cube (3rd gen, AFTGAZL) over Wi-Fi: full pass with Alexa off, DNS filter, dumbtv home and YouTube replaced by SmartTube; verify.sh all checks passed"
+notes: "Fire TV Cube (3rd gen, AFTGAZL) over Wi-Fi: full pass with Alexa off, DNS filter, the old launcher and YouTube replaced by SmartTube; verify.sh all checks passed"
 verify:
   blocked: data/blocklists/verify-blocked.txt
   allowed: data/blocklists/verify-allowed.txt

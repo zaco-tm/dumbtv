@@ -7,6 +7,20 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
+# The version lives in version.env, and the manifest has to agree with it: a build
+# whose manifest says one version and whose version file says another is refused on
+# the television, and the refusal does not say which of the two was wrong.
+# shellcheck disable=SC1091
+source version.env
+manifest_version=$(sed -nE 's/.*android:versionName="([^"]+)".*/\1/p' AndroidManifest.xml | head -1)
+manifest_code=$(sed -nE 's/.*android:versionCode="([0-9]+)".*/\1/p' AndroidManifest.xml | head -1)
+if [[ $manifest_version != "$VERSION_NAME" || $manifest_code != "$VERSION_CODE" ]]; then
+  echo "error: the manifest says version $manifest_version ($manifest_code), version.env says $VERSION_NAME ($VERSION_CODE)." >&2
+  echo "  change variant/version.env and variant/AndroidManifest.xml together." >&2
+  exit 1
+fi
+echo "version $VERSION_NAME"
+
 GENERIC=false
 for arg in "$@"; do
   case "$arg" in
@@ -52,8 +66,8 @@ echo "build-tools: $(basename "$BT")"
 # to run, not merely to exist. A stub that hangs (it does, when JAVA_HOME points at
 # something odd) is no better than one that fails: the probe waits five seconds, then
 # gives up on it.
-# The scheme is launcher/build.sh's: the JDK 17 paths, then macOS's java_home, then a
-# warning when the JDK in use is 21 or newer.
+# The scheme: the JDK 17 paths, then macOS's java_home, then a warning when the JDK
+# in use is 21 or newer.
 JDK17_PATHS=(/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home /usr/lib/jvm/java-17-openjdk)
 javac_major() { "$1/bin/javac" -version 2>&1 | sed -n 's/^javac \([0-9]*\).*/\1/p'; }
 javac_works() {

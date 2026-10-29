@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The variant's banner: our own, in the launcher's visual language.
-     The mark is launcher/res/drawable/banner.xml's, scaled and moved to the left;
+     The mark is the old launcher's, scaled and moved to the left;
      the wordmark is ours. Rendered to res/drawable-nodpi/banner_variant.png with
      rsvg-convert (see variant/README.md). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Undoes the package, app-op, network-policy, launcher and DNS changes.
+# Undoes the package, app-op, network-policy, home-screen and DNS changes.
 # Apps that were uninstalled from /data have to be reinstalled from the store.
 # Usage: ./scripts/restore.sh [--dry-run] [-y]
 set -uo pipefail
@@ -21,7 +21,7 @@ restore_list() {
 step "plan"
 note "turn back on every package dumbtv can disable: the ads list, Alexa, apps you named, YouTube"
 note "clear app-ops and network blacklists"
-note "detach the DNS filter and the launcher hook"
+note "detach the DNS filter and the home-screen hook"
 note "put back every setting from report/settings-before-*.txt, or the bundled defaults"
 note "the TV reboots when this finishes"
 if [[ $DRY_RUN == 0 ]]; then
@@ -106,10 +106,10 @@ step "on-device hooks"
 # undo, and HOME stays hijacked.
 acmd settings delete secure always_on_vpn_app >/dev/null 2>&1
 if [[ $DRY_RUN == 1 ]]; then
-  note "[dry-run] ADB=$ADB ADB_SERIAL=$SERIAL launcher/install.sh --undo"
+  note "[dry-run] ADB=$ADB ADB_SERIAL=$SERIAL variant/install.sh --undo-amazon"
 else
-  ADB=$ADB ADB_SERIAL=$SERIAL "$ROOT/launcher/install.sh" --undo >/dev/null ||
-    die "could not hand HOME back to Amazon's launcher; run ./launcher/install.sh --undo"
+  ADB=$ADB ADB_SERIAL=$SERIAL "$ROOT/variant/install.sh" --undo-amazon >/dev/null ||
+    die "could not hand HOME back to Amazon's launcher; run ./variant/install.sh --undo-amazon"
 fi
 note "always_on_vpn_app cleared, HOME handed back to Amazon's launcher (apps stay installed)"
 

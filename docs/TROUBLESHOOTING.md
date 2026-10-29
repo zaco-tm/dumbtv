@@ -13,8 +13,8 @@ To put the TV back the way it was: `./scripts/restore.sh`.
 
 ### Amazon's home screen came back
 
-The launcher's HOME hook is an accessibility service, and it can be switched off
-by an update, a settings reset, or a force-stop of the launcher (which every APK
+dumbtv home's HOME hook is an accessibility service, and it can be switched off
+by an update, a settings reset, or a force-stop of the app (which every APK
 update does). Check:
 
 ```sh
@@ -22,7 +22,7 @@ adb shell settings get secure enabled_accessibility_services   # empty = off
 adb shell settings get secure accessibility_enabled             # 0 = off
 ```
 
-Run `./scripts/launcher.sh -y`. It switches the service off and on again, which is
+Run `./scripts/variant.sh -y`. It switches the service off and on again, which is
 what makes Android bind it.
 
 ### `verify.sh` says the home hook is enabled but not bound
@@ -31,7 +31,7 @@ Enabled is a setting; bound means the service is actually running. `verify.sh`
 reads `dumpsys accessibility` and only passes when the label of the product that is in
 charge is in the current user's bound services — "dumbtv home button" for the old
 launcher, "dumbtv home (variant) button" for the fork. Run the install path of that
-product: `./scripts/launcher.sh -y` or `./variant/install.sh`.
+product: `./scripts/variant.sh -y` or `./variant/install.sh`.
 
 Note that the dump cuts a long label short (at 22 characters on a Fire OS 8 set), so
 the fork's comes out as `Service[label=dumbtv home (variant) b…`. That is the fork's:
@@ -48,15 +48,15 @@ app-op fixed it. That is a TCL rule, not something to grant on every TV; see
 The `min_futurity=0` alarm setting was lost (an update or a settings reset). Check
 with `adb shell settings get global alarm_manager_constants` (Fire OS 7 and 8), or
 `adb shell device_config get alarm_manager min_futurity` on a Fire TV built on
-Android 12 or later, then run `./scripts/launcher.sh -y`. With it set, HOME shows
-about 0.3 s of black. Fire OS 6 does not use this setting: its Keeper moves the
-home screen to the front without an alarm.
+Android 12 or later, then run `./scripts/variant.sh -y`. With it set, HOME shows
+about 0.3 s of black. Fire OS 6 does not use this setting: the old launcher's Keeper
+moves the home screen to the front without an alarm.
 
 ### Settings bounces back to the home screen
 
 On Fire OS, `android.settings.SETTINGS` opens a stub that forwards to Amazon's
-home, which the launcher then replaces. The launcher's Settings button already
-avoids this. From adb, open settings with:
+home, which dumbtv home then replaces. The old launcher's Settings button already
+avoided this. From adb, open settings with:
 
 ```sh
 adb shell am start -a android.intent.action.MAIN -c android.intent.category.LEANBACK_SETTINGS
@@ -69,15 +69,16 @@ That is Android's `FallbackHome` while the system starts. Nothing is broken.
 ### HOME from an HDMI input takes about five seconds
 
 On Fire TV Edition televisions Amazon's Live TV app holds the display while it
-closes. Nothing outside that app can shorten it. Open inputs with the launcher's
-own screen instead (Options › Open inputs with › Automatic or dumbtv home): it
-releases the picture about 0.4 s after HOME.
+closes. Nothing outside that app can shorten it. Open inputs with the old launcher's
+own screen instead (Options › Open inputs with › Automatic): it releases the picture
+about 0.4 s after HOME.
 
 ### An HDMI tile opens Live TV settings instead of the input
 
 Amazon's Live TV app claims every input and then shows its settings or a channel
-scan. Set Options › Open inputs with › **Automatic** (the default from launcher
-1.2), which uses the launcher's own input screen when that happens.
+scan. Set Options › Open inputs with › **Automatic** (the default from the old
+launcher 1.2), which uses the old launcher's own input screen when that happens.
+The fork opens the input on its own screen every time.
 
 ## DNS filter
 
@@ -216,10 +217,12 @@ level and switch to `data/fireos6/` on their own.
 
 - **HOME never switches to dumbtv home.** Fire OS 6.7 refuses third-party
   accessibility services (`A11yAuthorizer ... "trust"#"false"` in
-  `logcat -b all`). The launcher uses its Keeper service there instead; run
-  `./scripts/launcher.sh -y` to re-arm it.
-- **dumbtv home will not install.** Releases up to 1.1 needed Android 9. Install
-  1.2 or later with `./launcher/install.sh`.
+  `logcat -b all`). The old launcher uses its Keeper service there instead; run
+  `./scripts/variant.sh -y` to re-arm it.
+- **dumbtv home will not install.** The old launcher's releases up to 1.1 needed
+  Android 9; 1.2 and later install. The fork needs Android 8, and Fire OS 6 is
+  Android 7.1, so the fork does not run there: the old launcher stays the home
+  screen. Its release APK is the one `variant/version.env` names.
 - **`monkey` launches nothing** and says `SYS_KEYS has no physical keys` when the
   remote is asleep. Use `am start -n`, or pass `--pct-syskeys 0`.
 
@@ -247,15 +250,18 @@ level and switch to `data/fireos6/` on their own.
 - **The on-screen keyboard swallows keys** while a text field is focused. Batch
   deletes into one call (`input keyevent 67 67 67`), and close the keyboard with
   BACK before tapping another field.
-- **The launcher's own folder is closed to adb too,** so `home.conf` and the
+- **The old launcher's own folder is closed to adb too,** so `home.conf` and the
   wallpapers cannot be pushed to `/sdcard/Android/data/tv.dumbtv.home/files/`.
-  Write them to `/sdcard/Android/media/tv.dumbtv.home/` instead: the launcher reads
-  both, wallpapers in name order, and a settings file pushed to the media folder is
-  applied once, then remembered, so it does not overwrite a later change made in
-  Options. [launcher/README.md](../launcher/README.md) has the commands.
-- **HOME stays on Amazon's home with launcher 1.1.** Android 11 needs the
-  launcher to have a visible window first; 1.2 waits for its cover window. Update
-  with `./launcher/install.sh`.
+  Write them to `/sdcard/Android/media/tv.dumbtv.home/` instead: the old launcher
+  reads both, wallpapers in name order, and a settings file pushed to the media
+  folder is applied once, then remembered, so it does not overwrite a later change
+  made in Options.
+
+  The fork has no app-order file of its own: it shows the apps the television lists,
+  so an app is picked in the TV's own settings.
+- **HOME stays on Amazon's home with the old launcher 1.1.** Android 11 needs the
+  app to have a visible window first; 1.2 waits for its cover window. The fork
+  waits for its cover window too.
 
 ## Testing like a remote
 

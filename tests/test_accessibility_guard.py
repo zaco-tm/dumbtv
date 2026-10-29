@@ -4,9 +4,13 @@ Run: python3 -m unittest discover -s tests -v
 
 The parser is the one thing that tells the two guards apart on the TV: it prints the
 label of a bound service, never its component, so the label is what the caller has to
-name. A parser that matched a label too loosely would report the old launcher's guard
+name. A parser that matched a label too loosely would report the fallback launcher's guard
 as bound while the fork's is the one in front, and the check that decides whether HOME
 works would be wrong.
+
+The fallback launcher is not in this repo any more - it stays installed on a television as
+the fallback - but its guard is still on the television, and its label still has to be
+tellable apart from the fork's.
 """
 import subprocess
 import unittest
@@ -39,19 +43,20 @@ def guard_bound(dump, user='0', label=None, klass=None):
 
 
 class GuardBoundTests(unittest.TestCase):
-    def test_the_launcher_s_label_is_the_default(self):
-        # The old caller passes only the user; it must keep working.
-        dump = dump_of(f'Service[label={OLD_LABEL}, feedbackType[FEEDBACK_GENERIC]]')
+    def test_the_fork_s_label_is_the_default(self):
+        # The default is this repo's product's guard: the caller that passes only
+        # the user must find the fork's guard.
+        dump = dump_of(f'Service[label={FORK_LABEL}, feedbackType[FEEDBACK_GENERIC]]')
         self.assertEqual(guard_bound(dump), 0)
 
     def test_the_fork_s_label_finds_the_fork_s_guard(self):
         dump = dump_of(f'Service[label={FORK_LABEL}, feedbackType[FEEDBACK_GENERIC]]')
         self.assertEqual(guard_bound(dump, '0', FORK_LABEL, 'io.freemytv.Guard'), 0)
 
-    def test_the_launcher_s_label_does_not_find_the_fork_s_guard(self):
+    def test_the_fallback_s_label_does_not_find_the_fork_s_guard(self):
         # The comma straight after the label is what keeps the two apart.
         dump = dump_of(f'Service[label={FORK_LABEL}, feedbackType[FEEDBACK_GENERIC]]')
-        self.assertEqual(guard_bound(dump), 1)
+        self.assertEqual(guard_bound(dump, '0', OLD_LABEL, 'tv.dumbtv.home.Guard'), 1)
 
     def test_the_fork_s_label_does_not_find_the_launcher_s_guard(self):
         dump = dump_of(f'Service[label={OLD_LABEL}, feedbackType[FEEDBACK_GENERIC]]')
@@ -63,9 +68,11 @@ class GuardBoundTests(unittest.TestCase):
         dump = dump_of('Service[label=io.freemytv.Guard, feedbackType[FEEDBACK_GENERIC]]')
         self.assertEqual(guard_bound(dump, '0', FORK_LABEL, 'io.freemytv.Guard'), 0)
 
-    def test_the_launcher_s_class_name_still_counts(self):
+    def test_the_fallback_s_class_name_still_counts(self):
+        # The fallback's guard is still on the television, and the scripts still
+        # recognise it: it is named by its label and its class, not by default.
         dump = dump_of('Service[label=tv.dumbtv.home.Guard, feedbackType[FEEDBACK_GENERIC]]')
-        self.assertEqual(guard_bound(dump), 0)
+        self.assertEqual(guard_bound(dump, '0', OLD_LABEL, 'tv.dumbtv.home.Guard'), 0)
 
     def test_a_label_outside_the_bound_section_does_not_count(self):
         dump = dump_of('') + f' Binding services:{{Service[label={FORK_LABEL},]}}\n'
@@ -94,8 +101,8 @@ class GuardBoundTests(unittest.TestCase):
         dump = dump_of('Service[label=dumbtv home (variant) b…, feedbackType[FEEDBACK_GENERIC]]')
         self.assertEqual(guard_bound(dump, '0', FORK_LABEL, 'io.freemytv.Guard'), 0)
 
-    def test_a_cut_short_label_of_the_launcher_is_not_the_fork_s_guard(self):
-        # The other way round, and the one that matters: the dump cuts the launcher's
+    def test_a_cut_short_label_of_the_fallback_is_not_the_fork_s_guard(self):
+        # The other way round, and the one that matters: the dump cuts the fallback's
         # label short, and what is left of it must not be taken for the fork's. The
         # two labels part at the eleventh character, so a cut to ten characters or
         # fewer is all it would take to confuse them; the cut on this television is at
@@ -110,7 +117,7 @@ class GuardBoundTests(unittest.TestCase):
         dump = dump_of('Service[label=dumbtv…, feedbackType[FEEDBACK_GENERIC]]')
         self.assertEqual(guard_bound(dump, '0', FORK_LABEL, 'io.freemytv.Guard'), 1)
 
-    def test_the_whole_label_of_the_launcher_is_not_the_fork_s_guard(self):
+    def test_the_whole_label_of_the_fallback_is_not_the_fork_s_guard(self):
         dump = dump_of(f'Service[label={OLD_LABEL}, feedbackType[FEEDBACK_GENERIC]]')
         self.assertEqual(guard_bound(dump, '0', FORK_LABEL, 'io.freemytv.Guard'), 1)
 

@@ -35,7 +35,6 @@ APK_URL=https://github.com/yuliskov/SmartTube/releases/download/32.56s/SmartTube
 APK_SHA256=4a35b90940612e048e4e9cb9e10379f7db1e84f30375994129f10a571ee04ce5
 # versionCode of that build. Update it with the URL and hash.
 APK_VERSION_CODE=2446
-HOME_DIR=/sdcard/Android/data/tv.dumbtv.home/files
 
 step "plan"
 note "install SmartTube (MIT, open source, TV-only YouTube client with no ad code)"
@@ -104,27 +103,12 @@ else
 fi
 
 step "home screen"
-if present tv.dumbtv.home; then
-  conf=$WORK/home.conf
-  if "$ADB" -s "$SERIAL" shell "cat $HOME_DIR/home.conf" > "$conf" 2>/dev/null && [[ -s $conf ]]; then
-    # Keep every other key; replace the app order, then drop YouTube from it.
-    awk -v pkg="$PKG" -v yt="$YT" '
-      /^apps\.order=/ {
-        n=split(substr($0, index($0,"=")+1), a, ",")
-        out=pkg
-        for (i=1;i<=n;i++) { gsub(/^[ \t]+|[ \t]+$/, "", a[i]); if (a[i] != "" && a[i] != pkg && a[i] != yt) out=out","a[i] }
-        print "apps.order=" out
-        done=1
-        next
-      }
-      { print }
-      END { if (!done) print "apps.order=" pkg }
-    ' "$conf" > "$conf.new"
-    "$ADB" -s "$SERIAL" push "$conf.new" "$HOME_DIR/home.conf" | tail -1
-    note "apps.order now: $(sed -n 's/^apps\.order=//p' "$conf.new")"
-  else
-    note "no home.conf yet — set the app order in dumbtv home > Options"
-  fi
+if present tv.dumbtv.variant; then
+  # dumbtv home takes its app list from the television, not from a file of its own:
+  # the TV's own picker decides which apps are on the home screen, and SmartTube
+  # has to be picked there before it shows up on the shelf.
+  note "dumbtv home shows the apps the TV lists: pick SmartTube in the TV's own"
+  note "Settings > Apps on home screen, and it appears on the shelf."
 else
   note "dumbtv home is not installed; skipping the home-screen step"
 fi

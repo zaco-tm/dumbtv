@@ -15,48 +15,6 @@ jobs:
       - run: python3 -m pip install --quiet pyyaml
       - run: python3 catalog/validate.py
 
-  launcher:
-    runs-on: ubuntu-latest
-    env:
-      # The build-tools version is pinned, so the CI build and the local build use the
-      # same aapt2/d8: the newest one in the image changes when GitHub updates it.
-      BUILD_TOOLS: "34.0.0"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      - name: sdk
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-25" "build-tools;34.0.0" >/dev/null
-      - name: build (sdk 25 for fire os 6-8; fails on any android.* API that Android 7.1 lacks)
-        run: ./launcher/build.sh
-      - name: host-side launcher tests
-        run: |
-          jar="$ANDROID_HOME/platforms/android-25/android.jar"
-          javac -d /tmp/host -cp "$jar" launcher/src/tv/dumbtv/home/FocusColor.java \
-            launcher/src/tv/dumbtv/home/Config.java launcher/tests/FocusColorTest.java
-          java -cp "/tmp/host:$jar" tv.dumbtv.home.FocusColorTest
-          javac -d /tmp/host -cp "/tmp/host:$jar" launcher/src/tv/dumbtv/home/Recent.java \
-            launcher/tests/RecentTest.java
-          java -cp "/tmp/host:$jar" tv.dumbtv.home.RecentTest
-          javac -d /tmp/host -cp "/tmp/host:$jar" launcher/src/tv/dumbtv/home/Ui.java \
-            launcher/src/tv/dumbtv/home/Meter.java launcher/tests/MeterTest.java
-          java -cp "/tmp/host:$jar" tv.dumbtv.home.MeterTest
-      - name: the release apk installs on fire os 6
-        run: |
-          min=$("$ANDROID_HOME/build-tools/34.0.0/aapt2" dump badging launcher/build/dumbtv-home.apk | sed -nE "s/^(minSdkVersion|sdkVersion):'([0-9]+)'.*/\2/p")
-          [ "$min" = 25 ] || { echo "expected minSdkVersion 25, found $min"; exit 1; }
-      - name: no permissions on Fire OS 7 and later
-        run: |
-          # The only permissions allowed are Fire OS 6's Keeper trio, each capped at sdk 27.
-          dump=$("$ANDROID_HOME/build-tools/34.0.0/aapt2" dump permissions launcher/build/dumbtv-home.apk)
-          echo "$dump"
-          extra=$(echo "$dump" | grep uses-permission | grep -v "maxSdkVersion='27'" || true)
-          [ -z "$extra" ] || { echo "the launcher must request no permissions on sdk 28+, found: $extra"; exit 1; }
-          n=$(echo "$dump" | grep -c uses-permission || true)
-          [ "$n" -le 3 ] || { echo "expected at most the 3 Fire OS 6 permissions, found $n"; exit 1; }
-
   variant:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -77,6 +35,8 @@ jobs:
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0" >/dev/null
       - name: the vendored tree is upstream's
         run: ./variant/verify-vendor.sh
+      - name: the version files agree
+        run: ./variant/release-check.sh --manifest
       - name: "build (generic: no TMDB key is ever baked by CI)"
         run: ./variant/build.sh --generic
       - name: the apk is what this repo expects
@@ -87,11 +47,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: syntax
-        run: for f in scripts/*.sh launcher/*.sh variant/*.sh; do bash -n "$f" || exit 1; done
+        run: for f in scripts/*.sh variant/*.sh; do bash -n "$f" || exit 1; done
       - name: offline script tests (no device)
         run: python3 -m unittest discover -s tests -v
-      - name: launcher version manifest
-        run: ./launcher/release-check.sh --manifest
       - name: no private addresses or hardware ids
         run: |
           if grep -rnE '\b(10|172|192)\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\b|\b([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}\b' \

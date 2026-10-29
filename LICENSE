@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-The launcher in launcher/ is part of this repository and covered by this licence.
+dumbtv home in variant/ is part of this repository and covered by this licence.
 
 Third-party software is not covered by this licence and is not bundled:
 personalDNSfilter (GPL-2.0), the HaGeZi blocklists (GPL-3.0) and SmartTube (MIT)

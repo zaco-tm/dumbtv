@@ -33,14 +33,14 @@ data:
 launcher:
   package: tv.dumbtv.home
   reason: >-
-    launcherx holds HOME at priority 2 and setupwraith at 1. dumbtv home 1.1
+    launcherx holds HOME at priority 2 and setupwraith at 1. The old launcher 1.1
     (release APK, checksum ok) took HOME after pm disable-user of
     com.google.android.tungsten.setupwraith and then
     com.google.android.apps.tv.launcherx. No accessibility Guard and no
     alarm_manager_constants change were needed.
   fallback: >-
     com.android.tv.settings answers HOME at priority -1000, so with both
-    disabled and dumbtv home missing the TV lands in Settings rather than a
+    disabled and the old launcher missing the TV lands in Settings rather than a
     blank screen.
   quirk: >-
     LEANBACK_SETTINGS does not resolve on this build, so the Settings chip
@@ -76,7 +76,7 @@ notes: >-
   (voice search goes with it), com.google.android.tungsten.setupwraith,
   com.google.android.apps.tv.launcherx. No PROTECTED or failed disables. The
   first seven survived two reboots; the launcher swap survived the one after it. Netflix launched
-  from dumbtv home and HOME returned to it. Device codename songshan.
+  from the old launcher and HOME returned to it. Device codename songshan.
 known_limits:
   - "One TV and one firmware build; other Hisense Google TV models may differ."
   - >-

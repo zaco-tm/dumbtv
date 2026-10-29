@@ -20,10 +20,10 @@ data:
   never_disable: data/fireos/never-disable.txt
   user_apps: data/fireos/user-apps.txt
 quirks:
-  - "Another launcher that redirects HOME through a plain accessibility hook showed Amazon's home for about 5 s first, the Android 9 app-switch delay; dumbtv home's alarm launch is the way around it."
+  - "Another launcher that redirects HOME through a plain accessibility hook showed Amazon's home for about 5 s first, the Android 9 app-switch delay; the old launcher's alarm launch is the way around it."
   - "Reports as AFTHA004 (codename hazel), not AFTHA001 like the 58U6HF entry; same Fire OS 7.7.1.7 PS7717/5741."
   - "5 third-party apps were present and untouched. com.android.nfc was already disabled by the system."
-notes: "debloat.sh (39 packages), lockdown.sh, dnsfilter.sh and launcher.sh ran with PRIME=0 ALEXA=1 LAUNCHER=1; verify.sh exited 0 with all checks passing. HOME on the physical remote returned to dumbtv home."
+notes: "debloat.sh (39 packages), lockdown.sh, dnsfilter.sh and the old launcher's script ran with PRIME=0 ALEXA=1 LAUNCHER=1; verify.sh exited 0 with all checks passing. HOME on the physical remote returned to the old launcher."
 verify:
   blocked: data/blocklists/verify-blocked.txt
   allowed: data/blocklists/verify-allowed.txt

@@ -96,7 +96,7 @@ prints `Success` and changes nothing: HOME still resolves to
 `com.amazon.tv.launcher`, which Amazon protects, as it does
 `com.amazon.firehomestarter`.
 
-So dumbtv home ([launcher/](../launcher/README.md)) watches for Amazon's home
+So dumbtv home ([variant/](../variant/README.md)) watches for Amazon's home
 instead and replaces it.
 
 **Fire OS 7 and 8: an accessibility service, `Guard`.** It receives window changes
@@ -107,7 +107,7 @@ only and reads no screen content.
 - Android holds back app launches for 5 s after HOME (`APP_SWITCH_DELAY_TIME`),
   which is why other launchers flash Amazon's home for seconds. `Guard` launches
   through an alarm `PendingIntent`, which `system_server` sends and which is exempt
-  from the delay. `launcher/install.sh` sets `min_futurity=0` so the alarm fires
+  from the delay. `variant/install.sh` sets `min_futurity=0` so the alarm fires
   at once: in `settings global alarm_manager_constants` up to Android 11, and in
   `device_config` namespace `alarm_manager` on Android 12 and later, which ignore
   the global setting.
@@ -120,20 +120,25 @@ only and reads no screen content.
 **Fire OS 6: a foreground service, `Keeper`.** Fire OS 6.7 refuses third-party
 accessibility services. `Keeper` reads the foreground app from UsageStats and calls
 `moveTaskToFront` when Amazon's home appears. That is not an activity launch, so
-the 5 s delay does not apply. It is the only reason the launcher asks for any
+the 5 s delay does not apply. It is the only reason the old launcher asks for any
 permission at all, and those three permissions are capped at Android 8.1, so Fire
-OS 7 and 8 see none.
+OS 7 and 8 see none. The fork does not run on Fire OS 6: there the old launcher
+stays the home screen, and `verify.sh` says so.
 
-Holding HOME still opens Fire OS's quick menu, and the launcher's Options can open
+Holding HOME still opens Fire OS's quick menu. The old launcher's Options could open
 Amazon's home on purpose.
 
 ### HDMI inputs
 
 An input tile hands Android's passthrough URI to the TV's own app, unless that app
 is Amazon's Live TV, which claims every input and then shows its settings. In that
-case the launcher shows the input itself with Android's public `TvView`: it asks
-the TV's input service for a session and gives it the screen. Options › Open inputs
-with chooses between the two; **Automatic** is the default.
+case the old launcher showed the input itself with Android's public `TvView`: it asked
+the TV's input service for a session and gave it the screen. Options › Open inputs
+with chose between the two; **Automatic** was the default.
+
+The fork opens the input on its own screen instead, `io.freemytv.Input`: the picture
+is in a window of ours, BACK returns to the home screen, and the panel stays awake
+while the picture is there.
 
 ## Not used, and why
 

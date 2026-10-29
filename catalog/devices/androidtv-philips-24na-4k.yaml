@@ -20,7 +20,7 @@ ip_location: >-
   Settings > Network & Internet > the connected network.
 prompts:
   - name: "adb install hangs or fails silently"
-    when: "sideloading the dumbtv home APK"
+    when: "sideloading the old launcher's APK"
     blocks_automation: true
     fix: >-
       adb install hung or returned without installing. Push the APK to
@@ -35,10 +35,10 @@ launcher:
   mechanism: set_home_activity
   package: tv.dumbtv.home
   reason: >-
-    dumbtv home answers HOME once the Google TV launcher and its setup app
+    The old launcher answers HOME once the Google TV launcher and its setup app
     are disabled.
   quirk: >-
-    The launcher's Guard only matches com.amazon.tv.launcher, so it does
+    The Guard only matches com.amazon.tv.launcher, so it does
     nothing on Google TV. HOME needed com.google.android.apps.tv.launcherx and
     com.google.android.tungsten.setupwraith disabled with pm disable-user:
     setupwraith's RecoveryActivity also answers HOME, at priority 1. Both are

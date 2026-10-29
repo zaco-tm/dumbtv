@@ -35,8 +35,8 @@ import java.util.List;
  * session and hands it this window's surface. No permission is involved, and the picture goes
  * away with this screen, so HOME and BACK behave like everywhere else in the home screen.
  *
- * Ours, not upstream's: it is the port of the launcher's input screen
- * (launcher/src/tv/dumbtv/home/Input.java), and it is listed in variant/our-files.txt.
+ * Ours, not upstream's: it is the port of the old launcher's input screen, and it is
+ * listed in variant/our-files.txt.
  */
 public final class Input extends Activity {
     private static final int MATCH = ViewGroup.LayoutParams.MATCH_PARENT;

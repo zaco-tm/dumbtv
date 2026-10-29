@@ -28,7 +28,7 @@ quirks:
   - "launcherx declares mPriority=2 on its HOME filter, which beats both android.app.role.HOME and cmd package set-home-activity: HOME keeps landing on Google TV until pm disable-user com.google.android.apps.tv.launcherx. setupwraith re-enables it, so that one must stay disabled too."
   - "cmd role on this build uses singular verbs (add-role-holder / remove-role-holder), not the plural forms."
   - "Wireless debugging drops occasionally; adb connect to port 5555 works again without re-pairing."
-notes: "Manual ADB session (repo scripts not run): 4 packages disabled, dumbtv home installed as HOME replacing Google TV launcher; verify.sh targets Fire OS hosts so the full pass was not attempted."
+notes: "Manual ADB session (repo scripts not run): 4 packages disabled, the old launcher installed as HOME replacing Google TV launcher; verify.sh targets Fire OS hosts so the full pass was not attempted."
 verify:
   blocked: data/blocklists/verify-blocked.txt
   allowed: data/blocklists/verify-allowed.txt
