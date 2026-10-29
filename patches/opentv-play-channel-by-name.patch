@@ -1,16 +1,23 @@
 diff --git a/app/src/main/java/app/opentv/MainActivity.kt b/app/src/main/java/app/opentv/MainActivity.kt
-index 4c3fb2a..49f2543 100644
+index 4c3fb2a..5abe2fd 100644
 --- a/app/src/main/java/app/opentv/MainActivity.kt
 +++ b/app/src/main/java/app/opentv/MainActivity.kt
-@@ -35,6 +35,8 @@ import androidx.compose.material3.CircularProgressIndicator
- import androidx.compose.material3.Icon
- import androidx.compose.material3.MaterialTheme
- import androidx.compose.material3.Surface
+@@ -50,6 +50,7 @@ import androidx.compose.ui.focus.onFocusChanged
+ import androidx.compose.ui.graphics.Color
+ import androidx.compose.ui.res.stringResource
+ import androidx.compose.ui.unit.dp
 +import androidx.lifecycle.lifecycleScope
+ import androidx.lifecycle.viewmodel.compose.viewModel
+ import androidx.navigation.compose.NavHost
+ import androidx.navigation.compose.composable
+@@ -82,6 +83,7 @@ import app.opentv.ui.vod.PersonScreen
+ import app.opentv.ui.vod.SeriesDetailScreen
+ import app.opentv.ui.vod.VodPlayerScreen
+ import app.opentv.update.UpdateGate
 +import kotlinx.coroutines.launch
- import androidx.compose.material3.Text
- import androidx.compose.ui.Alignment
- import androidx.compose.runtime.Composable
+ 
+ class MainActivity : ComponentActivity() {
+ 
 @@ -128,6 +130,14 @@ class MainActivity : ComponentActivity() {
      private fun handlePlayIntent(intent: Intent?) {
          val id = intent?.getLongExtra(EXTRA_PLAY_CHANNEL, 0L) ?: 0L
