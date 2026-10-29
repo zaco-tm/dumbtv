@@ -1,3 +1,12 @@
 tools/photos.py
 tools/translate.py
+src/io/freemytv/Backdrop.java
+src/io/freemytv/Click.java
+src/io/freemytv/HomeActivity.java
 src/io/freemytv/HomeApps.java
+src/io/freemytv/HomeView.java
+src/io/freemytv/Prefs.java
+src/io/freemytv/Recs.java
+src/io/freemytv/SettingsActivity.java
+src/io/freemytv/Shadows.java
+src/io/freemytv/Spoken.java

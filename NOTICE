@@ -12,6 +12,23 @@ This project vendors third-party software. See `variant/UPSTREAM.md` for the ful
 `variant/tools/photos.py` and `variant/tools/translate.py` are upstream's too, with the
 paths and the application id changed for this tree (`variant/UPSTREAM.md` says how).
 
+## My Kids TV
+
+The kids face's catalogue — which title is in which age band, the badges and the four
+judgments (age fit, value, must-watch, fun) — comes from **My Kids TV**
+(<https://github.com/suboss87/my-kids-tv>), and is licensed under the Creative Commons
+Attribution 4.0 International License (CC BY 4.0):
+<https://creativecommons.org/licenses/by/4.0/>.
+
+Credit **"My Kids TV"**, link to the licence, and note that changes were made. We made
+changes: the dataset is shipped in `variant/catalog-data/` and the three band files the
+app reads are in `variant/assets/catalog/`, both with the dataset's own `LICENSE` next to
+them, and the app's own copy of the titles is adapted to what it can show.
+
+The title metadata (TMDB ids, titles, years, genres and age ratings) comes from TMDB and
+is subject to TMDB's terms of use: <https://www.themoviedb.org/api-terms-of-use>. This
+product uses the TMDB API but is not endorsed or certified by TMDB.
+
 ## Fonts and symbols
 
 - Inter — SIL Open Font License 1.1 — `variant/assets/fonts/`

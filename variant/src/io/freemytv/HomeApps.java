@@ -66,6 +66,8 @@ final class HomeApps {
     static final int APP = 0, LIVE_TV = 1, INPUT = 2, ALL_APPS = 3, SETTINGS = 4, ANDROID_SETTINGS = 5, DEVICE = 6;
     /** The "HDMI Inputs" button: opens the bottom drawer on the inputs (the home screen handles it). */
     static final int INPUTS = 7;
+    /** The "Kids" button: the way into the kids face (the home screen handles it). */
+    static final int KIDS = 8;
     /** Image size of each card (16:9; on screen it shows up to ~330 px wide). */
     static final int TILE_W = 384, TILE_H = 216;
 
@@ -184,6 +186,7 @@ final class HomeApps {
         int max = maxShelf(c);
         for (String pkg : shelfPackages(c)) {
             if (items.size() >= max) break;
+            if (kidsHidden(c, pkg)) continue;   // the kids face: only the apps that carry the band's titles
             Intent launch = launchIntent(pm, pkg);
             if (launch == null) continue;
             ResolveInfo ri = pm.resolveActivity(launch, 0);
@@ -239,7 +242,7 @@ final class HomeApps {
         for (String[] d : SHELF) if (launchIntent(pm, d[2]) != null && seen.add(d[2])) out.add(new String[] {d[2], d[1]});
         List<String[]> more = new ArrayList<>();
         for (String[] app : launchable(c)) {
-            if (app[0].equals(c.getPackageName()) || HIDDEN.contains(app[0]) || !seen.add(app[0])) continue;
+            if (app[0].equals(c.getPackageName()) || HIDDEN.contains(app[0]) || kidsHidden(c, app[0]) || !seen.add(app[0])) continue;
             more.add(app);
         }
         Collections.sort(more, (a, b) -> a[1].toLowerCase(Locale.ROOT).compareTo(b[1].toLowerCase(Locale.ROOT)));
@@ -247,11 +250,23 @@ final class HomeApps {
         return out;
     }
 
+    /**
+     * The kids face hides the apps a child has no business in: only the ones that carry the band's vetted
+     * titles are shown, so a child in the kids face reaches nothing else. The normal face shows everything
+     * upstream shows.
+     */
+    static boolean kidsHidden(Context c, String pkg) {
+        if (!Prefs.kidsMode()) return false;
+        return !Recs.kidsPackages(c).contains(pkg);
+    }
+
     // MARK: - Top buttons (the round ones at the top right)
 
     static final String TOP_LIVE = "live", TOP_INPUTS = "inputs", TOP_SETTINGS = "settings";
     static final List<String> TOP_DEFAULT = Collections.unmodifiableList(java.util.Arrays.asList(TOP_LIVE, TOP_INPUTS, TOP_SETTINGS));
-    static final int MAX_TOP = TOP_DEFAULT.size();
+    /** The round buttons at the top right: the parent's three, plus the Kids button, which is always there (the
+     *  parent PIN locks the kids face, so a child cannot get into it and stay stuck there). */
+    static final int MAX_TOP = TOP_DEFAULT.size() + 1;
 
     /** The keys of the top buttons, in order (Settings > Top Buttons; by default Live TV, HDMI Inputs, Settings). */
     static List<String> topButtonKeys() {
@@ -262,11 +277,17 @@ final class HomeApps {
         return keys;
     }
 
-    /** The top buttons, ready to draw (0 to 3 of them). */
+    /** The top buttons, ready to draw (the Kids button first, then the parent's 0 to 3). */
     static List<Item> topButtons() {
         List<Item> items = new ArrayList<>();
+        items.add(kidsButton());
         for (String key : topButtonKeys()) items.add(topButton(key));
         return items;
+    }
+
+    /** The way into the kids face (ours): the parent PIN locks it, so the button is always there. */
+    static Item kidsButton() {
+        return action(KIDS, "kids", Ui.tr("light|Kids"), "gamepad");
     }
 
     private static Item topButton(String key) {
@@ -530,7 +551,7 @@ final class HomeApps {
         Set<String> seen = new HashSet<>();
         for (String[] app : launchable(c)) {
             String pkg = app[0];
-            if (skip.contains(pkg) || !seen.add(pkg)) continue;
+            if (skip.contains(pkg) || kidsHidden(c, pkg) || !seen.add(pkg)) continue;
             Item it = new Item();
             it.kind = APP;
             it.pkg = pkg;
@@ -567,7 +588,11 @@ final class HomeApps {
                 plain = intent;
                 if (plain != null) plain.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
                 if (intent != null && it.uri != null) {
-                    intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(it.uri)).addCategory(Intent.CATEGORY_BROWSABLE).setPackage(it.pkg);
+                    // A fresh task: with the app already open, Android would otherwise only bring it to the front and the
+                    // title's page wouldn't open (the flags Netflix documents for TV launchers).
+                    intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(it.uri)).addCategory(Intent.CATEGORY_BROWSABLE).setPackage(it.pkg)
+                            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    if ("com.netflix.ninja".equals(it.pkg)) intent.putExtra("source", "30");   // Netflix: launched from a launcher row
                 }
                 break;
             case LIVE_TV:

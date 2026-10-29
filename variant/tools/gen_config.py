@@ -47,6 +47,11 @@ DEFAULTS = {
     'show_crypto': 'true',
     'hide_animation': 'false',
     'screensaver': 'true',
+    # The kids face (ported from suboss87/my-kids-tv): the parent's PIN, the age band
+    # the vetted catalogue comes from, and the child's name for the greeting.
+    'parent_pin': '',
+    'age_band': '7-10',
+    'child_name': '',
 }
 
 # The switches the app reads as Java booleans: there is no empty state for them, so an
@@ -77,6 +82,9 @@ final class Config {{
     static final boolean SHOW_CRYPTO = {show_crypto};
     static final boolean HIDE_ANIMATION = {hide_animation};
     static final boolean SCREENSAVER = {screensaver};
+    static final String PARENT_PIN = "{parent_pin}";
+    static final String AGE_BAND = "{age_band}";
+    static final String CHILD_NAME = "{child_name}";
     static final boolean GENERIC = {generic};
 }}
 '''

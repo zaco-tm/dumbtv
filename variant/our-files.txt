@@ -1,6 +1,14 @@
 tools/gen_config.py
+tools/javac.sh
 res/drawable-nodpi/banner_variant.png
 src/io/freemytv/Guard.java
 src/io/freemytv/Input.java
+src/io/freemytv/KidsView.java
+src/io/freemytv/ParentLock.java
+src/io/freemytv/SpaceSky.java
 res/xml/guard.xml
 res/values/guard.xml
+assets/catalog/4-6.json
+assets/catalog/7-10.json
+assets/catalog/11-13.json
+assets/catalog/LICENSE

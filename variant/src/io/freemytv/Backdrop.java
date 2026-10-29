@@ -41,6 +41,28 @@ final class Backdrop {
     final Bitmap image;
     final int[] frost;      // heavily blurred (frosted glass, bottom drawer)
     final int[] glass;      // lightly blurred (Liquid Glass: the photo shows through the glass)
+    private int ambient;    // 0 until worked out: the picture's light, for the glow around the story window
+
+    /**
+     * The picture's main color as light: the average of its frosted pixels, made more vivid and kept mid-bright, so it
+     * glows softly on the sky by day and by night. Ported from my-kids-tv: the kids face's story window has this glow
+     * around it.
+     */
+    int ambient() {
+        if (ambient != 0 || frost == null || frost.length == 0) return ambient;
+        long r = 0, g = 0, b = 0;
+        for (int px : frost) {
+            r += (px >> 16) & 0xFF;
+            g += (px >> 8) & 0xFF;
+            b += px & 0xFF;
+        }
+        float[] hsv = new float[3];
+        android.graphics.Color.RGBToHSV((int) (r / frost.length), (int) (g / frost.length), (int) (b / frost.length), hsv);
+        hsv[1] = Math.min(1, hsv[1] * 1.5f + 0.15f);
+        hsv[2] = Math.max(0.55f, Math.min(0.85f, hsv[2] * 1.2f));
+        ambient = android.graphics.Color.HSVToColor(hsv) | 0xFF000000;
+        return ambient;
+    }
     final Bitmap wide, tall;            // the photo on the cards
     final BitmapShader wideShader, tallShader;   // theirs, for the rounded cards: they go away with the backdrop
     final int[] light, lightGlass;     // by day: the frosted and glass versions, lightened

@@ -10,7 +10,10 @@ TOOL = ROOT / 'variant' / 'tools' / 'gen_config.py'
 
 FIELDS = ['TMDB_KEY', 'WATCHMODE_KEY', 'TMDB_REGION', 'LATITUDE', 'LONGITUDE', 'CITY',
           'LANGUAGE', 'CURRENCY', 'TEMPERATURE', 'HIDE_SERVICES', 'THEME',
-          'DISABLE_ASSISTANT', 'SHOW_CRYPTO', 'HIDE_ANIMATION', 'SCREENSAVER', 'GENERIC']
+          'DISABLE_ASSISTANT', 'SHOW_CRYPTO', 'HIDE_ANIMATION', 'SCREENSAVER', 'GENERIC',
+          # The kids face (ported from my-kids-tv): the parent's PIN, the age band and
+          # the child's name.
+          'PARENT_PIN', 'AGE_BAND', 'CHILD_NAME']
 
 
 def run_tool(*arguments):
@@ -98,7 +101,7 @@ class VariantConfigTests(unittest.TestCase):
         self.assertIn('static final String CITY = "Amsterdam";', java)
         self.assertNotIn('not_a_setting', java)
         self.assertNotIn('whatever', java)
-        # The class holds the sixteen fields and nothing else, so an unknown key in the
+        # The class holds the nineteen fields and nothing else, so an unknown key in the
         # file cannot turn up in it.
         self.assertEqual(java.count('static final'), len(FIELDS))
 

@@ -96,6 +96,7 @@ final class Prefs {
     static void reload() {
         String before = language();
         app.getSharedPreferences("settings", Context.MODE_MULTI_PROCESS);
+        app.getSharedPreferences("kids_settings", Context.MODE_MULTI_PROCESS);   // the kids face's own file
         version++;
         if (!language().equals(before)) Ui.applyLanguage();
     }
@@ -136,6 +137,167 @@ final class Prefs {
     }
 
     static void setTheme(String v) { put("theme", v); }
+
+    // MARK: - Kids
+
+    // The kids face (ported from suboss87/my-kids-tv, MIT). The three age bands the
+    // vetted catalogue has; the parent's choice, made in Home Settings behind the PIN.
+
+    static final String[] AGE_BANDS = {"4-6", "7-10", "11-13"};
+
+    /**
+     * The kids face's own settings, in a file of their own: the age band, the child's name and
+     * whether the kids face is showing.
+     *
+     * They are not in the settings file, because that one is written from more than one process
+     * (the home screen, the screensaver, the photo import), and a write from another process saves
+     * its own copy of the settings over the file: a copy that never had the band takes the band
+     * with it (upstream knows the hazard: PhotoInbox says so). Only :home writes these, and with
+     * commit(), so they are on the disk before the screen that shows them is drawn: an app update
+     * cannot lose them.
+     */
+    private static SharedPreferences kidsSp() {
+        return app.getSharedPreferences("kids_settings", Context.MODE_PRIVATE);
+    }
+
+    /**
+     * Moves the kids settings out of the settings file, once, so a build that kept them there
+     * does not lose the parent's choice when it is updated. Called from the home screen's
+     * process only (:home), the one that writes these: a write from another process would save
+     * its own copy of the file over it.
+     */
+    static void migrateKids() {
+        SharedPreferences k = kidsSp();
+        if (k.getBoolean("migrated", false)) return;
+        SharedPreferences old = sp();
+        SharedPreferences.Editor e = k.edit();
+        if (!k.contains("age_band") && old.contains("age_band")) e.putString("age_band", old.getString("age_band", ""));
+        if (!k.contains("child_name") && old.contains("child_name")) e.putString("child_name", old.getString("child_name", ""));
+        if (!k.contains("kidsMode") && old.contains("kidsMode")) e.putBoolean("kidsMode", old.getBoolean("kidsMode", false));
+        e.putBoolean("migrated", true);
+        e.commit();
+    }
+
+    /** The child's age band: which vetted catalogue (assets/catalog) the picks come from. */
+    static String ageBand() {
+        String v = kidsSp().getString("age_band", null);
+        if (v == null) v = sp().getString("age_band", Config.AGE_BAND.trim());   // a build before the move
+        for (String b : AGE_BANDS) if (b.equals(v)) return v;
+        return "7-10";
+    }
+
+    static void setAgeBand(String v) {
+        kidsSp().edit().putString("age_band", v).commit();
+        version++;
+    }
+
+    /** The child's first name for the greeting ("Good morning, Viva"), or "" for none. */
+    static String childName() {
+        String v = kidsSp().getString("child_name", null);
+        if (v == null) v = sp().getString("child_name", Config.CHILD_NAME.trim());   // a build before the move
+        return v.trim();
+    }
+
+    static void setChildName(String v) {
+        kidsSp().edit().putString("child_name", v).commit();
+        version++;
+    }
+
+    /** The kids face is showing (a mode of the home screen, not a setting the parent picks
+     *  in one place: the "Kids" button on the home screen goes in, the PIN lets you out). */
+    static boolean kidsMode() {
+        if (kidsSp().contains("kidsMode")) return kidsSp().getBoolean("kidsMode", false);
+        return sp().getBoolean("kidsMode", false);   // a build before the move
+    }
+
+    /** No version++: the mode is not a setting the screen draws, and a version bump would rebuild the
+     *  home screen (and lose the place the parent was in). */
+    static void setKidsMode(boolean on) { kidsSp().edit().putBoolean("kidsMode", on).commit(); }
+
+    // MARK: - Parent PIN
+
+    // Ported from suboss87/my-kids-tv. Only a salted SHA-256 hash ("salt:hash", hex) is
+    // kept, never the PIN. No version++: nothing on screen shows it. "pin_preset" is the
+    // hash parent_pin (config.properties) last set: a new parent_pin, built and installed
+    // again, replaces the PIN (the way back for a parent who forgot it).
+    //
+    // The PIN lives in a file of its own, not in the settings one: the settings are
+    // written from more than one process (the home screen, the screensaver, the photo
+    // import), and a write from another process saves its own copy of the settings over
+    // the file. A copy that never had the PIN takes the PIN with it (upstream knows the
+    // hazard: PhotoInbox says so). The PIN is written with commit(), so it is on the
+    // disk before anyone is let in.
+
+    /** The parent's PIN, in a file of its own. */
+    private static SharedPreferences pinSp() {
+        return app.getSharedPreferences("parent_pin", Context.MODE_PRIVATE);
+    }
+
+    /** A PIN is set (from parent_pin or made on the TV). */
+    static boolean hasPin() {
+        applyPinPreset();
+        return !pinSp().getString("pin", "").isEmpty();
+    }
+
+    static boolean checkPin(String pin) {
+        applyPinPreset();
+        return matches(pin, pinSp().getString("pin", ""));
+    }
+
+    static void setPin(String pin) {
+        pinSp().edit().putString("pin", hashPin(pin)).commit();
+    }
+
+    /** Wrong tries in a row, and until when (elapsedRealtime) entry waits after too many. */
+    static int pinFails() { return pinSp().getInt("pinFails", 0); }
+    static long pinWaitUntil() { return pinSp().getLong("pinWaitUntil", 0); }
+
+    static void setPinFails(int fails, long waitUntil) {
+        pinSp().edit().putInt("pinFails", fails).putLong("pinWaitUntil", waitUntil).commit();
+    }
+
+    private static void applyPinPreset() {
+        String preset = Config.PARENT_PIN.trim();
+        if (!preset.matches("[0-9]{4}") || matches(preset, pinSp().getString("pin_preset", ""))) return;
+        String hash = hashPin(preset);
+        pinSp().edit().putString("pin", hash).putString("pin_preset", hash).putInt("pinFails", 0).putLong("pinWaitUntil", 0).commit();
+    }
+
+    private static String hashPin(String pin) {
+        byte[] salt = new byte[16];
+        new java.security.SecureRandom().nextBytes(salt);
+        return hex(salt) + ":" + sha256(salt, pin);
+    }
+
+    private static boolean matches(String pin, String saltHash) {
+        int cut = saltHash.indexOf(':');
+        if (cut <= 0) return false;
+        String salt = saltHash.substring(0, cut);
+        byte[] bytes = new byte[salt.length() / 2];
+        try {
+            for (int i = 0; i < bytes.length; i++) bytes[i] = (byte) Integer.parseInt(salt.substring(2 * i, 2 * i + 2), 16);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+        return java.security.MessageDigest.isEqual(sha256(bytes, pin).getBytes(StandardCharsets.US_ASCII),
+                saltHash.substring(cut + 1).getBytes(StandardCharsets.US_ASCII));
+    }
+
+    private static String sha256(byte[] salt, String pin) {
+        try {
+            java.security.MessageDigest d = java.security.MessageDigest.getInstance("SHA-256");
+            d.update(salt);
+            return hex(d.digest(pin.getBytes(StandardCharsets.UTF_8)));
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);   // every Android has SHA-256
+        }
+    }
+
+    private static String hex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) sb.append(String.format(Locale.ROOT, "%02x", b));
+        return sb.toString();
+    }
 
     // MARK: - City
 

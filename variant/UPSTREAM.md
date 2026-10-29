@@ -1,6 +1,7 @@
 # Vendored upstream
 
-The Android app in `variant/` is free-my-tv, vendored verbatim.
+The Android app in `variant/` is free-my-tv, vendored, plus the kids face ported from
+my-kids-tv (see "The kids face" below).
 
 - Upstream: <https://github.com/simbasjungles/free-my-tv>
 - Commit: `f1830445e6e629a2f1eab19602afef38a1a4f8b8` (2026-10-26)
@@ -119,6 +120,68 @@ between them are exactly these nine, and names any difference that is not one of
 manifest that drifted away from upstream's — a permission added, an attribute dropped —
 fails the test suite rather than the reviewer.
 
+## The kids face
+
+The kids face is ported from **my-kids-tv**
+(<https://github.com/suboss87/my-kids-tv>), commit
+`800267d3ea28f2696529f8d77dbd93a9868c5d10` (2026-10-26), MIT licensed.
+
+my-kids-tv is itself a fork of the same free-my-tv we vendored, carrying the same class
+names under the package `io.mykidstv`. It imported upstream at `57ea460`; we vendored
+the newer `f1830445`, so the port was made as a three-way merge (base `57ea460`, ours =
+this tree, theirs = my-kids-tv with `io.mykidstv` normalised to `io.freemytv`) rather
+than as a file copy. A copy would have dropped upstream's newer features — `Glyphs.java`,
+`NowPlaying.java`, `Updates.java` — which my-kids-tv has never had.
+
+**What came across:** the kids face's own home view (the story-window hero, the greeting
+with the weather, the space sky, the capsule tabs and the softer cards) as
+`src/io/freemytv/KidsView.java`; the parent PIN as `src/io/freemytv/ParentLock.java`; the
+space sky as `src/io/freemytv/SpaceSky.java`; the vetted catalogue in
+`assets/catalog/{4-6,7-10,11-13}.json`; and the catalogue machinery in `Recs.java`.
+
+**What we had to build, because my-kids-tv has no such thing:** my-kids-tv's catalogue is
+unconditional — there is no kids *mode* to enter or leave, so there is nothing there to
+lock — and it hides no apps. The mode, the PIN's second job (leaving the kids face), the
+age band as the parent's choice, and the app hiding are ours, on top of their behaviour.
+Our own visual language comes later; this port is behaviour only.
+
+**Two faces, one activity.** Upstream's `HomeView` stays the normal face. The ported one
+becomes `KidsView`, and `HomeActivity` hosts either of them: `Prefs.kidsMode()` says which
+one is in front, and the parent's PIN is what locks it. It is a mode inside the activity
+rather than a second activity on purpose — a separate activity would let a child leave the
+kids face with the HOME key, and `HomeActivity` is `singleTask`, so HOME arrives as
+`onNewIntent` and the PIN is asked there.
+
+**The manifest does not change.** `KidsView`, `ParentLock` and `SpaceSky` are classes, not
+components: no new activity, no new permission, no tenth documented difference. The nine
+above are still the nine.
+
+### The dataset, and the credit it owes
+
+The catalogue — which title is in which age band, the badges and the four judgments (age
+fit, value, must-watch, fun) — is **My Kids TV**'s, and it is licensed under the Creative
+Commons Attribution 4.0 International License (CC BY 4.0):
+<https://creativecommons.org/licenses/by/4.0/>.
+
+Credit **"My Kids TV"**, link to the licence, and note that changes were made. We made
+changes: the dataset is shipped in `variant/catalog-data/` (the open CSV and JSON, with
+the dataset's own `LICENSE` and `README` beside it) and the three band files the app
+reads are in `variant/assets/catalog/`, with the same `LICENSE` next to them. The app's
+copy of the titles is adapted to what it can show.
+
+The credit is in `NOTICE` and in the repository's own `LICENSE` as well as here.
+
+931 title rows over three bands — 4-6 (106), 7-10 (372), 11-13 (453) — each title judged
+for that age. Title metadata (TMDB ids, titles, years, genres, age ratings) comes from
+TMDB and is subject to TMDB's terms of use
+(<https://www.themoviedb.org/api-terms-of-use>); this product uses the TMDB API but is
+not endorsed or certified by TMDB.
+
+Their `catalog/` pipeline (`pipeline.py`, `bands.py`, `tmdb.py`, `hotstar.py`,
+`overrides/`, `seeds/`) is **not** ported: it needs a paid `TYPESAFE_API_KEY` to re-judge
+the titles. We take the emitted JSON and the open dataset. Re-building the catalogue is a
+separate decision.
+
 ## Re-syncing upstream
 
 Upstream ships daily, so a re-sync is a deliberate piece of work and not an accident. It
@@ -134,11 +197,12 @@ means, in this order:
    `assets/`, the two tools, `LICENSE.free-my-tv` and `upstream/AndroidManifest.xml`.
 5. Re-apply our adapted files (the paths in `variant/local-changes.txt`) and our own
    files (the paths in `variant/our-files.txt`); adapt them again if upstream changed them.
-   Step 4 replaces `src/` wholesale, so our changes to `src/io/freemytv/HomeApps.java` and our
-   `src/io/freemytv/Input.java` go with it: re-apply both (the file's own comment says what
-   ours are, and `variant/UPSTREAM.md` above has the whole of it). Our banner goes with
+   Step 4 replaces `src/` wholesale, so our changes to the ten `src/io/freemytv/` files
+   above go with it: re-apply them all (each file's own comment says what ours are, and
+   `variant/UPSTREAM.md` above has the whole of it). Our banner goes with
    `res/`: re-make it from `variant/artwork/banner_variant.svg` (the command is in
-   `variant/README.md`).
+   `variant/README.md`). The catalogue assets go with `assets/`: take them from
+   `variant/catalog-data/`, which keeps them with their licence.
 6. Update the version in `variant/AndroidManifest.xml` (`versionCode`, `versionName`), so the
    new build is a different one on the TV than the old.
 7. Update `variant/local-changes.txt` and `variant/our-files.txt` if upstream's paths moved.
@@ -151,19 +215,35 @@ means, in this order:
 ## Local changes
 
 `local-changes.txt` lists the files that differ from upstream: the two adapted tools and
-`src/io/freemytv/HomeApps.java`. That one is upstream's file with our two changes to it: an
-input is opened on our own screen (`io.freemytv.Input`) instead of in the TV's own app, and a
-tile named after an HDMI-CEC device tunes that device's own input rather than the port it is
-plugged into. The file says so in its own comment, because a re-sync replaces it with
-upstream's. `verify-vendor.sh` proves every other vendored byte is upstream's, and it fails on
-a file that differs without being listed as well as on a listed file that no longer differs.
+the ten `src/io/freemytv/` files the port touched. The tools are upstream's with our paths
+and application id changed. The ten are upstream's files with our changes to them:
+
+| File | What we changed in it |
+|---|---|
+| `src/io/freemytv/HomeActivity.java` | the two faces: `showKids()`, `showNormal()`, the PIN asked on HOME in the kids mode, and only the face in front taking the keys |
+| `src/io/freemytv/HomeView.java` | one branch: the Kids button opens the kids face instead of an app |
+| `src/io/freemytv/HomeApps.java` | the always-present Kids button, the `KIDS` kind, and the hiding of the apps the current band's titles are not on |
+| `src/io/freemytv/Prefs.java` | the parent's PIN (a salted SHA-256 hash, never the PIN, in a prefs file of its own so another process's write of the settings cannot take it away), the age band, the child's name, the kids mode and the PIN's wait; the age band, the child's name and the kids mode are in a prefs file of their own (`kids_settings`) for the same reason, written with `commit()` so an app update cannot lose them |
+| `src/io/freemytv/Recs.java` | the catalogue machinery and the vetted picks in the kids mode, upstream's TMDB picks in the normal one, and the mapping from a title to the app that carries it |
+| `src/io/freemytv/SettingsActivity.java` | the PIN in front of the settings, and the age band row behind it |
+| `src/io/freemytv/Backdrop.java` | `ambient()`, the backdrop the kids face draws behind its story window |
+| `src/io/freemytv/Click.java` | the kids face's click sound |
+| `src/io/freemytv/Shadows.java` | the `under` overload the kids face's cards use |
+| `src/io/freemytv/Spoken.java` | `on()`, the spoken name the kids face reads |
+
+The file says in its own comment what ours are, because a re-sync replaces it with
+upstream's. `verify-vendor.sh` proves every other vendored byte is upstream's, and it fails
+on a file that differs without being listed as well as on a listed file that no longer differs.
 
 `our-files.txt` lists the paths in the vendored tree that are ours, not upstream's
-(`tools/gen_config.py`, `res/drawable-nodpi/banner_variant.png`, `src/io/freemytv/Guard.java`,
-`src/io/freemytv/Input.java`, `res/xml/guard.xml` and `res/values/guard.xml`): upstream has no
-such files, so there is nothing to compare them with and the verifier does not call them
-extra. It is not a loophole — a path upstream does have cannot be excused this way, and the
-verifier says so if one is.
+(`tools/gen_config.py`, `tools/javac.sh`, `res/drawable-nodpi/banner_variant.png`,
+`src/io/freemytv/Guard.java`, `src/io/freemytv/Input.java`, `src/io/freemytv/KidsView.java`,
+`src/io/freemytv/ParentLock.java`, `src/io/freemytv/SpaceSky.java`, `res/xml/guard.xml`,
+`res/values/guard.xml`, `assets/catalog/4-6.json`, `assets/catalog/7-10.json`,
+`assets/catalog/11-13.json` and `assets/catalog/LICENSE`): upstream has no such files, so
+there is nothing to compare them with and the verifier does not call them extra. It is
+not a loophole — a path upstream does have cannot be excused this way, and the verifier
+says so if one is.
 
 ## The proof
 
@@ -189,3 +269,8 @@ reason.
 - Simple Icons — CC0 1.0 — upstream's Samsung app logos, in upstream's `web/icons/`.
   That app is not vendored here, so no Simple Icons file is in this tree.
 - The 26 `assets/i18n/*.json` catalogues are upstream's own translations.
+- The kids face's catalogue (`assets/catalog/`, and the open dataset in
+  `variant/catalog-data/`) — **My Kids TV**, CC BY 4.0
+  (<https://creativecommons.org/licenses/by/4.0/>). Credit "My Kids TV", link to the
+  licence, note that changes were made. See "The dataset, and the credit it owes" above,
+  `NOTICE` and the repository's `LICENSE`.

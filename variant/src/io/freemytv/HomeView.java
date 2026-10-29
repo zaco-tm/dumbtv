@@ -102,6 +102,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private static int tabsGeneration = -1;
     private static final String[] TAB_KIND = {null, "movie", "tv"};
     private static final int Z_TOP = 4, Z_CARDS = 5;
+    /** Ours: the first round button at the top right is the Kids one (it is always there), so it is this index. */
+    private static final int KIDS_TOP = 3;
 
     private final Activity activity;
     private final Scene scene = new Scene();
@@ -125,7 +127,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     });
     private final RectF a11yRect = new RectF();
     private final Layer sky, heroLayer, status, platter, tiles, drawerLayer, sheetLayer, toastLayer;
-    private int zone = Z_SHELF;
+    private int zone = Z_TOP;   // ours: the Kids button has the focus when the home screen opens
 
     // Night look (like Apple's "Automatic" appearance): darker from sunset to sunrise, with a 2 s transition.
     private static final long NIGHT_MS = 2000;
@@ -138,7 +140,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private Shader nightGradient;
 
     // At the top: tabs (0 to 2) and icon-only buttons (3 to 5); the three cards
-    private int tab, topIndex, cardIndex;
+    // Ours: the home screen opens with the focus on the Kids button, so the kids face is one press from HOME.
+    // Upstream's entry state was the first app on the shelf.
+    private int tab, topIndex = KIDS_TOP, cardIndex;
     private int widgetIndex;    // with TalkBack on, the drawer's weather (0) or quotes (1) card can take the focus
     private List<Recs.Pick> cards = new ArrayList<>();
     // The three tabs, then the round buttons at the top right (up to HomeApps.MAX_TOP).
@@ -489,7 +493,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     void reset(boolean animated) {
         wake();
         cancelReorder(!animated);
-        zone = Z_SHELF;
+        // Ours: the focus starts on the Kids button, so the kids face is one press from HOME. Upstream's entry
+        // state was the first app on the shelf.
+        zone = Z_TOP;
+        topIndex = KIDS_TOP;
         shelfIndex = 0;
         sheetOpen = false;
         drawerOpen = false;
@@ -2457,6 +2464,12 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             r = tileRects[shelfIndex];
         }
         click.open();
+        if (it.kind == HomeApps.KIDS) {
+            // The way into the kids face (ours): one press from here. The parent PIN locks it, so a
+            // child cannot leave it again without it.
+            if (activity instanceof HomeActivity) ((HomeActivity) activity).showKids();
+            return;
+        }
         if (it.kind == HomeApps.ALL_APPS) {
             openSheet();
             return;

@@ -152,6 +152,55 @@ category. That answer is the same before and after the variant is installed — 
 If Android ever offers to switch the home app, decline it. The Guard stays the way HOME
 is taken, and `./scripts/verify.sh` must still pass end to end.
 
+## The kids face
+
+The home screen has **two faces**. HOME shows the normal one — upstream's, with its TMDB
+picks. The **Kids** button (the gamepad symbol, first in the top-right group) opens the
+kids face, ported from [my-kids-tv](https://github.com/suboss87/my-kids-tv): one title as
+the hero, the greeting with the weather, the space sky, and the vetted catalogue for the
+chosen age band.
+
+The **parent's PIN** does two jobs:
+
+- it **gates the settings** — the list is not drawn at all until the PIN is right, and
+  Back cancels;
+- it **locks the kids face** — BACK, the "Exit Kids" button and the HOME key all ask for
+  it, so a child cannot leave.
+
+The first time, with no PIN set yet, the lock asks for a new one twice. After five wrong
+tries it waits 30 seconds, and the wait is kept in the prefs, so closing and reopening
+the settings does not reset it.
+
+The PIN is a salted SHA-256 hash, never the PIN itself, and it lives in a prefs file of its
+own (`parent_pin`), not in the settings file: the settings are written from more than one
+process, and a copy that never had the PIN could save itself over the one that had it.
+
+The **age band, the child's name and the kids mode** live in a prefs file of their own
+(`kids_settings`), for the same reason and written the same way, so the parent's choice
+survives an app update.
+
+The PIN can be set on the TV (Home Settings) or in `variant/config.properties`:
+
+```properties
+parent_pin=1234
+age_band=7-10
+child_name=Viva
+```
+
+`age_band` is one of `4-6`, `7-10`, `11-13` — the three catalogues the dataset has. The
+parent can change it on the TV (Home Settings → Age, behind the PIN), and the picks change
+with it. `child_name` is optional and only names the child in the greeting.
+
+In the kids mode the shelf and the All Apps list show only the apps that carry the
+current band's titles, so a child in it cannot reach the adult apps. Leaving the kids
+face asks for the PIN; once on the normal face nothing asks for a PIN, and the normal
+face's picks are unchanged.
+
+The catalogue is **My Kids TV**'s, CC BY 4.0
+(<https://creativecommons.org/licenses/by/4.0/>); the credit is in `NOTICE`, in
+`variant/UPSTREAM.md` and in the repository's `LICENSE`, and the dataset's own `LICENSE`
+sits next to the data in `variant/catalog-data/` and `variant/assets/catalog/`.
+
 ## The way back to a working TV
 
 One setting. If the fork misbehaves, put the old launcher's Guard back:

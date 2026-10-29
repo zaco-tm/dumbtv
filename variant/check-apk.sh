@@ -83,6 +83,19 @@ grep -qx "Lio/freemytv/HomeActivity;" <<< "$dex" \
 # the home app. An APK without it installs, and then does nothing when HOME is pressed.
 grep -qx "Lio/freemytv/Guard;" <<< "$dex" \
   || { echo "io.freemytv.Guard is not in the dex"; exit 1; }
+# The kids face reads its vetted catalogue from the assets: without them it shows nothing
+# but the sky. The licence travels with them.
+for band in 4-6 7-10 11-13; do
+  printf '%s\n' "$names" | grep -x "assets/catalog/$band.json" >/dev/null \
+    || { echo "assets/catalog/$band.json is not in $APK"; exit 1; }
+done
+printf '%s\n' "$names" | grep -x "assets/catalog/LICENSE" >/dev/null \
+  || { echo "assets/catalog/LICENSE is not in $APK"; exit 1; }
+# The kids face's own classes are in the dex too.
+grep -qx "Lio/freemytv/KidsView;" <<< "$dex" \
+  || { echo "io.freemytv.KidsView is not in the dex"; exit 1; }
+grep -qx "Lio/freemytv/ParentLock;" <<< "$dex" \
+  || { echo "io.freemytv.ParentLock is not in the dex"; exit 1; }
 
 "$BT/apksigner" verify "$APK" >/dev/null || { echo "the APK is not signed"; exit 1; }
 echo "variant APK ok: $pkg, label '$label', banner $(basename "$banner"), minSdk $min, targetSdk $target, 8 permissions, signed"
