@@ -11,6 +11,7 @@ import {Home} from './src/screens/Home';
 import {Gaming} from './src/screens/Gaming';
 import {Inputs} from './src/screens/Inputs';
 import {LiveTv} from './src/screens/LiveTv';
+import {Settings} from './src/screens/Settings';
 import {Streaming} from './src/screens/Streaming';
 import {WiringScreen} from './src/screens/WiringScreen';
 import {ALL_ITEMS, Rail} from './src/ui/charcoal/Rail';
@@ -73,6 +74,8 @@ function App() {
             <Gaming grid={grid} />
           ) : destination === 'inputs' ? (
             <Inputs grid={grid} />
+          ) : destination === 'settings' ? (
+            <Settings grid={grid} />
           ) : (
             <Coming page={destination} />
           )}
