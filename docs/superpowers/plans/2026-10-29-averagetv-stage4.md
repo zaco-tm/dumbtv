@@ -123,10 +123,18 @@ The CI greps are extended to the new file types (`.ts`, `.tsx`, `.js`, `.jsx`, `
 
 ## The design: the sketch in Charcoal
 
-The owner's sketch: a left rail with **Home / Live TV / Apps / Inputs**, a settings gear and
-the kids face at the bottom; a header with a greeting and a weather widget; a
-**Favorites** row that mixes apps and inputs; and **Trending** as a big feature with a
-ranked list beside it, each with a star rating.
+The owner's sketch: a left rail with **Home / Live TV / Streaming / Gaming / Inputs**, a
+settings gear and the kids face at the bottom; a header with a greeting and a weather
+widget; a **Favorites** row that mixes apps and inputs; and **Trending** as a big feature
+with a ranked list beside it, each with a star rating.
+
+The rail grew a page and lost a name. It was **Home / Live TV / Apps / Inputs**, and it is
+now **Home / Live TV / Streaming / Gaming / Inputs**: the apps page was calling a grid of
+Netflix, Plex and Spotify "Apps", which it is not, and the games had nowhere of their own.
+The Gaming page holds the **consoles** (the HDMI inputs that report a console) and the
+**games** (the apps whose store category says they are games), in two sections, because they
+are two different kinds of thing. The split is measured on the device, not guessed — see
+the parity table, "The three kinds of thing".
 
 The Charcoal components that carry it:
 
@@ -225,13 +233,22 @@ Three things were decided while building it, and they are the ones the app has t
   browser-sized, so the prototype's copy of it was edited — the rows, the icons, the
   labels — and the port carries those numbers over.
 - **The focus is a grid.** Every focusable says where it is (`data-row`, `data-col`), and
-  an arrow key moves to the nearest one in that direction: the rail is column 0, so right
-  from the rail enters the content and left from the content's left edge goes back. The
-  measured behaviour: right from *Home* lands on the first Favorite, down from it lands
-  on the Trending feature.
+  an arrow key moves to the nearest one in that direction. The rail is column 0, but it is
+  **a list of destinations, not a band of the screen**, and that distinction is the whole
+  model: up and down stay inside whichever list you are in, right out of the rail enters
+  the page at its top-left, and left back into the rail returns to the item of the page
+  you are on. The measured behaviour: right from *Home* lands on the first Favorite, down
+  from it lands on the Trending feature; right from *Streaming* lands on Netflix, not on
+  the seventh app; right from *Gaming* lands on the first console and down from it lands
+  on the first game.
 - **The carousel was not needed.** The sketch has no carousel: its rows are driven by the
   focus, not by dragging. It stays installed in the prototype (it is free) and is not
   ported.
+
+The pages are **Home / Live TV / Streaming / Gaming / Inputs**. The Apps page became
+**Streaming** (a grid of Netflix, Plex and Spotify is not "Apps"), and the **Gaming** page
+holds the consoles and the games in two sections. How the three kinds of thing are told
+apart is in the parity table, and it is measured on the device.
 
 The parity table is [docs/superpowers/averagetv-parity.md](../averagetv-parity.md).
 
@@ -271,6 +288,15 @@ tokens match exactly (the generator says so).
 The Guard in the RN app (same class name, same label, same mechanism), the PIN module
 reading `parent_pin`, the mode switch, the inputs, the sleep timer, the kids face behind
 the PIN, and the Screensaver.
+
+Two native answers the new pages need, and they are the same two the Java app already
+gives:
+
+- the `inputs` module says **whether each input is a console**, from the name the
+  television reports over HDMI-CEC (the Java app's `HomeApps.deviceSymbol` does this
+  already: "playstation", "ps5", "xbox", "nintendo", "switch", "steam deck");
+- a new `apps` module lists the installed apps **with their store category**, so the app
+  can tell a game from a streaming app (`ApplicationInfo.category`, `CATEGORY_GAME`).
 
 Risk: high — this is the part that can break the parts that work. Measure: on the preview
 id, the PIN gate holds, the kids face comes and goes, and the sleep timer blanks the

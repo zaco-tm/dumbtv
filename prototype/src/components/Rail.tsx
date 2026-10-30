@@ -1,11 +1,12 @@
 import * as React from "react"
-import { Baby, Cable, House, LayoutGrid, Settings, Tv } from "lucide-react"
+import { Baby, Cable, Gamepad2, House, Play, Settings, Tv } from "lucide-react"
 import { LineSidebar, type LineSidebarItem } from "@/components/ui/line-sidebar"
 
 const MAIN: LineSidebarItem[] = [
   { label: "Home", href: "home", icon: <House /> },
   { label: "Live TV", href: "live-tv", icon: <Tv /> },
-  { label: "Apps", href: "apps", icon: <LayoutGrid /> },
+  { label: "Streaming", href: "streaming", icon: <Play /> },
+  { label: "Gaming", href: "gaming", icon: <Gamepad2 /> },
   { label: "Inputs", href: "inputs", icon: <Cable /> },
 ]
 

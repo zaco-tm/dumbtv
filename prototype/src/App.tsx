@@ -2,9 +2,11 @@ import * as React from "react"
 import { Rail } from "@/components/Rail"
 import { STAGE_H, STAGE_W, useFit } from "@/lib/fit"
 import { useStageFocus } from "@/lib/tvFocus"
-import { Apps, Inputs } from "@/pages/Apps"
+import { Gaming } from "@/pages/Gaming"
 import { Home } from "@/pages/Home"
+import { Inputs } from "@/pages/Inputs"
 import { LiveTv } from "@/pages/LiveTv"
+import { Streaming } from "@/pages/Streaming"
 
 /**
  * The prototype of the home screen, at the television's own size.
@@ -37,8 +39,10 @@ export default function App() {
         <main className="flex-1 overflow-hidden">
           {destination === "live-tv" ? (
             <LiveTv />
-          ) : destination === "apps" ? (
-            <Apps />
+          ) : destination === "streaming" ? (
+            <Streaming />
+          ) : destination === "gaming" ? (
+            <Gaming />
           ) : destination === "inputs" ? (
             <Inputs />
           ) : (

@@ -11,7 +11,7 @@ export type FavoriteEntry = AppEntry | InputEntry
 export const FAVORITES: FavoriteEntry[] = [
   { kind: "app", key: "com.netflix.ninja", label: "Netflix" },
   { kind: "app", key: "com.amazon.avod", label: "Prime Video" },
-  { kind: "input", key: "hdmi1", label: "HDMI 1", detail: "PlayStation" },
+  { kind: "input", key: "hdmi1", label: "HDMI 1", detail: "PlayStation 5" },
   { kind: "app", key: "com.spotify.tv.android", label: "Spotify" },
   { kind: "input", key: "hdmi2", label: "HDMI 2", detail: "Not connected" },
   { kind: "app", key: "tv.dumbtv.variant", label: "AverageTV" },
@@ -97,7 +97,15 @@ export const TRENDING: Trend[] = [
 
 export type AppEntry2 = { key: string; label: string }
 
-export const TV_APPS: AppEntry2[] = [
+/**
+ * The television's streaming apps: the ones that play somebody else's video or music.
+ *
+ * The prototype's own split. The app's split is the same rule measured on the device:
+ * an app whose store category is video, audio or social is a streaming app, and one whose
+ * category is a game is a game (see TV_GAMES). The app that is neither — a browser, a
+ * settings app — is a streaming app too, because a television has nowhere else to put it.
+ */
+export const TV_STREAMING_APPS: AppEntry2[] = [
   { key: "com.netflix.ninja", label: "Netflix" },
   { key: "com.amazon.avod", label: "Prime Video" },
   { key: "com.disney.disneyplus", label: "Disney+" },
@@ -108,16 +116,41 @@ export const TV_APPS: AppEntry2[] = [
   { key: "tv.dumbtv.variant", label: "AverageTV" },
   { key: "com.twitch.android.app", label: "Twitch" },
   { key: "org.kodi.team.android", label: "Kodi" },
-  { key: "com.retro.arch", label: "RetroArch" },
   { key: "app.opentv", label: "OpenTV" },
 ]
 
-export type TvInput = { key: string; label: string; detail: string; connected: boolean }
+/**
+ * The games: the Android and Fire OS apps whose store category is a game.
+ *
+ * These are the owner's games, the ones they installed. They are not ours to curate and
+ * not ours to remove, so they are simply shown where a game belongs.
+ */
+export const TV_GAMES: AppEntry2[] = [
+  { key: "com.retro.arch", label: "RetroArch" },
+  { key: "com.dxco.pandavsz", label: "Pandora's Box" },
+  { key: "com.ketchapp.sudoku", label: "Sudoku" },
+  { key: "org.ppsspp.ppsspp", label: "PPSSPP" },
+]
+
+export type TvInput = {
+  key: string
+  label: string
+  detail: string
+  connected: boolean
+  /**
+   * Whether the thing plugged into this port is a games console.
+   *
+   * The television says so itself: a console that talks HDMI-CEC gets its own input,
+   * named after the device ("PlayStation 5"), and the app matches those words. The
+   * Java app does the same, in HomeApps.deviceSymbol.
+   */
+  console?: boolean
+}
 
 export const TV_INPUTS: TvInput[] = [
   { key: "live-tv", label: "Live TV", detail: "Antenna or cable", connected: true },
-  { key: "hdmi1", label: "HDMI 1", detail: "PlayStation", connected: true },
-  { key: "hdmi2", label: "HDMI 2", detail: "Nothing plugged in", connected: false },
+  { key: "hdmi1", label: "HDMI 1", detail: "PlayStation 5", connected: true, console: true },
+  { key: "hdmi2", label: "HDMI 2", detail: "Xbox Series X", connected: true, console: true },
   { key: "hdmi3", label: "HDMI 3", detail: "Nothing plugged in", connected: false },
-  { key: "hdmi4", label: "HDMI 4", detail: "Nothing plugged in", connected: false },
+  { key: "hdmi4", label: "HDMI 4", detail: "Nintendo Switch", connected: true, console: true },
 ]

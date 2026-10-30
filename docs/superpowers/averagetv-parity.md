@@ -23,12 +23,28 @@ colour changes in one, it changes in both, and there is nothing to remember.
 
 | In the prototype | In the app | Notes |
 |---|---|---|
-| `src/lib/tvFocus.ts` — the grid focus model | `app/src/ui/focus.ts` | Every focusable says where it is (`data-row`, `data-col`); an arrow key moves to the nearest one in that direction. The rail is column 0. The same rules, in TypeScript, with the same measurements. |
+| `src/lib/tvFocus.ts` — the grid focus model | `app/src/ui/focus.ts` | Every focusable says where it is (`data-row`, `data-col`); an arrow key moves to the nearest one in that direction. The rail is column 0, and it is **a list of destinations, not a band of the screen**: up and down stay inside whichever list you are in (the rail's or the content's), right out of the rail enters the page at its top-left, and left back into the rail returns to the item of the page you are on. The same rules, in TypeScript, with the same measurements. |
 | `src/lib/fit.ts` — the 1920×1080 stage | `app/src/ui/stage.ts` | The television's screen is the stage; there is no scaling there. The numbers in the prototype are the television's pixels, and the app's density decides how many of them a dp is. |
 | `src/data/mock.ts` | the native modules | The prototype's data is mock data. The app's comes from the same places the Java app uses: open-meteo for the weather, TMDB for the picks, the native modules for the apps and the inputs. |
 | `src/sections/*` | `app/src/screens/Home.tsx` | The greeting, the Favorites row, the Trending section. |
 | `src/pages/LiveTv.tsx` | `app/src/screens/LiveTv.tsx` | The guide: "On now" (the channel's number, its name, what is on it, and a bar showing how far through the programme we are) and "Tonight" (the coming events, their times, their channels, and the badges). |
-| `src/pages/Apps.tsx`, `src/pages/Inputs.tsx` | `app/src/screens/Apps.tsx`, `Inputs.tsx` | The television's own apps in a grid, and its inputs as a list with the empty ones dimmed. |
+| `src/pages/Streaming.tsx`, `src/pages/Gaming.tsx`, `src/pages/Inputs.tsx` | `app/src/screens/Streaming.tsx`, `Gaming.tsx`, `Inputs.tsx` | The streaming apps in a grid; the consoles and the games; and the inputs as a list with the empty ones dimmed. |
+
+## The three kinds of thing
+
+The pages split the television's apps and inputs three ways, and the split is measured on the
+device, not guessed:
+
+| What | How it is told apart | Where it goes |
+|---|---|---|
+| A **streaming app** | Its store category is video, audio or social (`ApplicationInfo.category`). An app that is neither a game nor media — a browser, the settings — is a streaming app too, because a television has nowhere else to put it. | **Streaming** |
+| A **game** | Its store category is a game (`ApplicationInfo.CATEGORY_GAME`). These are the household's own apps; they are shown, not curated, and never removed. | **Gaming** |
+| A **console** | It is an **input**: a device on the other end of a cable. The television says so itself — a console that talks HDMI-CEC gets its own input, named after the device ("PlayStation 5") — and the app matches those words, the way the Java app does in `HomeApps.deviceSymbol`. | **Gaming** |
+
+So the Gaming page holds two different kinds of thing, and says so with two sections: the
+consoles are a row of tiles (they are inputs, and an input is a dashed box), the games are a
+grid below them. The Inputs page keeps everything that is not a console.
+
 
 ## What the app has that the prototype does not
 
@@ -49,7 +65,8 @@ The native modules the app's JavaScript calls:
 |---|---|
 | `parent_pin` | `check(pin)`, `set(pin)` — the hash stays in the `parent_pin` preference file, in the format it has today. |
 | `home_mode` | `isHome()`, `setHome(on)`, `refresh()` — whether this app is the home screen. |
-| `inputs` | `list()` — the HDMI inputs and their names. |
+| `inputs` | `list()` — the HDMI inputs and their names, and **whether each one is a console** (`isConsole`), which the television's own HDMI-CEC naming says. |
+| `apps` | `list()` — the television's installed apps with their **store category** (`category`), so the app can tell a game from a streaming app. A new module: the Java app lists apps in Java, and the split needs the category, which is a `PackageManager` answer. |
 | `sleep` | `start(minutes)`, `cancel()` — the sleep timer. |
 | `prefs` | `get`/`set` for `settings` and `home-ui` (the Favorites list). |
 | `night` | `isNight()` — for the Guard's cover colour, which must match the sky the home screen is about to paint. |
