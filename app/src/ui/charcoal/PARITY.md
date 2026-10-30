@@ -24,6 +24,8 @@ file is the app's side of it: what exists, and what is still to come.
 | `src/lib/fit.ts` — the 1920×1080 stage | `src/ui/stage.ts` | **Done (task 7).** The screen is the stage: there is no scaling, and a stage pixel is a dp divided by the density, so the prototype's numbers are the television's pixels whichever way the screen is set up. |
 | `src/data/mock.ts` | `src/data/tv.ts` | **Done (task 8), in part.** The television's apps, its inputs and the house's favourites come from the native side now: the `apps` module and the `inputs` module, and the favourites list out of the home screen's own file. The rule that tells a game from a streaming app (the store's category, read together with who installed the app) is in `src/data/tv.ts`, where jest can hold it. What is left in `src/data/mock.ts` is the weather and the trending picks, which come off the network: task 10's work. |
 | `src/sections/*` | `src/screens/Home.tsx` | **Done (task 7).** The greeting, the Favorites row, and the Trending feature with its ranked list, with the prototype's numbers: 72px greeting, 32px section titles, 22px labels, 176px tiles, 104px app boxes, a 340px feature. |
+| `src/pages/Streaming.tsx`, `Gaming.tsx`, `Inputs.tsx` | `src/screens/Streaming.tsx`, `Gaming.tsx`, `Inputs.tsx` | **Done.** The three pages, with the prototype's numbers: a six-column grid of app tiles, a row of dashed 220px console tiles above a grid of games, and a list of the television's inputs with the ones with nothing plugged in dimmed. The data comes from the native side — the `apps` module and the `inputs` module — and the app's tile is shared, in `ui/charcoal/AppTile.tsx`. |
+| `src/pages/LiveTv.tsx` | `src/screens/LiveTv.tsx` | **Done (task 10).** The port of the prototype's page: the "on now" row and the "tonight" list, in the app's focus model, wired to the rail's Live TV destination. The data comes from the `iptv` module. |
 
 ## The native modules
 
@@ -46,7 +48,6 @@ is still missing is written down in the module's own source file.
 
 | What | Whose work |
 |---|---|
-| The Streaming, Gaming and Inputs pages | Task 8's data is there; the pages are not written yet |
 | A settings page to add the provider | Task 10's module is there; there is nowhere yet to type the host and password |
 | The swap to `tv.dumbtv.variant` | Task 9 |
 | The carriage return and the PIN gate | The native side is done (task 8); the pages that show them are not written yet |
