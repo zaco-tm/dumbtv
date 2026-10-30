@@ -26,6 +26,7 @@ file is the app's side of it: what exists, and what is still to come.
 | `src/sections/*` | `src/screens/Home.tsx` | **Done (task 7).** The greeting, the Favorites row, and the Trending feature with its ranked list, with the prototype's numbers: 72px greeting, 32px section titles, 22px labels, 176px tiles, 104px app boxes, a 340px feature. |
 | `src/pages/Streaming.tsx`, `Gaming.tsx`, `Inputs.tsx` | `src/screens/Streaming.tsx`, `Gaming.tsx`, `Inputs.tsx` | **Done.** The three pages, with the prototype's numbers: a six-column grid of app tiles, a row of dashed 220px console tiles above a grid of games, and a list of the television's inputs with the ones with nothing plugged in dimmed. The data comes from the native side — the `apps` module and the `inputs` module — and the app's tile is shared, in `ui/charcoal/AppTile.tsx`. |
 | `src/pages/LiveTv.tsx` | `src/screens/LiveTv.tsx` | **Done (task 10).** The port of the prototype's page: the "on now" row and the "tonight" list, in the app's focus model, wired to the rail's Live TV destination. The data comes from the `iptv` module. |
+| — | `src/screens/Settings.tsx` | **New.** The Live TV page says "Open Settings to add one", so there is somewhere to add one: a provider's host, user and password, or a playlist's address. The password is handed to the native side and forgotten — it is sealed with the television's own Keystore key and never comes back. The page says when a provider is not on an encrypted connection, because the shipping build will not reach it. **The on-screen keyboard's behaviour with the remote is untried** — it is the first thing to check on the Ember 55. |
 
 ## The native modules
 
@@ -48,9 +49,9 @@ is still missing is written down in the module's own source file.
 
 | What | Whose work |
 |---|---|
-| A settings page to add the provider | Task 10's module is there; there is nowhere yet to type the host and password |
 | The swap to `tv.dumbtv.variant` | Task 9 |
 | The carriage return and the PIN gate | The native side is done (task 8); the pages that show them are not written yet |
+| The rest of the settings the Java app has | The city, the language, the screensaver, the kids' hours |
 
 ## The native side
 
