@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Image, StyleSheet, Text, View, type StyleProp, type ViewStyle} from 'react-native';
+import {StyleSheet, Text, View, type StyleProp, type ViewStyle} from 'react-native';
 import Svg, {Defs, LinearGradient, Rect, Stop} from 'react-native-svg';
 import {
   TRENDING,
@@ -9,7 +9,7 @@ import {
 } from '../data/mock';
 import {loadFavorites, type FavoriteEntry} from '../data/tv';
 import {Button} from '../ui/charcoal/Button';
-import {Card} from '../ui/charcoal/Card';
+import {AppTile} from '../ui/charcoal/AppTile';
 import {Icon} from '../ui/charcoal/Icon';
 import {Rating} from '../ui/charcoal/Rating';
 import {FONT_FAMILY, colors} from '../ui/charcoal/theme';
@@ -145,7 +145,7 @@ function Favorites({grid, items}: {grid: FocusGrid; items: FavoriteEntry[]}) {
             focusedStyle={styles.focusedTile}
             style={styles.favoriteTile}>
             {item.kind === 'app' ? (
-              <AppBox label={item.label.charAt(0)} icon={item.icon} />
+              <AppTile label={item.label} icon={item.icon} />
             ) : (
               <InputBox />
             )}
@@ -161,32 +161,6 @@ function Favorites({grid, items}: {grid: FocusGrid; items: FavoriteEntry[]}) {
         ))}
       </View>
     </View>
-  );
-}
-
-/**
- * The app's tile: the app's own icon, or a picture with the app's first letter on it.
- *
- * With the focus, the box goes from the card's colour to the muted one and the letter
- * comes forward, the way the prototype's tile does.
- */
-function AppBox({label, icon}: {label: string; icon?: string}) {
-  const focused = useFocused();
-  return (
-    <Card
-      radius={dp(26)}
-      padding={0}
-      style={[styles.appBox, focused ? styles.appBoxFocused : null]}>
-      {icon ? (
-        // The icon is a file in the app's cache: the native side writes it there and hands
-        // over the path, because a drawable cannot cross the bridge.
-        <Image source={{uri: `file://${icon}`}} style={styles.appIcon} resizeMode="contain" />
-      ) : (
-        <Text style={[styles.appInitial, focused ? styles.appInitialFocused : null]}>
-          {label}
-        </Text>
-      )}
-    </Card>
   );
 }
 
@@ -419,29 +393,6 @@ const styles = StyleSheet.create({
   focusedTile: {
     backgroundColor: colors.accent,
     transform: [{scale: 1.05}],
-  },
-  appBox: {
-    width: dp(104),
-    height: dp(104),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  appBoxFocused: {
-    backgroundColor: colors.muted,
-  },
-  appIcon: {
-    width: dp(72),
-    height: dp(72),
-  },
-  appInitial: {
-    fontFamily: FONT_FAMILY,
-    fontSize: dp(46),
-    lineHeight: dp(52),
-    fontWeight: '600',
-    color: colors.mutedForeground,
-  },
-  appInitialFocused: {
-    color: colors.foreground,
   },
   inputBox: {
     width: dp(104),

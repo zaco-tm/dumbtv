@@ -19,6 +19,8 @@ export type HomeInput = {
   label: string;
   /** Anything else worth knowing about it. */
   detail: string;
+  /** Whether something is plugged into this port. */
+  connected: boolean;
   /**
    * Whether a games console is plugged into this port.
    *

@@ -25,7 +25,7 @@ class InputsModule(reactContext: ReactApplicationContext) :
 
     override fun getName(): String = "inputs"
 
-    /** The inputs, as `{key, label, detail, isConsole}`. */
+    /** The inputs, as `{key, label, detail, connected, isConsole}`. */
     @ReactMethod
     fun list(promise: Promise) {
         val out: WritableArray = Arguments.createArray()
@@ -38,6 +38,9 @@ class InputsModule(reactContext: ReactApplicationContext) :
                 input.putString("key", item.key)
                 input.putString("label", item.label)
                 input.putString("detail", if (item.connected) "connected" else "no signal")
+                // Whether something is plugged in. The page dims the ones that are not,
+                // and a dimmed row is a fact about the television, not a decoration.
+                input.putBoolean("connected", item.connected)
                 input.putBoolean("isConsole", SYMBOL_CONSOLE == item.symbol)
                 out.pushMap(input)
             }

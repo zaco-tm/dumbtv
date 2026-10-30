@@ -8,7 +8,10 @@ import React from 'react';
 import {StatusBar, StyleSheet, Text, View, useColorScheme} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Home} from './src/screens/Home';
+import {Gaming} from './src/screens/Gaming';
+import {Inputs} from './src/screens/Inputs';
 import {LiveTv} from './src/screens/LiveTv';
+import {Streaming} from './src/screens/Streaming';
 import {WiringScreen} from './src/screens/WiringScreen';
 import {ALL_ITEMS, Rail} from './src/ui/charcoal/Rail';
 import {FONT_FAMILY, colors} from './src/ui/charcoal/theme';
@@ -64,6 +67,12 @@ function App() {
             <Home grid={grid} />
           ) : destination === 'live-tv' ? (
             <LiveTv grid={grid} />
+          ) : destination === 'streaming' ? (
+            <Streaming grid={grid} />
+          ) : destination === 'gaming' ? (
+            <Gaming grid={grid} />
+          ) : destination === 'inputs' ? (
+            <Inputs grid={grid} />
           ) : (
             <Coming page={destination} />
           )}
