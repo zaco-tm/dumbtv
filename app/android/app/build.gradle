@@ -63,6 +63,23 @@ def enableProguardInReleaseBuilds = false
 // app in the television's list, and the shipping build replaces AverageTV in place.
 def tvApplicationId = (project.findProperty("tvApplicationId") ?: "tv.dumbtv.preview").toString()
 
+// The shipping build's signing key.
+//
+// The swap is an *update* of the Java app, not a new app beside it, so it has to be signed
+// with the same key: a different key is a different app to Android, and the household's
+// settings — the PIN, the kids settings, the favourites — would not survive.
+//
+// The keystore is git-ignored and created on demand by variant/build.sh, which is also where
+// the password's default lives; it is not copied here, so the environment variable has to
+// say it. Both variables are the Java app's own names.
+def variantKeystore = file(System.getenv("DUMBTV_VARIANT_KEYSTORE") ?: "$rootDir/../../variant/release.keystore")
+def variantKeyPass = System.getenv("DUMBTV_VARIANT_KEYPASS") ?: ""
+
+// The version. The Java app ships versionCode 1, so the swap is 2: an update that says it is
+// an update. The name stays "1.0" — it is AverageTV 1.0, and it is the same product.
+def tvVersionCode = (project.findProperty("versionCode") ?: "2").toString()
+def tvVersionName = (project.findProperty("versionName") ?: "1.0").toString()
+
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
  *
@@ -89,8 +106,8 @@ android {
         applicationId tvApplicationId
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode tvVersionCode.toInteger()
+        versionName tvVersionName
 
         manifestPlaceholders = [
             // A task affinity is a package name: ours has to be ours, or the task lands in
@@ -113,6 +130,15 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        // The key the installed AverageTV was signed with. The alias is the Java app's own
+        // ("variant"). The password comes from the environment; the default that the Java
+        // app's build uses lives in variant/build.sh and is not copied here.
+        variant {
+            storeFile variantKeystore
+            storePassword variantKeyPass
+            keyAlias 'variant'
+            keyPassword variantKeyPass
+        }
     }
     buildTypes {
         debug {
@@ -121,7 +147,9 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // The key is the Java app's, not a new one: the swap replaces that app, and
+            // only the same key can replace it.
+            signingConfig signingConfigs.variant
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }

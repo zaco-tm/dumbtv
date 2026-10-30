@@ -317,9 +317,40 @@ screen. Nothing is touched on `tv.dumbtv.variant` yet.
 
 ### Task 9 — the swap
 
-Build the release APK with `tv.dumbtv.variant` and the release key, install it over the
-Java app, and measure everything the Java app did: the guard bound, HOME landing on
-AverageTV, the PIN, the kids face, the sleep timer, the inputs, `scripts/verify.sh` green.
+**Built, not yet installed.** The shipping APK builds and is proven to be an update of the Java
+app rather than a new app beside it:
+
+```
+cd app/android
+DUMBTV_VARIANT_KEYPASS=... ./gradlew assembleRelease \
+  -PtvApplicationId=tv.dumbtv.variant -PreactNativeArchitectures=arm64-v8a
+```
+
+- application id **`tv.dumbtv.variant`**, versionCode **2** (the Java app ships 1), versionName
+  `1.0`;
+- signed with `variant/release.keystore`, alias `variant` — and the certificate's SHA-256 is
+  **the same digest as the Java app's own APK** (`62d69e57…`), which is the proof that Android
+  will accept it as an update and the household's `shared_prefs` will survive;
+- the JS bundle is inside (`assets/index.android.bundle`), the vendored assets are inside, and
+  it is arm64-v8a only;
+- the content provider's authority is `tv.dumbtv.variant.photos` — the one
+  `variant/tools/photos.py` writes to.
+
+The keystore is git-ignored and its password is **not** in the Gradle file: it comes from
+`DUMBTV_VARIANT_KEYPASS`, the same variable name the Java app's own build uses, whose default
+lives in `variant/build.sh`.
+
+**What is not done: the install and the measurement.** They need the television, and it is off
+by the owner's choice. So the swap's remaining steps are:
+
+1. Install it over the Java app. Android allows it: same id, same key. The data in
+   `shared_prefs` is untouched, so the PIN, the kids settings and the favorites survive.
+2. The guard stays bound — same package, same class, same label.
+3. `scripts/verify.sh` still passes; the HOME key still lands on AverageTV.
+
+Note that the Java app declares **no HOME category** either — upstream does, the variant does
+not, on purpose: the Guard gives it the HOME key, and a home-app candidate could take the HOME
+key away from the launcher that works. The shipping manifest keeps that.
 
 Risk: high, and the rollback must be ready before it starts: the Java app's last good APK
 and the keystore, and `variant/install.sh` to put it back.
