@@ -23,6 +23,9 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
+    // Before the runtime starts: the flags it reads are cached, and the focus model
+    // needs the remote's keys and the imperative focus command.
+    ReactFlags.enable()
     loadReactNative(this)
   }
 }

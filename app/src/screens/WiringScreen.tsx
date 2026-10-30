@@ -10,7 +10,8 @@ import {
   prefs,
   sleep,
 } from '../native';
-import {dark, font, light, radius} from '../ui/charcoal/tokens';
+import {dark, light, radius} from '../ui/charcoal/tokens';
+import {FONT_FAMILY} from '../ui/charcoal/theme';
 
 /**
  * The first screen: the proof that the wiring works.
@@ -246,24 +247,24 @@ const styles = StyleSheet.create({
   },
   title: {
     color: dark.foreground,
-    fontFamily: font.sans,
+    fontFamily: FONT_FAMILY,
     fontSize: 40,
     fontWeight: '700',
   },
   subtitle: {
     color: dark.mutedForeground,
-    fontFamily: font.sans,
+    fontFamily: FONT_FAMILY,
     fontSize: 20,
   },
   appId: {
     color: dark.ember,
-    fontFamily: font.sans,
+    fontFamily: FONT_FAMILY,
     fontSize: 18,
     marginTop: 8,
   },
   section: {
     color: dark.mutedForeground,
-    fontFamily: font.sans,
+    fontFamily: FONT_FAMILY,
     fontSize: 16,
     letterSpacing: 1,
     marginTop: 32,
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
   },
   swatchName: {
     color: dark.mutedForeground,
-    fontFamily: font.sans,
+    fontFamily: FONT_FAMILY,
     fontSize: 13,
     marginTop: 6,
   },
@@ -303,19 +304,19 @@ const styles = StyleSheet.create({
   },
   answerLabel: {
     color: dark.mutedForeground,
-    fontFamily: font.sans,
+    fontFamily: FONT_FAMILY,
     fontSize: 16,
     width: 380,
   },
   answerValue: {
     color: dark.foreground,
     flex: 1,
-    fontFamily: font.sans,
+    fontFamily: FONT_FAMILY,
     fontSize: 16,
   },
   answer: {
     color: dark.foreground,
-    fontFamily: font.sans,
+    fontFamily: FONT_FAMILY,
     fontSize: 16,
   },
   buttons: {
@@ -338,7 +339,7 @@ const styles = StyleSheet.create({
   },
   buttonLabel: {
     color: dark.foreground,
-    fontFamily: font.sans,
+    fontFamily: FONT_FAMILY,
     fontSize: 16,
   },
 });
