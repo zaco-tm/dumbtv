@@ -7,7 +7,8 @@ To put the TV back the way it was: `./scripts/restore.sh`.
 
 **Contents:** [Home screen](#home-screen) · [DNS filter](#dns-filter) ·
 [Packages and apps](#packages-and-apps) · [Updates](#updates) ·
-[Fire OS 6](#fire-os-6) · [Fire OS 8](#fire-os-8) · [Testing like a remote](#testing-like-a-remote)
+[Fire OS 6](#fire-os-6) · [Fire OS 8](#fire-os-8) · [Testing like a remote](#testing-like-a-remote) ·
+[CI](#ci)
 
 ## Home screen
 
@@ -275,3 +276,39 @@ adb shell sendevent /dev/input/eventN 0 0 0
 adb shell sendevent /dev/input/eventN 1 172 0
 adb shell sendevent /dev/input/eventN 0 0 0
 ```
+
+## CI
+
+### A push created no workflow run
+
+The commit is on the remote, the push is fine, and GitHub creates **no** run at all:
+`gh api "repos/zaco-tm/dumbtv/actions/runs?per_page=5"` lists nothing newer, and the
+commit's check suites show only the third-party apps. Re-running an **older** run still
+works and its jobs pass, so Actions itself is healthy — only new runs are refused.
+
+The cause is that Actions is **disabled for this repository**, and only the owner can
+turn it back on: **Settings → Actions → General → Enable Actions**. The next push
+creates a run normally.
+
+Two traps when diagnosing it:
+
+- `GET /repos/zaco-tm/dumbtv/actions/permissions` still reports `{"enabled": true}`.
+  It does not describe this state.
+- The token's scopes are not the problem. A PAT with `repo` and `workflow` (as ours has)
+  triggers runs normally once Actions is enabled.
+
+The one endpoint that tells the truth is the dispatch endpoint, and only by its
+**message**:
+
+```sh
+gh api -X POST repos/zaco-tm/dumbtv/actions/workflows/validate.yml/dispatches
+```
+
+- `Actions has been disabled for this repository.` → disabled; the owner must enable it.
+- `Workflow does not have 'workflow_dispatch' trigger` → the repo is fine; our workflow
+  simply does not offer a manual trigger. Compare against another repository before
+  concluding anything, because the two look alike if you only read the status code.
+
+GitHub's Actions page shows the same thing without the API: the HTML payload contains
+`"showActionsNotEnabledBanner":true` and a `banners.enablePath` of
+`…/actions/enable` when the repository needs it enabled.
