@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">AverageTV</string>
+
+    <!-- Ours: the Guard's label and description, as the Java app has them. The label is what the
+         television's accessibility settings show, and what "dumpsys accessibility" names a bound
+         service by: it prints the label, never the component. -->
+    <string name="guard_label">AverageTV guard</string>
+    <string name="guard_description">Sends the HOME button to AverageTV instead of Amazon\'s. It reads no screen content and sends nothing out.</string>
+
+    <!-- Ours: what the television's accessibility settings say about the remote's app buttons. -->
+    <string name="remote_key_service">Lets the app buttons on the remote (Netflix, YouTube, Prime Video, TCL Channel) open the apps you picked in AverageTV, from any app. It only reads those buttons.</string>
 </resources>

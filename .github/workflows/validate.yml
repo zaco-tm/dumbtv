@@ -132,6 +132,11 @@ jobs:
         working-directory: app
       - run: npm test
         working-directory: app
+      - name: the parent PIN's format is the Java app's, byte for byte
+        # A JVM test, so it needs no television: it holds the app's own PIN code and the
+        # vendored Java app's code side by side and compares what they write.
+        run: ./gradlew :app:testDebugUnitTest
+        working-directory: app/android
       - name: the apk builds
         # One ABI: the television is arm64, and four of them do not fit the runner's
         # disk with the NDK in them. The build is a check, not a release.

@@ -38,12 +38,20 @@ device, not guessed:
 | What | How it is told apart | Where it goes |
 |---|---|---|
 | A **streaming app** | Its store category is video, audio or social (`ApplicationInfo.category`). An app that is neither a game nor media — a browser, the settings — is a streaming app too, because a television has nowhere else to put it. | **Streaming** |
-| A **game** | Its store category is a game (`ApplicationInfo.CATEGORY_GAME`). These are the household's own apps; they are shown, not curated, and never removed. | **Gaming** |
+| A **game** | Its store category is a game (`ApplicationInfo.CATEGORY_GAME`) **and a store installed it**. The second half is not decoration: `CATEGORY_GAME` is `0`, and an app that declares no category at all is *also* `0` — the field is a plain int with no "unset" of its own, and Android exposes the category nowhere else. A store writes the category into the app it installs; an app that was sideloaded has neither a store nor a category. So "zero plus a store" means the store said *game*, and "zero without a store" means nobody said anything. These are the household's own apps; they are shown, not curated, and never removed. | **Gaming** |
 | A **console** | It is an **input**: a device on the other end of a cable. The television says so itself — a console that talks HDMI-CEC gets its own input, named after the device ("PlayStation 5") — and the app matches those words, the way the Java app does in `HomeApps.deviceSymbol`. | **Gaming** |
 
 So the Gaming page holds two different kinds of thing, and says so with two sections: the
 consoles are a row of tiles (they are inputs, and an input is a dashed box), the games are a
 grid below them. The Inputs page keeps everything that is not a console.
+
+**The one thing this table cannot settle on its own.** A *sideloaded* game declares no category,
+so by the rule above it is a Streaming app. On a television where most apps were put there by
+hand, that is most of them — and the Gaming page's games then come from what a store installed,
+or from what the house pins. Both numbers (the category and the installer) cross into the
+JavaScript, so the rule can be changed once it has been measured on the television: task 9's
+work. Until then the conservative reading is the one above: an app is only called a game when
+something actually said so.
 
 
 ## What the app has that the prototype does not

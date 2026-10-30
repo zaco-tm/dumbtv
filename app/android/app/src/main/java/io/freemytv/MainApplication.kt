@@ -23,6 +23,11 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
+    // The Java app's Application did this, and every process needs it: the preference files and
+    // the place (the city and its coordinates) are read from the context, and the home screen, the
+    // screensaver and the photo import all run in processes of their own.
+    Prefs.init(this)
+    Place.init(this)
     // Before the runtime starts: the flags it reads are cached, and the focus model
     // needs the remote's keys and the imperative focus command.
     ReactFlags.enable()

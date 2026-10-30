@@ -18,9 +18,11 @@ class AverageTVPackage : ReactPackage {
                     ParentPinModule(reactContext),
                     HomeModeModule(reactContext),
                     InputsModule(reactContext),
+                    AppsModule(reactContext),
                     SleepModule(reactContext),
                     PrefsModule(reactContext),
                     NightModule(reactContext),
+                    KidsModule(reactContext),
             )
 
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> =

@@ -6,4 +6,18 @@
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     </style>
 
+    <!-- Ours: the theme the Java app's screens use, kept as it is there. The light background is
+         already in the window, so opening the home screen never flashes another colour. -->
+    <color name="home_background">#EBEBF0</color>
+
+    <!-- The parent is the AppCompat one, not the platform's: the host activity is a
+         ReactActivity, and an AppCompatActivity in a platform theme throws on start. -->
+    <style name="AverageTV.Home" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowBackground">@color/home_background</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowShowWallpaper">false</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+    </style>
+
 </resources>

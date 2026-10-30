@@ -1,6 +1,6 @@
 package io.freemytv
 
-import android.os.SystemClock
+import android.content.Context
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -10,10 +10,13 @@ import kotlin.math.roundToInt
 /**
  * The sleep timer.
  *
- * The real timer blanks the screen (SleepBlank) and shows the minutes left over the other apps
- * (SleepOverlay); in the Java app those are two other processes, and they are task 8's work. What the
- * stub does is the part that is a contract: it writes the end of the timer into the settings file,
- * in the same keys and the same format the Java app uses, so that the native side can pick it up.
+ * The timer itself is the Java app's, unchanged: `SleepTimer.set` writes the end of the timer into
+ * the settings file (`sleepAt` the wall clock, `sleepFrom` the uptime clock, the same keys and the
+ * same format the Java app writes), sets the alarm that ends it, and asks the overlay (the minutes
+ * left, over the other apps) to show itself.
+ *
+ * When the alarm goes off, the screen goes dark: `SleepBlank` puts a black window over whatever is
+ * playing and the panel's brightness at its lowest.
  */
 class SleepModule(reactContext: ReactApplicationContext) :
         ReactContextBaseJavaModule(reactContext) {
@@ -25,11 +28,7 @@ class SleepModule(reactContext: ReactApplicationContext) :
     fun start(minutes: Double, promise: Promise) {
         try {
             val whole = minutes.roundToInt()
-            if (whole <= 0) {
-                write(0L)
-            } else {
-                write(System.currentTimeMillis() + whole * 60_000L)
-            }
+            SleepTimer.set(context(), if (whole <= 0) 0 else whole)
             promise.resolve(null)
         } catch (e: Exception) {
             promise.reject("sleep_start_failed", e)
@@ -40,27 +39,22 @@ class SleepModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun cancel(promise: Promise) {
         try {
-            write(0L)
+            SleepTimer.set(context(), 0)
             promise.resolve(null)
         } catch (e: Exception) {
             promise.reject("sleep_cancel_failed", e)
         }
     }
 
-    /**
-     * The end of the timer, in the settings file: `sleepAt` is the wall clock, `sleepFrom` the
-     * uptime clock, both as the Java app writes them.
-     */
-    private fun write(at: Long) {
-        TvPrefs.file(reactApplicationContext.applicationContext, TvPrefs.SETTINGS)
-                .edit()
-                .putLong(KEY_AT, at)
-                .putLong(KEY_FROM, SystemClock.elapsedRealtime())
-                .apply()
+    /** The minutes left, rounded up. Zero when the timer is off. */
+    @ReactMethod
+    fun minutesLeft(promise: Promise) {
+        try {
+            promise.resolve(SleepTimer.minutesLeft(context()))
+        } catch (e: Exception) {
+            promise.reject("sleep_minutes_left_failed", e)
+        }
     }
 
-    private companion object {
-        const val KEY_AT = "sleepAt"
-        const val KEY_FROM = "sleepFrom"
-    }
+    private fun context(): Context = reactApplicationContext.applicationContext
 }

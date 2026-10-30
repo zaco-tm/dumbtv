@@ -1,14 +1,13 @@
-import React from 'react';
-import {StyleSheet, Text, View, type StyleProp, type ViewStyle} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {Image, StyleSheet, Text, View, type StyleProp, type ViewStyle} from 'react-native';
 import Svg, {Defs, LinearGradient, Rect, Stop} from 'react-native-svg';
 import {
-  FAVORITES,
   TRENDING,
   WEATHER,
-  type FavoriteEntry,
   type Trend,
   type Weather,
 } from '../data/mock';
+import {loadFavorites, type FavoriteEntry} from '../data/tv';
 import {Button} from '../ui/charcoal/Button';
 import {Card} from '../ui/charcoal/Card';
 import {Icon} from '../ui/charcoal/Icon';
@@ -26,15 +25,48 @@ import {useFocused, type FocusGrid} from '../ui/useFocusGrid';
  * The bands of the screen are the focus grid's rows: Favorites is band 0, the Trending
  * feature is band 1 in column 1, and the ranked list runs down bands 2 and up in
  * column 2. The rail is column 0.
+ *
+ * Favorites is the television's own: the apps and the inputs the house pinned, read from the
+ * native side. The greeting's weather and the Trending picks are still the prototype's; they
+ * come off the network, and that is task 10's work.
  */
 export function Home({grid}: {grid: FocusGrid}) {
+  const favorites = useFavorites();
   return (
     <View style={styles.screen}>
       <Greeting />
-      <Favorites grid={grid} />
+      <Favorites grid={grid} items={favorites} />
       <Trending grid={grid} />
     </View>
   );
+}
+
+/**
+ * The house's favourites, read from the native side.
+ *
+ * The list is empty until the native side answers: a row of tiles that are not there yet would
+ * be a row of lies, and the section goes away rather than showing an empty strip.
+ */
+function useFavorites(): FavoriteEntry[] {
+  const [items, setItems] = useState<FavoriteEntry[]>([]);
+  useEffect(() => {
+    let alive = true;
+    loadFavorites()
+      .then(found => {
+        if (alive) {
+          setItems(found);
+        }
+      })
+      .catch((e: unknown) => {
+        // The native side is not there (or the file is not readable): the row goes away, and
+        // the reason is in the log rather than on the television's screen.
+        console.warn('the favourites could not be read:', e);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return items;
 }
 
 /** The greeting follows the clock. There is no name: the screen belongs to the house. */
@@ -93,7 +125,7 @@ function DayNumber({label, value}: {label: string; value: string}) {
  * The row is band 0 of the screen's focus grid: the tiles are columns 1 and up, so the
  * left arrow from the first tile crosses to the rail.
  */
-function Favorites({grid, items = FAVORITES}: {grid: FocusGrid; items?: FavoriteEntry[]}) {
+function Favorites({grid, items}: {grid: FocusGrid; items: FavoriteEntry[]}) {
   // An empty row is not a row: the section goes away rather than showing an empty strip.
   if (items.length === 0) {
     return null;
@@ -113,7 +145,7 @@ function Favorites({grid, items = FAVORITES}: {grid: FocusGrid; items?: Favorite
             focusedStyle={styles.focusedTile}
             style={styles.favoriteTile}>
             {item.kind === 'app' ? (
-              <AppBox label={item.label.charAt(0)} />
+              <AppBox label={item.label.charAt(0)} icon={item.icon} />
             ) : (
               <InputBox />
             )}
@@ -133,21 +165,27 @@ function Favorites({grid, items = FAVORITES}: {grid: FocusGrid; items?: Favorite
 }
 
 /**
- * The app's tile: a picture with the app's first letter on it.
+ * The app's tile: the app's own icon, or a picture with the app's first letter on it.
  *
  * With the focus, the box goes from the card's colour to the muted one and the letter
  * comes forward, the way the prototype's tile does.
  */
-function AppBox({label}: {label: string}) {
+function AppBox({label, icon}: {label: string; icon?: string}) {
   const focused = useFocused();
   return (
     <Card
       radius={dp(26)}
       padding={0}
       style={[styles.appBox, focused ? styles.appBoxFocused : null]}>
-      <Text style={[styles.appInitial, focused ? styles.appInitialFocused : null]}>
-        {label}
-      </Text>
+      {icon ? (
+        // The icon is a file in the app's cache: the native side writes it there and hands
+        // over the path, because a drawable cannot cross the bridge.
+        <Image source={{uri: `file://${icon}`}} style={styles.appIcon} resizeMode="contain" />
+      ) : (
+        <Text style={[styles.appInitial, focused ? styles.appInitialFocused : null]}>
+          {label}
+        </Text>
+      )}
     </Card>
   );
 }
@@ -390,6 +428,10 @@ const styles = StyleSheet.create({
   },
   appBoxFocused: {
     backgroundColor: colors.muted,
+  },
+  appIcon: {
+    width: dp(72),
+    height: dp(72),
   },
   appInitial: {
     fontFamily: FONT_FAMILY,

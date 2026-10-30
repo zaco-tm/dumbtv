@@ -19,6 +19,37 @@ export type HomeInput = {
   label: string;
   /** Anything else worth knowing about it. */
   detail: string;
+  /**
+   * Whether a games console is plugged into this port.
+   *
+   * The television says so itself: a console that talks HDMI-CEC gets its own input, named
+   * after the device ("PlayStation 5"), and the native side matches those words, the way the
+   * Java app does in HomeApps.deviceSymbol.
+   */
+  isConsole: boolean;
+};
+
+/**
+ * One app on the television, as the native side describes it.
+ *
+ * The category is the store's own: `CATEGORY_GAME` is a game, the media categories are
+ * streaming apps. `src/data/tv.ts` is where the rule lives.
+ *
+ * The installer comes with it, because the category's number cannot say on its own whether an
+ * app is a game or whether nobody declared one: both are zero. A store that installed the app
+ * also declared the category; an app that was put on the television by hand has neither.
+ */
+export type TvApp = {
+  /** The app's package name, which is what identifies it. */
+  package: string;
+  /** The name on the screen. */
+  label: string;
+  /** The icon, as a file in the app's cache. Empty when the app has none we can draw. */
+  icon: string;
+  /** The store's category: 0 is a game's number, 1 to 5 are the media ones. */
+  category: number;
+  /** Who installed the app. Empty when it was sideloaded and no store declared it. */
+  installedBy: string;
 };
 
 /** A value a preference file can hold. */
@@ -39,9 +70,21 @@ interface InputsNative {
   list(): Promise<HomeInput[]>;
 }
 
+interface AppsNative {
+  list(): Promise<TvApp[]>;
+}
+
+interface KidsNative {
+  show(): Promise<void>;
+  showNormal(): Promise<void>;
+  isActive(): Promise<boolean>;
+  hasPin(): Promise<boolean>;
+}
+
 interface SleepNative {
   start(minutes: number): Promise<void>;
   cancel(): Promise<void>;
+  minutesLeft(): Promise<number>;
 }
 
 interface PrefsNative {
@@ -91,6 +134,33 @@ export const inputs = {
   },
 };
 
+/** The apps on the television, with the store's category for each. */
+export const apps = {
+  list(): Promise<TvApp[]> {
+    return nativeModule<AppsNative>('apps').list();
+  },
+};
+
+/**
+ * The kids face.
+ *
+ * Getting in is free; getting out asks for the parent PIN, and the face asks for it, not this.
+ */
+export const kids = {
+  show(): Promise<void> {
+    return nativeModule<KidsNative>('kids').show();
+  },
+  showNormal(): Promise<void> {
+    return nativeModule<KidsNative>('kids').showNormal();
+  },
+  isActive(): Promise<boolean> {
+    return nativeModule<KidsNative>('kids').isActive();
+  },
+  hasPin(): Promise<boolean> {
+    return nativeModule<KidsNative>('kids').hasPin();
+  },
+};
+
 /** The sleep timer. */
 export const sleep = {
   start(minutes: number): Promise<void> {
@@ -98,6 +168,9 @@ export const sleep = {
   },
   cancel(): Promise<void> {
     return nativeModule<SleepNative>('sleep').cancel();
+  },
+  minutesLeft(): Promise<number> {
+    return nativeModule<SleepNative>('sleep').minutesLeft();
   },
 };
 

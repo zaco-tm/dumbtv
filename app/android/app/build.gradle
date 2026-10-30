@@ -59,6 +59,10 @@ react {
  */
 def enableProguardInReleaseBuilds = false
 
+// The application id, and the one thing the swap changes: the preview build is an ordinary
+// app in the television's list, and the shipping build replaces AverageTV in place.
+def tvApplicationId = (project.findProperty("tvApplicationId") ?: "tv.dumbtv.preview").toString()
+
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
  *
@@ -80,12 +84,27 @@ android {
     namespace "io.freemytv"
     defaultConfig {
         // The preview id, not the shipping one. The household's home screen stays AverageTV
-        // (tv.dumbtv.variant) while this tree is built; the swap is task 9's work.
-        applicationId "tv.dumbtv.preview"
+        // (tv.dumbtv.variant) while this tree is built; the swap is task 9's work, and it is
+        // this one property: -PtvApplicationId=tv.dumbtv.variant builds the shipping id.
+        applicationId tvApplicationId
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+
+        manifestPlaceholders = [
+            // A task affinity is a package name: ours has to be ours, or the task lands in
+            // another app's package.
+            taskAffinity: tvApplicationId + ".settings",
+            // The photos inbox's authority. It follows the application id, and it has to:
+            // two apps cannot share a content provider's authority, and the installed
+            // AverageTV already owns tv.dumbtv.variant.photos — so a preview build that
+            // claimed it would not install beside it at all.
+            //
+            // The shipping build gets tv.dumbtv.variant.photos, which is the contract
+            // tools/photos.py writes to, and the preview build gets its own.
+            photoAuthority: (project.findProperty("photoAuthority") ?: (tvApplicationId + ".photos")).toString(),
+        ]
     }
     signingConfigs {
         debug {
@@ -118,4 +137,8 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // The test that holds the parent PIN's format against the Java app's own code. It runs on
+    // the JVM, with no television: the app/android/app/src/test/java/io/freemytv one.
+    testImplementation("junit:junit:4.13.2")
 }

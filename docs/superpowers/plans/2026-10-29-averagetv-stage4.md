@@ -285,6 +285,9 @@ tokens match exactly (the generator says so).
 
 ### Task 8 — the native side, for real
 
+**Done**, and measured **without the television** (it was off, and was not woken). The report is
+`.superpowers/sdd/stage4-task-8-report.md`.
+
 The Guard in the RN app (same class name, same label, same mechanism), the PIN module
 reading `parent_pin`, the mode switch, the inputs, the sleep timer, the kids face behind
 the PIN, and the Screensaver.
@@ -296,7 +299,17 @@ gives:
   television reports over HDMI-CEC (the Java app's `HomeApps.deviceSymbol` does this
   already: "playstation", "ps5", "xbox", "nintendo", "switch", "steam deck");
 - a new `apps` module lists the installed apps **with their store category**, so the app
-  can tell a game from a streaming app (`ApplicationInfo.category`, `CATEGORY_GAME`).
+  can tell a game from a streaming app (`ApplicationInfo.category`, `CATEGORY_GAME`) — and
+  with **who installed it**, because `CATEGORY_GAME` is `0` and an app that declares no
+  category is *also* `0, so the number alone cannot tell a game from an app nobody
+  declared. A store writes the category into the app it installs; a sideloaded app has
+  neither. The rule reads the two together, and it is the one thing here that has to be
+  measured on the television (task 9).
+
+The Java app's native code now lives in the app's own source tree, copied from
+`variant/src/io/freemytv/` — the vendored tree is untouched and is still the rollback.
+`HomeActivity` is one class holding both faces: the React root view and the Java app's
+`KidsView`.
 
 Risk: high — this is the part that can break the parts that work. Measure: on the preview
 id, the PIN gate holds, the kids face comes and goes, and the sleep timer blanks the

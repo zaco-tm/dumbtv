@@ -1,6 +1,86 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- After the TV boots (and after a TV update), checks that the mode is still as you left it. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- The sleep timer's minutes left over any app (SleepOverlay), when picked; allowed through ADB, as Android TV
+         has no screen for it. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- The sleep timer on time: from Android 12, windows under 10 minutes stretch to 10. No prompt for either. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!--
+        Android 11+: without this list the app cannot "see" the other apps. The two intent
+        filters are the important ones: an app that can be launched from the television's app
+        list is visible to us, and that is every app the Streaming and Gaming pages show.
+    -->
+    <queries>
+        <package android:name="com.netflix.ninja" />
+        <package android:name="com.google.android.youtube.tv" />
+        <package android:name="com.amazon.firetv.youtube" />
+        <package android:name="com.amazon.amazonvideo.livingroom" />
+        <package android:name="com.amazon.firebat" />
+        <package android:name="com.amazon.avod" />
+        <package android:name="com.disney.disneyplus" />
+        <package android:name="com.wbd.stream" />
+        <package android:name="com.hbo.hbonow" />
+        <package android:name="com.apple.atve.androidtv.appletv" />
+        <package android:name="com.apple.atve.sony.appletv" />
+        <package android:name="com.apple.atve.amazon.appletv" />
+        <package android:name="com.hulu.livingroomplus" />
+        <package android:name="com.hulu.plus" />
+        <package android:name="com.cbs.ott" />
+        <package android:name="com.cbs.ca" />
+        <package android:name="com.bskyb.nowtv.beta" />
+        <package android:name="de.swr.avp.ard.tv" />
+        <package android:name="com.zdf.android.mediathek" />
+        <package android:name="tv.arte.plus7" />
+        <package android:name="de.prosiebensat1digital.seventv" />
+        <package android:name="de.rtli.tvnow" />
+        <package android:name="de.sky.online" />
+        <package android:name="de.telekom.magentatv.tv" />
+        <package android:name="com.peacocktv.peacockandroid" />
+        <package android:name="com.peacock.peacockfiretv" />
+        <package android:name="com.globo.globotv" />
+        <package android:name="ru.kinopoisk.tv" />
+        <package android:name="ru.more.play" />
+        <package android:name="gpm.tnt_premier" />
+        <package android:name="ru.amediateka" />
+        <package android:name="ru.rt.video.app.tv" />
+        <package android:name="in.startv.hotstar" />
+        <package android:name="com.crunchyroll.crunchyroid" />
+        <package android:name="net.cme.voyo.cz.tvapp" />
+        <package android:name="com.spotify.tv.android" />
+        <package android:name="com.tcl.tv" />
+        <package android:name="com.google.android.tv" />
+        <package android:name="com.mediatek.wwtv.tvcenter" />
+        <package android:name="com.sony.dtv.tvx" />
+        <package android:name="com.smartdevice.livetv" />
+        <package android:name="com.mediatek.tv.oneworld.tvcenter" />
+        <package android:name="com.htc.htcsettings" />
+        <package android:name="com.softwinner.tcorrection" />
+        <package android:name="com.softwinner.miracastReceiver" />
+        <package android:name="com.softwinner.awlivetv" />
+        <package android:name="com.xiaomi.mitv.tvplayer" />
+        <package android:name="com.amazon.tv.livetv" />
+        <package android:name="com.amazon.tv.inputpreference.service" />
+        <package android:name="com.amazon.mediatek.livetv" />
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="content" android:host="android.media.tv" />
+        </intent>
+    </queries>
 
     <!-- A television: the app is a Leanback one, and it does not need a touchscreen. -->
     <uses-feature android:name="android.software.leanback" android:required="false" />
@@ -15,6 +95,7 @@
       android:theme="@style/AppTheme"
       android:usesCleartextTraffic="${usesCleartextTraffic}"
       android:supportsRtl="true">
+
       <!--
         The host activity. Its simple class name is "HomeActivity" on purpose: the Guard (an
         accessibility service) compares the focused window's simple class name against that
@@ -22,15 +103,25 @@
 
         No HOME category here. The home key on this television belongs to the Guard, not to a
         home-app candidate, and the preview app is an ordinary app in the television's list.
+
+        It runs in the :home process, as the Java app's does: the home screen is the part that
+        may crash, and the safety net (the Watchdog, in the main process) has to survive it.
       -->
       <activity
         android:name=".HomeActivity"
+        android:process=":home"
         android:label="@string/app_name"
         android:screenOrientation="landscape"
         android:banner="@drawable/banner"
-        android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+        android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
         android:launchMode="singleTask"
+        android:taskAffinity=""
+        android:stateNotNeeded="true"
+        android:clearTaskOnLaunch="true"
+        android:resumeWhilePausing="true"
+        android:excludeFromRecents="true"
         android:windowSoftInputMode="adjustResize"
+        android:theme="@style/AverageTV.Home"
         android:exported="true">
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
@@ -38,5 +129,180 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+
+      <!--
+        The Java app's settings screen. It is the way the household's settings (the ones in
+        the settings file) are changed on the television itself, so the file stays a contract
+        with something that can write it.
+      -->
+      <activity
+        android:name=".SettingsActivity"
+        android:process=":home"
+        android:exported="true"
+        android:label="@string/app_name"
+        android:launchMode="singleTask"
+        android:taskAffinity="${taskAffinity}"
+        android:excludeFromRecents="true"
+        android:screenOrientation="landscape"
+        android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
+        android:theme="@style/AverageTV.Home">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+      </activity>
+
+      <!-- The home screen when opened as an app on Fire TV (where Amazon keeps the Home button). -->
+      <activity
+        android:name=".FireHomeActivity"
+        android:process=":home"
+        android:exported="false"
+        android:label="@string/app_name"
+        android:launchMode="singleTask"
+        android:taskAffinity="${taskAffinity}"
+        android:excludeFromRecents="true"
+        android:screenOrientation="landscape"
+        android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
+        android:theme="@style/AverageTV.Home" />
+
+      <!--
+        The input screen. The picture is in a window of ours (TvView), so BACK comes back to
+        the home screen and the panel stays awake while the input shows a picture.
+
+        Same process and task affinity as HomeActivity: the input screen belongs to the home
+        screen's task, so BACK returns to it. The theme is the platform's fullscreen one and
+        not AverageTV.Home: the window's background is transparent here (the video is a layer
+        behind it), and AverageTV.Home's light background would flash before the code can
+        clear it.
+      -->
+      <activity
+        android:name=".Input"
+        android:process=":home"
+        android:exported="false"
+        android:taskAffinity=""
+        android:excludeFromRecents="true"
+        android:screenOrientation="landscape"
+        android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen" />
+
+      <!-- The screensaver. On Android 11 to 12L this one is off and the copy below is on. -->
+      <service
+        android:name=".Screensaver"
+        android:process=":home"
+        android:enabled="@bool/dream_in_home"
+        android:exported="true"
+        android:label="@string/app_name"
+        android:permission="android.permission.BIND_DREAM_SERVICE">
+        <intent-filter>
+            <action android:name="android.service.dreams.DreamService" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
+      </service>
+
+      <service
+        android:name=".ScreensaverAlone"
+        android:enabled="@bool/dream_alone"
+        android:exported="true"
+        android:label="@string/app_name"
+        android:permission="android.permission.BIND_DREAM_SERVICE">
+        <intent-filter>
+            <action android:name="android.service.dreams.DreamService" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
+      </service>
+
+      <!-- Runs the mode switches in the background (HomeMode). -->
+      <service
+        android:name=".ModeJob"
+        android:exported="false"
+        android:permission="android.permission.BIND_JOB_SERVICE" />
+
+      <!--
+        Upstream's own accessibility service: the remote's app buttons, from inside any app.
+
+        android:exported is not optional here: this APK targets 36, and Android 12 refuses to
+        install a component that declares an intent filter without an explicit
+        android:exported. "true" is right because the system has to bind the service from
+        another uid; android.permission.BIND_ACCESSIBILITY_SERVICE is what guards it.
+      -->
+      <service
+        android:name=".RemoteKeyService"
+        android:process=":keys"
+        android:exported="true"
+        android:label="@string/app_name"
+        android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+        <intent-filter>
+            <action android:name="android.accessibilityservice.AccessibilityService" />
+        </intent-filter>
+        <meta-data
+            android:name="android.accessibilityservice"
+            android:resource="@xml/remote_key_service" />
+      </service>
+
+      <!--
+        Ours: the Guard takes the HOME key on Fire OS, where Amazon's launcher is protected
+        and no third-party app can be the home app. It is the port of tv.dumbtv.home's Guard.
+
+        The class name may not change: Android binds the service by component, and the Guard
+        itself compares the focused window's simple class name against the literal
+        "HomeActivity", which is why the host activity keeps that name.
+      -->
+      <service
+        android:name=".Guard"
+        android:label="@string/guard_label"
+        android:exported="true"
+        android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+        <intent-filter>
+            <action android:name="android.accessibilityservice.AccessibilityService" />
+        </intent-filter>
+        <meta-data
+            android:name="android.accessibilityservice"
+            android:resource="@xml/guard" />
+      </service>
+
+      <!-- The photos a computer sends to the television: the inbox's authority. -->
+      <provider
+        android:name=".PhotoInbox"
+        android:authorities="${photoAuthority}"
+        android:exported="true" />
+
+      <!-- The sleep timer's minutes left over any app (SleepOverlay), in its own process. -->
+      <service
+        android:name=".SleepOverlay"
+        android:process=":sleep"
+        android:exported="false" />
+
+      <!--
+        Ours: the sleep timer's end. The screen goes dark over whatever is on it, with a black
+        window over the app that is playing and the panel's brightness at its lowest. It needs
+        no permission the app does not already hold (the overlay one, granted at install) and
+        no ADB.
+      -->
+      <service
+        android:name=".SleepBlank"
+        android:process=":sleep"
+        android:exported="false" />
+
+      <!-- The notification listener: what is playing now, from the app that says so. -->
+      <service
+        android:name=".NowPlaying"
+        android:exported="true"
+        android:label="@string/app_name"
+        android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+        <intent-filter>
+            <action android:name="android.service.notification.NotificationListenerService" />
+        </intent-filter>
+      </service>
+
+      <!-- System notices for the main process: the TV booted, this app was updated. -->
+      <receiver
+        android:name=".HomeReceiver"
+        android:exported="false">
+        <intent-filter>
+            <action android:name="android.intent.action.BOOT_COMPLETED" />
+            <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        </intent-filter>
+      </receiver>
     </application>
 </manifest>

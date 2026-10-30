@@ -1,8 +1,6 @@
 package io.freemytv
 
 import android.content.Context
-import android.hardware.display.DisplayManager
-import android.view.Display
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -13,31 +11,34 @@ import com.facebook.react.bridge.WritableArray
 /**
  * The television's HDMI inputs.
  *
- * The Java app opens an input in a window of its own, over a TvView layer, and the back stack goes
- * with it; that is task 8's work. What the stub answers is the list Android already knows: on a
- * television the displays it reports are the HDMI inputs, with the names the television gives them.
+ * The list is the Java app's own: `HomeApps.allInputs` walks the TV's input manager, gives each
+ * port the number the television gives it, and takes the name from the device that talks HDMI-CEC
+ * ("PlayStation 5"), so the tile is named after the console and not after the port.
+ *
+ * `isConsole` is that name read the way the Java app reads it: `HomeApps.deviceSymbol` picks an
+ * icon from the words in the name, and the game console's icon is "gamepad". The words are the
+ * table in `HomeApps`: a gamepad, a playstation, a ps5, a ps4, a ps3, an xbox, a nintendo, a
+ * switch, a steam deck, a console, a game.
  */
 class InputsModule(reactContext: ReactApplicationContext) :
         ReactContextBaseJavaModule(reactContext) {
 
     override fun getName(): String = "inputs"
 
-    /** The inputs, as `{key, label, detail}`. */
+    /** The inputs, as `{key, label, detail, isConsole}`. */
     @ReactMethod
     fun list(promise: Promise) {
         val out: WritableArray = Arguments.createArray()
         try {
-            val manager = reactApplicationContext
-                    .getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
-            val displays: Array<Display> = manager?.displays ?: emptyArray()
-            for (display in displays) {
-                val name = display.name ?: ""
-                if (!name.startsWith("HDMI")) continue
+            val context: Context = reactApplicationContext.applicationContext
+            for (item in HomeApps.allInputs(context)) {
+                // The live TV entry is in the same list: it is not an input.
+                if (item.kind != HomeApps.INPUT) continue
                 val input = Arguments.createMap()
-                input.putString("key", display.displayId.toString())
-                input.putString("label", name)
-                input.putString("detail", "display " + display.displayId + ", " +
-                        display.mode.physicalWidth + "x" + display.mode.physicalHeight)
+                input.putString("key", item.key)
+                input.putString("label", item.label)
+                input.putString("detail", if (item.connected) "connected" else "no signal")
+                input.putBoolean("isConsole", SYMBOL_CONSOLE == item.symbol)
                 out.pushMap(input)
             }
         } catch (e: Exception) {
@@ -45,5 +46,10 @@ class InputsModule(reactContext: ReactApplicationContext) :
             return
         }
         promise.resolve(out)
+    }
+
+    private companion object {
+        /** The icon `HomeApps.deviceSymbol` gives a game console. */
+        const val SYMBOL_CONSOLE = "gamepad"
     }
 }

@@ -22,7 +22,7 @@ file is the app's side of it: what exists, and what is still to come.
 |---|---|---|
 | `src/lib/tvFocus.ts` — the grid focus model | `src/ui/focus.ts` (the model), `src/ui/useFocusGrid.ts` (the plumbing) | **Done (task 7).** The model is a pure function over a list of positions, in TypeScript, with no React and no React Native in the file — so jest proves it with no device. The movements the prototype was measured against are the movements `__tests__/focus.test.ts` proves: right from the rail enters the page at its top-left (right from Streaming lands on the first app, not the seventh; right from Gaming on the first console, not a game), down from a console walks the games, left from the content returns to the rail item of the page you are on, and up and down stay inside whichever list you are in. The focus is moved with the `focus` command, and React Native's own flags for keys and for the imperative focus are turned on in `ReactFlags.kt`. |
 | `src/lib/fit.ts` — the 1920×1080 stage | `src/ui/stage.ts` | **Done (task 7).** The screen is the stage: there is no scaling, and a stage pixel is a dp divided by the density, so the prototype's numbers are the television's pixels whichever way the screen is set up. |
-| `src/data/mock.ts` | the native modules | The modules answer; the data layer is task 8's work. `src/data/mock.ts` is the prototype's mock data, marked as the placeholder it is. |
+| `src/data/mock.ts` | `src/data/tv.ts` | **Done (task 8), in part.** The television's apps, its inputs and the house's favourites come from the native side now: the `apps` module and the `inputs` module, and the favourites list out of the home screen's own file. The rule that tells a game from a streaming app (the store's category, read together with who installed the app) is in `src/data/tv.ts`, where jest can hold it. What is left in `src/data/mock.ts` is the weather and the trending picks, which come off the network: task 10's work. |
 | `src/sections/*` | `src/screens/Home.tsx` | **Done (task 7).** The greeting, the Favorites row, and the Trending feature with its ranked list, with the prototype's numbers: 72px greeting, 32px section titles, 22px labels, 176px tiles, 104px app boxes, a 340px feature. |
 
 ## The native modules
@@ -32,18 +32,39 @@ is still missing is written down in the module's own source file.
 
 | Module | What it answers | Now |
 |---|---|---|
-| `parent_pin` | `check(pin)`, `set(pin)` | **Real.** The salted SHA-256 hash in the `parent_pin` file, in the format the Java app uses. |
-| `home_mode` | `isHome()`, `setHome(on)`, `refresh()` | A stub. `isHome()` asks the system who holds the HOME role; `setHome()` only records the request, because the real switch needs the television's own ADB (task 8). |
-| `inputs` | `list()` | A stub. It reads the displays Android reports, which on a television are the HDMI inputs. The input screen itself is task 8's work. |
-| `sleep` | `start(minutes)`, `cancel()` | A stub. It writes the end of the timer into the settings file, in the Java app's keys. The blanking is task 8's work. |
+| `parent_pin` | `check(pin)`, `set(pin)` | **Real.** The salted SHA-256 hash in the `parent_pin` file, in the format the Java app uses. The format lives in `ParentPin.kt`, apart from the module, and `app/android/app/src/test/java/io/freemytv/ParentPinFormatTest.kt` holds it against the Java app's own code, byte for byte. |
+| `home_mode` | `isHome()`, `setHome(on)`, `refresh()` | Still a stub for the switch. `isHome()` asks the system who holds the HOME role; `setHome()` only records the request, because the real switch (the Java app's `HomeMode`) needs the television's own ADB, and the preview app must not take the household's home screen away. The switch is the swap's work (task 9). |
+| `inputs` | `list()` | **Real (task 8).** The Java app's own list: the ports, the number the television gives them, and the name of the device that talks HDMI-CEC ("PlayStation 5"). `isConsole` says whether that name is a games console, the way `HomeApps.deviceSymbol` decides it. |
+| `apps` | `list()` | **Real (task 8).** The television's own apps, with the store's category for each (`ApplicationInfo.category`), **who installed it**, and the icon as a file in the app's cache. The rule that turns the category into Streaming or Gaming is in `src/data/tv.ts`. **The installer is not optional:** `CATEGORY_GAME` is `0`, and an app that declares no category is *also* `0` — the field is a plain int with no "unset", and Android exposes the category nowhere else. So the number alone cannot say "a game" from "nobody said"; the installer can, because a store writes the category into the app it installs and a sideloaded app has neither. The rule is therefore: a media category is Streaming; zero **plus a store** is a game; everything else is Streaming. The consequence is that a sideloaded game is a Streaming app as far as this rule goes — to be settled by measurement on the television in task 9. |
+| `kids` | `show()`, `showNormal()`, `isActive()`, `hasPin()` | **Real (task 8).** The kids face is the Java app's `KidsView`, drawn by the native side, and it is a mode of the home screen: the PIN locks it, and the Home button asks for the PIN instead of leaving. |
+| `sleep` | `start(minutes)`, `cancel()`, `minutesLeft()` | **Real (task 8).** The Java app's own timer: `SleepTimer.set` writes the end of the timer into the settings file in the Java app's keys, sets the alarm, and shows the minutes left over the other apps. When the alarm goes off, the screen goes dark (`SleepBlank`). |
 | `prefs` | `get(file, key)`, `set(file, key, value)` | **Real**, for the `settings` and `home-ui` files. The PIN's file is not reachable from here. |
-| `night` | `isNight()` | A stub with the Java app's rule: the theme has the last word, and without sun times it is night from 18:00 to 06:00. |
+| `night` | `isNight()` | **Real (task 8).** The Java app's own answer: the theme has the last word, and the sun times come from the last forecast the native side fetched (without one, night is from 18:00 to 06:00). |
 
 ## What is still to come
 
 | What | Whose work |
 |---|---|
 | The Live TV page and the `iptv` module | Task 10 |
-| The Streaming, Gaming and Inputs pages, and the real data behind them | Task 8 |
+| The Streaming, Gaming and Inputs pages | Task 8's data is there; the pages are not written yet |
 | The swap to `tv.dumbtv.variant` | Task 9 |
-| The carriage return, the PIN gate and the children's face | Task 8 and the native side |
+| The carriage return and the PIN gate | The native side is done (task 8); the pages that show them are not written yet |
+
+## The native side
+
+The Java app's native code is in the app's own source tree, at
+`android/app/src/main/java/io/freemytv/`, copied from `variant/src/io/freemytv/` as it was
+(task 8). The copy is the reference: the Java app is the rollback, and the two have to behave
+the same. `HomeActivity` is the app's own: it holds the React root view and the Java app's
+`KidsView` in one container, one face at a time.
+
+The copy is the arrangement, not a source set, because two of the vendored files cannot be used
+as they are — `HomeActivity` has to become the two-face host and `App` has to give way to
+`MainApplication` — and a Gradle source set cannot exclude one file out of two directories.
+The vendored tree itself is untouched: `variant/verify-vendor.sh` still passes.
+
+The **content provider's authority follows the application id** (`<application id>.photos`).
+It has to: two apps cannot share an authority, and the installed AverageTV already owns
+`tv.dumbtv.variant.photos` — so a preview build that claimed it would not install beside it
+at all. The shipping build (`-PtvApplicationId=tv.dumbtv.variant`) gets
+`tv.dumbtv.variant.photos`, which is what `variant/tools/photos.py` writes to.

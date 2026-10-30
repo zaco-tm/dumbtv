@@ -10,7 +10,12 @@ const manifest = readFileSync(
 );
 
 test('the build uses the id the app says it does', () => {
-  expect(gradle).toContain(`applicationId "${APP_ID}"`);
+  // The id is a property now, so that the swap can build the shipping id without touching the
+  // file: the default is still the preview id the app says it is.
+  expect(gradle).toContain('applicationId tvApplicationId');
+  expect(gradle).toContain(
+    `(project.findProperty("tvApplicationId") ?: "${APP_ID}")`,
+  );
   expect(gradle).toContain(`namespace "${JAVA_PACKAGE}"`);
 });
 
