@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tv>
+  <channel id="bbc-one.uk">
+    <display-name>BBC One</display-name>
+    <icon src="http://logos.example.invalid/bbc-one.png"/>
+  </channel>
+  <channel id="itv.uk">
+    <display-name>ITV1</display-name>
+  </channel>
+  <channel id="sky-sports.uk">
+    <display-name>Sky Sports Main Event</display-name>
+  </channel>
+  <programme start="20260101180000 +0000" stop="20260101183000 +0000" channel="bbc-one.uk">
+    <title>The News at Six</title>
+    <desc>The headlines, and the weather.</desc>
+    <category>News</category>
+  </programme>
+  <programme start="20260101183000 +0000" stop="20260101203000 +0000" channel="bbc-one.uk">
+    <title>Match of the Day</title>
+    <category>Sports</category>
+  </programme>
+  <programme start="20260101180000 -0500" stop="20260101190000 -0500" channel="itv.uk">
+    <title>Coronation Street</title>
+    <category>Drama</category>
+  </programme>
+  <programme start="20260101180000 +0000" stop="20260101183000 +0000" channel="sky-sports.uk">
+    <title>Sky Sports News</title>
+    <category>Sports</category>
+  </programme>
+</tv>

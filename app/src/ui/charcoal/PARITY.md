@@ -40,13 +40,14 @@ is still missing is written down in the module's own source file.
 | `sleep` | `start(minutes)`, `cancel()`, `minutesLeft()` | **Real (task 8).** The Java app's own timer: `SleepTimer.set` writes the end of the timer into the settings file in the Java app's keys, sets the alarm, and shows the minutes left over the other apps. When the alarm goes off, the screen goes dark (`SleepBlank`). |
 | `prefs` | `get(file, key)`, `set(file, key, value)` | **Real**, for the `settings` and `home-ui` files. The PIN's file is not reachable from here. |
 | `night` | `isNight()` | **Real (task 8).** The Java app's own answer: the theme has the last word, and the sun times come from the last forecast the native side fetched (without one, night is from 18:00 to 06:00). |
+| `iptv` | `saveProvider(host, user, password)`, `savePlaylist(url)`, `clear()`, `source()`, `channels()`, `guide()`, `watch(channelId, name)`, `openTvInstalled()` | **Real (task 10).** The provider's channels, the guide, and the hand-off to OpenTV. **The credentials are sealed** with the Android Keystore's own AES/GCM key and kept in the app's own `iptv` preference file; they never cross the bridge and never leave the television. The M3U and XMLTV parsers are pure Kotlin with no Android in them, so the **JVM tests prove them** with no device and no network. The guide is the provider's own when there is one and OpenTV's public feeds when there is not; a failed fetch leaves the public feed in place rather than raising. The channels are joined to the guide by the provider's own guide id when it gives one, and by the folded name — the same folding OpenTV uses — when it does not. `source()` carries `secure`, because a plain `http://` provider works in a debug build and **fails in the shipping one**: React Native's Gradle plugin sets `usesCleartextTraffic` to false for the release build and sets it after the app's own placeholders, so it cannot be overridden from there. |
 
 ## What is still to come
 
 | What | Whose work |
 |---|---|
-| The Live TV page and the `iptv` module | Task 10 |
 | The Streaming, Gaming and Inputs pages | Task 8's data is there; the pages are not written yet |
+| A settings page to add the provider | Task 10's module is there; there is nowhere yet to type the host and password |
 | The swap to `tv.dumbtv.variant` | Task 9 |
 | The carriage return and the PIN gate | The native side is done (task 8); the pages that show them are not written yet |
 

@@ -8,6 +8,7 @@ import React from 'react';
 import {StatusBar, StyleSheet, Text, View, useColorScheme} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Home} from './src/screens/Home';
+import {LiveTv} from './src/screens/LiveTv';
 import {WiringScreen} from './src/screens/WiringScreen';
 import {ALL_ITEMS, Rail} from './src/ui/charcoal/Rail';
 import {FONT_FAMILY, colors} from './src/ui/charcoal/theme';
@@ -59,7 +60,13 @@ function App() {
           }}
         />
         <View style={styles.content}>
-          {destination === 'home' ? <Home grid={grid} /> : <Coming page={destination} />}
+          {destination === 'home' ? (
+            <Home grid={grid} />
+          ) : destination === 'live-tv' ? (
+            <LiveTv grid={grid} />
+          ) : (
+            <Coming page={destination} />
+          )}
         </View>
       </View>
     </SafeAreaProvider>

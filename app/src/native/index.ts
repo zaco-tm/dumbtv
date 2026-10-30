@@ -96,6 +96,17 @@ interface NightNative {
   isNight(): Promise<boolean>;
 }
 
+interface IptvNative {
+  saveProvider(host: string, user: string, password: string): Promise<boolean>;
+  savePlaylist(url: string): Promise<boolean>;
+  clear(): Promise<boolean>;
+  source(): Promise<TvSource | null>;
+  channels(): Promise<TvChannel[]>;
+  guide(): Promise<TvEvent[]>;
+  watch(channelId: string, name: string): Promise<boolean>;
+  openTvInstalled(): Promise<boolean>;
+}
+
 function nativeModule<T>(name: string): T {
   const found = (NativeModules as Record<string, unknown>)[name];
   if (!found) {
@@ -196,3 +207,109 @@ export const PREF_FILES = {
   settings: 'settings',
   homeUi: 'home-ui',
 } as const;
+
+/**
+ * Live TV: the provider's channels, the guide, and the hand-off to OpenTV.
+ *
+ * The credentials live on the native side and are **never** sent back: `source()` says
+ * what is stored and leaves the password out of it. The guide comes back as plain data.
+ */
+export const iptv = {
+  /** Stores a provider the household signs in to. */
+  saveProvider(host: string, user: string, password: string): Promise<boolean> {
+    return nativeModule<IptvNative>('iptv').saveProvider(host, user, password);
+  },
+  /** Stores a playlist of streams. */
+  savePlaylist(url: string): Promise<boolean> {
+    return nativeModule<IptvNative>('iptv').savePlaylist(url);
+  },
+  /** Forgets the source. */
+  clear(): Promise<boolean> {
+    return nativeModule<IptvNative>('iptv').clear();
+  },
+  /** What is stored, without the secret. */
+  source(): Promise<TvSource | null> {
+    return nativeModule<IptvNative>('iptv').source();
+  },
+  /** The channels, with what is on them now. */
+  channels(): Promise<TvChannel[]> {
+    return nativeModule<IptvNative>('iptv').channels();
+  },
+  /** The evening's events. */
+  guide(): Promise<TvEvent[]> {
+    return nativeModule<IptvNative>('iptv').guide();
+  },
+  /** Opens OpenTV on a channel. */
+  watch(channelId: string, name: string): Promise<boolean> {
+    return nativeModule<IptvNative>('iptv').watch(channelId, name);
+  },
+  /** Whether OpenTV is on the television. */
+  openTvInstalled(): Promise<boolean> {
+    return nativeModule<IptvNative>('iptv').openTvInstalled();
+  },
+};
+
+/** A programme, as the native side describes it. */
+export type TvProgramme = {
+  /** The title. */
+  title: string;
+  /** When it starts, in milliseconds since the epoch. */
+  from: number;
+  /** When it ends, in milliseconds since the epoch. */
+  to: number;
+  /** The guide's category ("News", "Sports"), when it has one. */
+  category: string;
+};
+
+/** A channel on the television, with what is on it. */
+export type TvChannel = {
+  /** The provider's own id for the channel. */
+  id: string;
+  /** The name the household sees. */
+  name: string;
+  /** The channel number, when the provider gives one. */
+  number: number;
+  /** The group ("Sports", "Kids"), when the provider gives one. */
+  group: string;
+  /** The logo's URL, when the provider gives one. */
+  logo: string;
+  /** What is on now, when the guide knows. */
+  now: TvProgramme | null;
+  /** What is next, when the guide knows. */
+  next: TvProgramme | null;
+};
+
+/** An event in the evening. */
+export type TvEvent = {
+  /** The title. */
+  title: string;
+  /** When it starts, in milliseconds since the epoch. */
+  from: number;
+  /** When it ends, in milliseconds since the epoch. */
+  to: number;
+  /** The guide's category ("News", "Sports"), when it has one. */
+  category: string;
+  /** The guide's id for the channel. */
+  channelId: string;
+  /** The name the household knows the channel by. */
+  channelName: string;
+};
+
+/** What is stored, without the secret. */
+export type TvSource = {
+  /** Which kind of source it is. */
+  kind: 'provider' | 'playlist';
+  /** The provider's host, for a provider source. */
+  host: string;
+  /** The user the household signs in as. */
+  user: string;
+  /** The playlist's address, for a playlist source. */
+  url: string;
+  /**
+   * Whether the provider is reached over an encrypted connection.
+   *
+   * The shipping build does not allow a plain `http://` provider, so the app says so
+   * rather than letting it work in a debug build and fail in the release one.
+   */
+  secure: boolean;
+};

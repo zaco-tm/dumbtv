@@ -462,12 +462,41 @@ sketch's four destinations all go somewhere.
 
 ### Task 10 — the Live TV page in the app
 
-The port of the prototype's page, the `iptv` module, and the hand-off.
+**Done**, and measured **without the television** (it is off, and was not woken). The report
+is `.superpowers/sdd/stage4-task-10-report.md`.
 
-Risk: medium for the page, high for the credentials (they are the owner's IPTV login, in
-a second app). Measure: the preview app shows the guide with the owner's own provider
-login; pressing a programme opens OpenTV; with no login, the public feed fills the guide
-for the UK; a failed provider fetch leaves the public feed in place instead of an error.
+- The `iptv` module: the provider's channels, the guide, and the hand-off. The credentials
+  are sealed with the Android Keystore's own AES key and kept in the app's own `iptv`
+  preference file; they never cross the bridge and never leave the television.
+- The parsers — M3U and XMLTV — are pure Kotlin with no Android in them, so the **JVM
+  tests prove them** with no device and no network. The XMLTV reader is SAX, not DOM: the
+  public feeds are tens of megabytes, and the television should not spend its memory on a
+  guide.
+- The **public feeds are the floor**: the provider's own guide when there is one, and
+  OpenTV's public feeds when there is not — the same feeds, so the guide on the television
+  is the guide OpenTV would show. A failed fetch leaves the public feed in place; it does
+  not raise.
+- The channels are joined to the guide by the provider's **own guide id** when it gives
+  one, and by the folded name when it does not — the same folding OpenTV uses, so a
+  channel this app finds is the channel the upstream patch would find.
+- The hand-off sends both extras, the name always and the id when it is known. Today's
+  OpenTV reads only the id, so the hand-off opens OpenTV and the viewer picks; that is
+  the degradation the plan asks for.
+- The page: the prototype's "On now" row and "Tonight" list, in the app's focus model,
+  wired to the rail's Live TV destination.
+
+**One thing will not work, and it is worth saying plainly: a plain `http://` provider
+works in a debug build and fails in the shipping one.** React Native's Gradle plugin sets
+`usesCleartextTraffic` to false for the release build and sets it after the app's own
+placeholders, so it cannot be overridden from there. The app reports it (`source()` carries
+`secure`) rather than hiding it, and the recommendation is that the provider must be
+**https**.
+
+Risk: medium for the page, high for the credentials. Measure: the preview app shows the
+guide with the owner's own provider login; pressing a programme opens OpenTV; with no
+login, the public feed fills the guide for the country the television is in; a failed
+provider fetch leaves the public feed in place instead of an error. **None of that has
+been measured yet** — the television is off.
 
 ## What is not in this stage
 
