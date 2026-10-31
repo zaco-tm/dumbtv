@@ -16,7 +16,11 @@ export function Favorites({ items = FAVORITES }: { items?: FavoriteEntry[] }) {
   return (
     <section data-focus-group="favorites" className="mt-8 px-16">
       <h2 className="text-[32px] font-medium tracking-tight">Favorites</h2>
-      <div role="list" className="mt-4 flex gap-6 overflow-hidden">
+      {/* The row clips sideways, so a long row cannot spill off the stage — but it must
+          not clip downwards: the focused tile grows by five per cent and its ring sits
+          outside it, and a row that clips both ways cuts the tops and the bottoms off
+          the tile that has the focus. */}
+      <div role="list" className="mt-4 flex gap-6 overflow-x-clip overflow-y-visible">
         {items.map((item, i) => (
           <button
             key={`${item.kind}-${item.key}`}
