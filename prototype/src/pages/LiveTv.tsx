@@ -32,9 +32,10 @@ export function LiveTv({
 
       <section data-focus-group="livetv-now" className="mt-8">
         <h2 className="text-[32px] font-medium tracking-tight">On now</h2>
-        {/* Clipped sideways so a long row cannot spill off the stage, but not downwards:
-            the focused tile grows, and a row that clips both ways cuts it off. */}
-        <div className="mt-4 flex gap-5 overflow-x-clip overflow-y-visible">
+        {/* The row must not clip itself: the focused tile grows and its ring sits outside
+            it, so a row that clips cuts the tile that has the focus. The stage clips at
+            the edge of the screen. */}
+        <div className="mt-4 flex gap-5 overflow-visible">
           {channels.map((channel, i) => (
             <button
               key={channel.id}
