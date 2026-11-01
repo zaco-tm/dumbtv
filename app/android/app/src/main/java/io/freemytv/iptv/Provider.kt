@@ -31,7 +31,7 @@ class Provider {
     fun channels(source: Credentials.StoredSource, secret: Pair<String, String>?): List<IptvChannel> = try {
         when (source.kind) {
             SOURCE_PROVIDER -> providerChannels(source, secret)
-            SOURCE_PLAYLIST -> M3u.parse(readText(source.url))
+            SOURCE_PLAYLIST -> M3u.parse(readText(Address.address(source.url)))
             else -> emptyList()
         }
     } catch (e: Exception) {
@@ -148,19 +148,7 @@ class Provider {
      * A host is written however the owner wrote it — with or without a scheme — and the
      * scheme is what decides whether the connection is encrypted, so it is kept.
      */
-    private fun base(host: String): String {
-        val trimmed = host.trim().trimEnd('/')
-        if (trimmed.isEmpty()) {
-            return ""
-        }
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-            return trimmed
-        }
-        return "http://$trimmed"
-    }
-
-    /** Whether a host is reached over an encrypted connection. */
-    fun isSecure(host: String): Boolean = host.trim().startsWith("https://", ignoreCase = true)
+    private fun base(host: String): String = Address.base(host)
 
     /** A URL's query part, encoded. */
     private fun encode(value: String): String = URLEncoder.encode(value, "UTF-8")

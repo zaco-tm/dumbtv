@@ -78,10 +78,14 @@ class IptvModule(reactContext: ReactApplicationContext) :
         map.putString("host", stored.host)
         map.putString("user", stored.user)
         map.putString("url", stored.url)
-        // Whether the provider is reached over an encrypted connection. The app says so
+        // Whether the source is reached over an encrypted connection. The app says so
         // when it is not: the release build does not allow cleartext, so a plain http
         // provider works in a debug build and fails in the shipping one.
-        map.putBoolean("secure", provider.isSecure(stored.host))
+        //
+        // The address asked about is the one that is really fetched — a provider's host
+        // or a playlist's own address — so a playlist is not judged by a host it does
+        // not have.
+        map.putBoolean("secure", Address.isSecure(Address.of(stored)))
         promise.resolve(map)
     }
 
@@ -162,7 +166,15 @@ class IptvModule(reactContext: ReactApplicationContext) :
                 map.putDouble("to", item.to.toDouble())
                 map.putString("category", item.category)
                 map.putString("channelId", item.channelId)
-                map.putString("channelName", names[item.channelId] ?: item.channelId)
+                // The provider's name for the channel, and the guide's own name for it
+                // when the provider has none. The id is the last resort: it is not a
+                // name.
+                map.putString(
+                    "channelName",
+                    names[item.channelId]
+                            ?: guide.channels.firstOrNull { it.id == item.channelId }?.name
+                            ?: item.channelId,
+                )
                 out.pushMap(map)
             }
             promise.resolve(out)

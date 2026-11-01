@@ -80,4 +80,45 @@ class XmltvTest {
             news.to,
         )
     }
+
+    @Test
+    fun aGuideWithADoctypeIsStillRead() {
+        // XMLTV files carry a DOCTYPE often enough that refusing one would throw away
+        // every provider's own guide. The DOCTYPE is allowed; what it points at is not
+        // fetched.
+        val guide = Xmltv.parse(
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE tv SYSTEM "xmltv.dtd">
+            <tv generator-info-name="none">
+              <channel id="bbc-one.uk"><display-name>BBC One</display-name></channel>
+              <programme start="20260101180000 +0000" stop="20260101183000 +0000" channel="bbc-one.uk">
+                <title>The News at Six</title><category>News</category>
+              </programme>
+            </tv>
+            """.trimIndent(),
+        )
+        assertEquals("the guide with a DOCTYPE was not read", 1, guide.channels.size)
+        assertEquals("the channel was not read", "bbc-one.uk", guide.channels[0].id)
+        assertEquals("the programme was not read", 1, guide.programmes.size)
+        assertEquals("the title was not read", "The News at Six", guide.programmes[0].title)
+    }
+
+    @Test
+    fun aGuideThatPointsAtAFileDoesNotReadIt() {
+        // The DOCTYPE is allowed, but nothing outside the guide is fetched to resolve
+        // it: a guide is a file from the internet, and it must not be able to make the
+        // parser open one of the television's own files.
+        val guide = Xmltv.parse(
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE tv SYSTEM "file:///etc/passwd">
+            <tv generator-info-name="none">
+              <channel id="bbc-one.uk"><display-name>BBC One</display-name></channel>
+            </tv>
+            """.trimIndent(),
+        )
+        assertEquals("the guide was not read", 1, guide.channels.size)
+        assertEquals("the channel was not read", "BBC One", guide.channels[0].name)
+    }
 }

@@ -6,6 +6,7 @@ import java.util.GregorianCalendar
 import java.util.TimeZone
 import javax.xml.parsers.SAXParserFactory
 import org.xml.sax.Attributes
+import org.xml.sax.EntityResolver
 import org.xml.sax.InputSource
 import org.xml.sax.helpers.DefaultHandler
 
@@ -41,16 +42,31 @@ object Xmltv {
         val factory = SAXParserFactory.newInstance()
         factory.isNamespaceAware = false
         // The guide is a file from the internet: it must not be able to make the parser
-        // read a local file or open a connection of its own. Android's parser does not
-        // resolve external entities anyway, so this is belt and braces — and a parser
-        // that has never heard of the feature is not a reason to fail the guide.
-        try {
-            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
-        } catch (e: Exception) {
-            // The parser does not know the feature.
+        // read a local file or open a connection of its own.
+        //
+        // The DOCTYPE itself is **allowed**, because XMLTV files commonly carry one
+        // (`<!DOCTYPE tv SYSTEM "xmltv.dtd">`) and refusing every DOCTYPE throws away
+        // every provider's own guide for no gain. What is refused is the external
+        // part of it: the entities and the DTD that would have to be fetched to
+        // resolve them. Each feature is set on its own, because a parser that has
+        // never heard of one is not a reason to fail the guide.
+        for (feature in NO_EXTERNAL_ENTITIES) {
+            try {
+                factory.setFeature(feature, false)
+            } catch (e: Exception) {
+                // The parser does not know the feature.
+            }
         }
         val handler = Handler()
-        factory.newSAXParser().parse(source, handler)
+        val parser = factory.newSAXParser()
+        // Belt and braces for a parser that ignored the features above: anything
+        // external resolves to nothing, so there is nothing to read.
+        try {
+            parser.xmlReader.entityResolver = EntityResolver { _, _ -> InputSource(StringReader("")) }
+        } catch (e: Exception) {
+            // The parser has no reader to set it on. The features above are the guard.
+        }
+        parser.parse(source, handler)
         return Guide(handler.channels, handler.programmes)
     }
 
@@ -185,4 +201,17 @@ object Xmltv {
             }
         }
     }
+
+    /**
+     * The parser features that stop a guide from reaching outside itself.
+     *
+     * A DOCTYPE is allowed — XMLTV files carry one often enough that refusing it would
+     * throw away every provider's guide — but nothing outside the file is fetched to
+     * resolve it.
+     */
+    private val NO_EXTERNAL_ENTITIES = arrayOf(
+        "http://xml.org/sax/features/external-general-entities",
+        "http://xml.org/sax/features/external-parameter-entities",
+        "http://apache.org/xml/features/nonvalidating/load-external-dtd",
+    )
 }
