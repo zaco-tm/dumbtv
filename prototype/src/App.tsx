@@ -6,6 +6,7 @@ import { Gaming } from "@/pages/Gaming"
 import { Home } from "@/pages/Home"
 import { Inputs } from "@/pages/Inputs"
 import { LiveTv } from "@/pages/LiveTv"
+import { Settings } from "@/pages/Settings"
 import { Streaming } from "@/pages/Streaming"
 
 /**
@@ -45,11 +46,28 @@ export default function App() {
             <Gaming />
           ) : destination === "inputs" ? (
             <Inputs />
+          ) : destination === "settings" ? (
+            <Settings />
+          ) : destination === "kids" ? (
+            <Coming page="Kids" />
           ) : (
             <Home />
           )}
         </main>
       </div>
+    </div>
+  )
+}
+
+/**
+ * The pages that come with the native side are not here yet — the same words the app
+ * uses, so the two do not disagree about what is missing.
+ */
+function Coming({page}: {page: string}) {
+  return (
+    <div className="px-16 pt-8">
+      <h1 className="text-[72px] font-semibold leading-none tracking-tight">{page}</h1>
+      <p className="mt-4 text-[30px] text-muted-foreground">This page is not here yet.</p>
     </div>
   )
 }
