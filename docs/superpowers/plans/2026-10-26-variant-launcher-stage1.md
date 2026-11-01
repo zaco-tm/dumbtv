@@ -85,7 +85,7 @@ Expected: exactly one directory, `free-my-tv-f1830445e6e629a2f1eab19602afef38a1a
 - [ ] **Step 2: Copy the app into `variant/`**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 UP=/tmp/fmy/free-my-tv-f1830445e6e629a2f1eab19602afef38a1a4f8b8
 mkdir -p variant/src/io variant/tools
 cp -R "$UP/app/src/io/freemytv" variant/src/io/
@@ -107,7 +107,7 @@ Expected: `40`.
 The manifest authority is ours; `photos.py` must send to the same one. The vendored app code is untouched — the authority lives in the manifest, not in `PhotoInbox.java`.
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 sed -i '' 's#io\.freemytv\.photos#tv.dumbtv.variant.photos#g' variant/tools/photos.py
 grep -n "variant.photos" variant/tools/photos.py
 ```
@@ -259,7 +259,7 @@ This project vendors third-party software. See `variant/UPSTREAM.md` for the ful
 - [ ] **Step 7: Run the verifier — it must pass**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 ./variant/verify-vendor.sh
 ```
 
@@ -268,7 +268,7 @@ Expected: `vendor tree matches upstream f1830445e6e629a2f1eab19602afef38a1a4f8b8
 - [ ] **Step 8: Prove the verifier actually fails on a change**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 printf '\n// tampered\n' >> variant/src/io/freemytv/Ui.java
 ./variant/verify-vendor.sh; echo "exit=$?"
 ```
@@ -279,8 +279,8 @@ tarball, so this step works even if `/tmp/fmy` was cleaned up in between:
 ```bash
 cd /tmp/fmy && tar xzf up.tar.gz
 cp /tmp/fmy/free-my-tv-*/app/src/io/freemytv/Ui.java \
-   /Users/zaco/Projects/Personal/dumbtv/variant/src/io/freemytv/Ui.java
-cd /Users/zaco/Projects/Personal/dumbtv
+   /Volumes/Zac's External Drive/Projects/Personal/dumbtv/variant/src/io/freemytv/Ui.java
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 ./variant/verify-vendor.sh
 ```
 
@@ -289,7 +289,7 @@ Expected: the pass line again.
 - [ ] **Step 9: Commit**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 git add variant NOTICE
 git commit -m "feat(variant): vendor free-my-tv's Android app
 
@@ -609,7 +609,7 @@ if __name__ == '__main__':
 - [ ] **Step 2: Run the tests — they must fail**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 python3 -m unittest tests.test_variant_config -v
 ```
 
@@ -811,7 +811,7 @@ if __name__ == '__main__':
 - [ ] **Step 4: Run the tests — they must pass**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 python3 -m unittest tests.test_variant_config -v
 ```
 
@@ -862,7 +862,7 @@ hide_services=
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 git add variant/tools/gen_config.py variant/config.example.properties tests/test_variant_config.py
 git commit -m "feat(variant): the config.properties -> Config generator, with tests
 
@@ -1153,7 +1153,7 @@ the app's data directory and lists the installed packages, and the variant insta
 `tv.dumbtv.variant`, not `io.freemytv`. Point the whole tool at the variant:
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 sed -i '' 's#io\.freemytv#tv.dumbtv.variant#g' variant/tools/photos.py
 grep -n "tv.dumbtv.variant" variant/tools/photos.py
 ```
@@ -1430,7 +1430,7 @@ Expected: `done`.
 - [ ] **Step 7: Build the variant**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
 ./variant/build.sh --generic
@@ -1450,7 +1450,7 @@ to upstream's flags, which take `java.*` from the Android jar instead of the JDK
 - [ ] **Step 8: Check the APK**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 ./variant/check-apk.sh
 ```
 
@@ -1459,7 +1459,7 @@ Expected: `variant APK ok: tv.dumbtv.variant, minSdk 26, targetSdk 33, 8 permiss
 - [ ] **Step 9: Prove the check fails when the APK is not what we expect**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 cp variant/permissions.txt /tmp/permissions.txt.bak
 printf 'android.permission.CAMERA\n' >> variant/permissions.txt
 ./variant/check-apk.sh; echo "exit=$?"
@@ -1473,7 +1473,7 @@ and `exit=1`; the second run prints the ok line again.
 - [ ] **Step 10: Commit**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 git add variant/AndroidManifest.xml variant/permissions.txt variant/build.sh variant/check-apk.sh .gitignore
 git commit -m "feat(variant): the manifest, the build and the APK checks
 
@@ -1577,7 +1577,7 @@ And add a check for the TMDB key itself, which nothing scanned for:
 - [ ] **Step 3: Run the same checks locally**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 for f in scripts/*.sh launcher/*.sh variant/*.sh; do bash -n "$f" || exit 1; done
 python3 -m unittest discover -s tests
 python3 catalog/validate.py
@@ -1590,7 +1590,7 @@ catalog, and a consistent manifest from `release-check.sh`.
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 git add .github/workflows/validate.yml
 git commit -m "ci: build and check the variant launcher
 
@@ -1654,7 +1654,7 @@ Two notes, both learned on the TV:
 - [ ] **Step 3: Install the variant beside it**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 adb install -r variant/build/variant.apk
 adb shell pm list packages | grep dumbtv
 ```
@@ -1708,7 +1708,7 @@ owner sees.
 - [ ] **Step 7: Run the repo's own check on the TV**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 ./scripts/verify.sh
 ```
 
@@ -1755,7 +1755,7 @@ See `variant/UPSTREAM.md` for the upstream commit and the licence.
 - [ ] **Step 9: Commit**
 
 ```bash
-cd /Users/zaco/Projects/Personal/dumbtv
+cd /Volumes/Zac's External Drive/Projects/Personal/dumbtv
 git add variant/README.md
 git commit -m "docs(variant): how to build and install the variant launcher"
 ```
