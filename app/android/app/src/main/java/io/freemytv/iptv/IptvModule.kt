@@ -186,19 +186,33 @@ class IptvModule(reactContext: ReactApplicationContext) :
     /**
      * Opens OpenTV on a channel.
      *
-     * The name always goes; the id goes when it is known, which today it never is.
+     * The name always goes. The id goes only when it is **OpenTV's own** id for the
+     * channel, and this app cannot know it: OpenTV's ids are rows in its own private
+     * database.
+     *
+     * The channel's own id — the provider's id, which is a different number for the
+     * same channel — is not sent as OpenTV's, because OpenTV would play whichever
+     * channel happens to carry that number in its own list: the wrong channel, with
+     * nothing to say so.
      */
     @ReactMethod
-    fun watch(channelId: String, name: String, promise: Promise) {
+    fun watch(name: String, promise: Promise) {
         try {
             val activity = reactApplicationContext.currentActivity
             val context = activity ?: reactApplicationContext
-            val id = channelId.toLongOrNull()
-            promise.resolve(OpenTv.watch(context, id, name))
+            promise.resolve(OpenTv.watch(context, openTvId(), name))
         } catch (e: Exception) {
             promise.reject("iptv_watch_failed", e)
         }
     }
+
+    /**
+     * OpenTV's own id for a channel, when it is known.
+     *
+     * Today it never is: OpenTV's channel list is its own private database, and there
+     * is no way to read it from here.
+     */
+    private fun openTvId(): Long? = null
 
     /** Whether OpenTV is on the television. */
     @ReactMethod

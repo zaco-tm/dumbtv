@@ -34,10 +34,10 @@ object OpenTv {
     const val ACTIVITY = "app.opentv.MainActivity"
 
     /** The extra that names a channel. */
-    const val EXTRA_NAME = "opentv.play_channel_name"
+    const val EXTRA_NAME = Handoff.EXTRA_NAME
 
     /** The extra that carries OpenTV's own channel id. */
-    const val EXTRA_ID = "opentv.play_channel"
+    const val EXTRA_ID = Handoff.EXTRA_ID
 
     /** Whether OpenTV is on the television at all. */
     fun isInstalled(context: Context): Boolean = try {
@@ -50,17 +50,19 @@ object OpenTv {
     /**
      * Opens OpenTV on a channel.
      *
-     * @param channelId OpenTV's own id for the channel, when it is known.
+     * @param channelId OpenTV's own id for the channel, when it is known. Today it never
+     *   is: OpenTV's ids are rows in its private database. The provider's id for the
+     *   same channel is a different number and must not be sent as this one.
      * @param name the channel's name, which is what goes when the id is not.
      * @return whether OpenTV was opened.
      */
     fun watch(context: Context, channelId: Long?, name: String): Boolean {
         val intent = Intent().setClassName(PACKAGE, ACTIVITY)
-        if (channelId != null) {
-            intent.putExtra(EXTRA_ID, channelId)
-        }
-        if (name.isNotEmpty()) {
-            intent.putExtra(EXTRA_NAME, name)
+        for ((key, value) in Handoff.extras(name, channelId)) {
+            when (value) {
+                is Long -> intent.putExtra(key, value)
+                else -> intent.putExtra(key, value as String)
+            }
         }
         if (context !is Activity) {
             // Starting an activity from the application needs its own task.

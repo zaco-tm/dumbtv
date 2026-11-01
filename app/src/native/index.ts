@@ -105,7 +105,7 @@ interface IptvNative {
   source(): Promise<TvSource | null>;
   channels(): Promise<TvChannel[]>;
   guide(): Promise<TvEvent[]>;
-  watch(channelId: string, name: string): Promise<boolean>;
+  watch(name: string): Promise<boolean>;
   openTvInstalled(): Promise<boolean>;
 }
 
@@ -241,9 +241,16 @@ export const iptv = {
   guide(): Promise<TvEvent[]> {
     return nativeModule<IptvNative>('iptv').guide();
   },
-  /** Opens OpenTV on a channel. */
-  watch(channelId: string, name: string): Promise<boolean> {
-    return nativeModule<IptvNative>('iptv').watch(channelId, name);
+  /**
+   * Opens OpenTV on a channel.
+   *
+   * The name is what goes. OpenTV's own id for a channel is a row in its private
+   * database and this app cannot know it, so no id is sent: the provider's id for
+   * the same channel is a different number, and sending it would make OpenTV play
+   * the wrong channel.
+   */
+  watch(name: string): Promise<boolean> {
+    return nativeModule<IptvNative>('iptv').watch(name);
   },
   /** Whether OpenTV is on the television. */
   openTvInstalled(): Promise<boolean> {

@@ -119,7 +119,7 @@ function ChannelTile({
       grid={grid}
       target={{id: `livetv:channel:${channel.id}`, row: 0, col: column, page: 'live-tv'}}
       onPress={() => {
-        iptv.watch(channel.id, channel.name).catch(() => {
+        iptv.watch(channel.name).catch(() => {
           // OpenTV is not on the television. Nothing to hand off to.
         });
       }}
@@ -167,7 +167,7 @@ function EventRow({
       grid={grid}
       target={{id: `livetv:event:${event.from}-${event.title}`, row, col: 1, page: 'live-tv'}}
       onPress={() => {
-        iptv.watch(event.channelId, event.channelName).catch(() => {
+        iptv.watch(event.channelName).catch(() => {
           // OpenTV is not on the television. Nothing to hand off to.
         });
       }}
