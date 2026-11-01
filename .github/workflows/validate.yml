@@ -138,7 +138,9 @@ jobs:
         run: ./gradlew :app:testDebugUnitTest
         working-directory: app/android
       - name: the apk builds
-        # One ABI: the television is arm64, and four of them do not fit the runner's
-        # disk with the NDK in them. The build is a check, not a release.
-        run: ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a
+        # Two ABIs, the ones that matter: the Ember 55 is armeabi-v7a (measured on the
+        # television, 2026-10-31), and arm64-v8a is for the 64-bit sets. Four of them do
+        # not fit the runner's disk with the NDK in them. The build is a check, not a
+        # release.
+        run: ./gradlew assembleDebug -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
         working-directory: app/android

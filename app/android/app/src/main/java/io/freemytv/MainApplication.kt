@@ -28,9 +28,16 @@ class MainApplication : Application(), ReactApplication {
     // screensaver and the photo import all run in processes of their own.
     Prefs.init(this)
     Place.init(this)
-    // Before the runtime starts: the flags it reads are cached, and the focus model
-    // needs the remote's keys and the imperative focus command.
-    ReactFlags.enable()
+    // React Native first: its loader initialises SoLoader, loads the native libraries,
+    // and sets its own feature flags on the way.
     loadReactNative(this)
+    // Our flags come *after* React Native's, because the last override is the one that
+    // counts — React Native's own loader overrides the flags with its stable set, so it
+    // has to be our turn after it.
+    //
+    // It also cannot come before: the flags reach React Native's C++ side, and that
+    // loads a native library through SoLoader, which is not initialised until React
+    // Native is loaded. Doing it earlier crashed the app on every start.
+    ReactFlags.enable()
   }
 }

@@ -355,6 +355,25 @@ key away from the launcher that works. The shipping manifest keeps that.
 Risk: high, and the rollback must be ready before it starts: the Java app's last good APK
 and the keystore, and `variant/install.sh` to put it back.
 
+**Measured on the television (2026-10-31).** The television is the Ember 55
+(`AFTOMNA003`, Fire OS 8), and two things were wrong with the plan above, both found by
+putting it on the television:
+
+1. **The television is 32-bit.** `ro.product.cpu.abilist` is `armeabi-v7a,armeabi` — there
+   is no 64-bit userland. The shipping APK built for `arm64-v8a` alone cannot be installed
+   at all (`INSTALL_FAILED_NO_MATCHING_ABIS`). The shipping build is
+   `-PreactNativeArchitectures=armeabi-v7a,arm64-v8a`, and CI builds the same two.
+2. **The app crashed on every start.** `MainApplication.onCreate` called `ReactFlags.enable()`
+   *before* `loadReactNative(this)`, and the flags reach React Native's C++ side, which loads
+   a native library through SoLoader — and SoLoader is not initialised until React Native is
+   loaded. Every start died with `IllegalStateException: SoLoader.init() not yet called`.
+   The flags also have to come *after* React Native's own loader, because that loader
+   overrides the flags with its stable set and the last override is the one that counts.
+   The order is now: React Native, then our flags.
+
+Neither of these could be found without the television: CI only builds the APK, it never
+runs it, and it built for the wrong ABI.
+
 ## Live TV — the OpenTV integration
 
 The owner's decision: the **Live TV** tab is a page that integrates with OpenTV

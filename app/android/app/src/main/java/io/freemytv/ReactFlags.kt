@@ -17,7 +17,10 @@ import com.facebook.react.internal.featureflags.ReactNativeFeatureFlagsDefaults
  *    screen's bands — which is how "right" from Streaming landed on the seventh app
  *    instead of the first.
  *
- * They are read once and cached, so this has to run before the React runtime starts.
+ * They are read once and cached, so this has to run before anything reads them — and
+ * after React Native's own loader, which overrides the flags with its stable set when
+ * it loads. That puts it between the two: React Native is loaded, the flags are ours,
+ * and the React instance has not been created yet. See MainApplication.
  */
 object ReactFlags {
 
