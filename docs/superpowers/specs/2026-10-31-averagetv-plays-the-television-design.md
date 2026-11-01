@@ -65,6 +65,12 @@ sits in the app's own window the way a normal view does.
 The player draws **no controls**. A television's picture is clean; the remote is the
 controller.
 
+Media3 brings **no native code** — its AARs are pure Java and Kotlin, with no `.so` at all —
+so the player adds no constraint on the app's architectures. That matters here: the Ember 55
+is a **32-bit** television (`ro.product.cpu.abilist` is `armeabi-v7a,armeabi`), measured on
+the device, and the app is built for `armeabi-v7a,arm64-v8a` because of React Native's own
+libraries rather than the player's.
+
 ### 2.2 Why the picture is native and not a React child
 
 The app runs the new architecture (`newArchEnabled=true`, React Native 0.88.1) and registers
