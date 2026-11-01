@@ -370,8 +370,16 @@ putting it on the television:
    The flags also have to come *after* React Native's own loader, because that loader
    overrides the flags with its stable set and the last override is the one that counts.
    The order is now: React Native, then our flags.
+3. **And then the flags were wrong.** The override has to be *forced*
+   (`dangerouslyForceOverride`, the API for "the app needs different flags than the
+   loader's"), and its provider has to be built on React Native's **stable set**, not on
+   the plain defaults: the defaults have `useTurboModuleInterop` off, and that flag is
+   what lets a plain Kotlin module be found from JavaScript at all. Overriding the
+   defaults turned the interop off, and every native module vanished from the bridge
+   ("the native module 'iptv' is not in the app"). The provider now delegates to
+   React Native's stable set and answers the two flags the focus model needs itself.
 
-Neither of these could be found without the television: CI only builds the APK, it never
+None of these could be found without the television: CI only builds the APK, it never
 runs it, and it built for the wrong ABI.
 
 ## Live TV — the OpenTV integration
