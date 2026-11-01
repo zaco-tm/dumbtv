@@ -23,6 +23,7 @@ data:
   never_disable: data/fireos/never-disable.txt
   user_apps: data/fireos/user-apps.txt
 quirks:
+  - "This television is 32-bit: ro.product.cpu.abilist is armeabi-v7a,armeabi, with no 64-bit userland. An APK built for arm64-v8a alone cannot be installed at all (INSTALL_FAILED_NO_MATCHING_ABIS), so the React Native app is built for armeabi-v7a,arm64-v8a"
   - "DNS filter on Fire OS 8: adb cannot write the app's own folder (Android 11 hides Android/data, the shell gets Permission denied), so dnsfilter.sh pushes the blocklist to /sdcard/Android/media/dnsfilter.android/ and personalDNSfilter has to be pointed at it on screen: Advanced settings > Configure filter update, one row with the file:// URL and Active ticked, the other rows unticked"
   - "The app saves its filter list to disk only when the activity is left (onBackPressed, or any click on the main screen). Editing the row, pressing OK and then rebooting loses the change, and the app goes on using the previous list"
   - "The filter service caches the filter URL at startup, so a list saved in the app is ignored until the service is restarted: tap RESTART on the main screen, then RELOAD FILTER. The proof in the app log is 'Building index for 394 entries!'"
