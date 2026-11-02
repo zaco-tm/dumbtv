@@ -4,7 +4,9 @@ import {useApps} from '../data/useTelevision';
 import {AppTile} from '../ui/charcoal/AppTile';
 import {Button} from '../ui/charcoal/Button';
 import {FONT_FAMILY, colors} from '../ui/charcoal/theme';
+import {useGridColumns} from '../ui/grid';
 import {dp} from '../ui/stage';
+import {lineBox, lineBoxTight} from '../ui/typography';
 import type {FocusGrid} from '../ui/useFocusGrid';
 
 /**
@@ -18,6 +20,7 @@ import type {FocusGrid} from '../ui/useFocusGrid';
  * rail. The up and down arrows walk the rows and the left arrow crosses to the rail.
  */
 export function Streaming({grid}: {grid: FocusGrid}) {
+  const tiles = useGridColumns(COLUMNS, dp(GRID_GAP));
   const {streaming} = useApps();
 
   return (
@@ -27,7 +30,7 @@ export function Streaming({grid}: {grid: FocusGrid}) {
         <Text style={styles.subtitle}>{streaming.length} apps</Text>
       </View>
 
-      <View style={styles.grid}>
+      <View style={styles.grid} onLayout={tiles.onLayout}>
         {streaming.map((app, index) => (
           <Button
             key={app.package}
@@ -41,8 +44,8 @@ export function Streaming({grid}: {grid: FocusGrid}) {
             variant="ghost"
             radius={dp(21.6)}
             focusedStyle={styles.focusedTile}
-            style={styles.tile}>
-            <AppTile label={app.label} icon={app.icon} />
+            style={[styles.tile, {width: tiles.columnWidth}]}>
+            <AppTile label={app.label} icon={app.icon} letterSize={42} />
             <Text style={styles.tileLabel} numberOfLines={1}>
               {app.label}
             </Text>
@@ -53,8 +56,9 @@ export function Streaming({grid}: {grid: FocusGrid}) {
   );
 }
 
-/** The grid's columns. */
+/** The grid's columns, and the gap between them. */
 const COLUMNS = 6;
+const GRID_GAP = 20;
 
 const styles = StyleSheet.create({
   screen: {
@@ -66,6 +70,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
+    gap: dp(64),
   },
   title: {
     fontFamily: FONT_FAMILY,
@@ -78,18 +83,16 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(30),
-    lineHeight: dp(30),
-    marginBottom: dp(6),
+    lineHeight: lineBox(30),
     color: colors.mutedForeground,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginTop: dp(40),
-    gap: dp(20),
+    gap: dp(GRID_GAP),
   },
   tile: {
-    width: dp(176),
     flexDirection: 'column',
     alignItems: 'center',
     gap: dp(12),
@@ -102,7 +105,7 @@ const styles = StyleSheet.create({
   tileLabel: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(22),
-    lineHeight: dp(26),
+    lineHeight: lineBoxTight(22),
     textAlign: 'center',
     color: colors.foreground,
   },

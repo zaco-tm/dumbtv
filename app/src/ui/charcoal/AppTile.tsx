@@ -1,6 +1,7 @@
 import React from 'react';
 import {Image, StyleSheet, Text, type StyleProp, type ViewStyle} from 'react-native';
 import {dp} from '../stage';
+import {lineBox} from '../typography';
 import {useFocused} from '../useFocusGrid';
 import {Card} from './Card';
 import {FONT_FAMILY, colors} from './theme';
@@ -15,19 +16,27 @@ import {FONT_FAMILY, colors} from './theme';
  *
  * With the focus, the box goes from the card's colour to the muted one and the letter
  * comes forward.
+ *
+ * The sizes are the prototype's stage pixels, as everywhere else in the app.
  */
 export function AppTile({
   label,
   icon,
-  size = dp(104),
+  size = 104,
+  letterSize = 46,
   style,
 }: {
   /** The app's name. Its first letter stands in when there is no icon. */
   label: string;
   /** The icon's path, when the native side has one. */
   icon?: string;
-  /** The box's size. */
+  /** The box's size, in stage pixels. */
   size?: number;
+  /**
+   * The letter's size, in stage pixels. The prototype's tiles are not all the same: the
+   * favourites row uses 46px, and the grid pages use 42px.
+   */
+  letterSize?: number;
   style?: StyleProp<ViewStyle>;
 }) {
   const focused = useFocused();
@@ -35,11 +44,21 @@ export function AppTile({
     <Card
       radius={dp(26)}
       padding={0}
-      style={[styles.box, {width: size, height: size}, focused ? styles.boxFocused : null, style]}>
+      style={[
+        styles.box,
+        {width: dp(size), height: dp(size)},
+        focused ? styles.boxFocused : null,
+        style,
+      ]}>
       {icon ? (
         <Image source={{uri: `file://${icon}`}} style={styles.icon} resizeMode="contain" />
       ) : (
-        <Text style={[styles.initial, focused ? styles.initialFocused : null]}>
+        <Text
+          style={[
+            styles.initial,
+            {fontSize: dp(letterSize), lineHeight: lineBox(letterSize)},
+            focused ? styles.initialFocused : null,
+          ]}>
           {label.charAt(0).toUpperCase()}
         </Text>
       )}
@@ -61,8 +80,6 @@ const styles = StyleSheet.create({
   },
   initial: {
     fontFamily: FONT_FAMILY,
-    fontSize: dp(46),
-    lineHeight: dp(52),
     fontWeight: '600',
     color: colors.mutedForeground,
   },

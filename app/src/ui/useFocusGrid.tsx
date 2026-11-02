@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import {colors} from './charcoal/theme';
 import {moveFocus, type Direction, type FocusTarget} from './focus';
+import {dp} from './stage';
 
 /**
  * The television's focus, in React Native.
@@ -256,13 +257,25 @@ export function Focusable({
       onBlur={() => {
         setFocused(false);
       }}
-      style={[style, focused ? focusedStyle : null]}>
+      style={[
+        style,
+        focused ? focusedStyle : null,
+        focused ? {boxShadow: focusRing(radius)} : null,
+      ]}>
       <FocusedContext.Provider value={focused}>{children}</FocusedContext.Provider>
-      {focused ? (
-        <View pointerEvents="none" style={[styles.ring, {borderRadius: radius}]} />
-      ) : null}
     </View>
   );
+}
+
+/**
+ * The focus ring, drawn where the prototype draws it.
+ *
+ * The prototype's `focus:ring-4` is a ring *outside* the item: four pixels of colour
+ * around it, with the item's own size unchanged. A border would be inside it, taking
+ * four pixels off the thing the person is looking at, so the ring is a shadow.
+ */
+function focusRing(radius: number): string {
+  return `0 0 0 ${dp(4)}px ${colors.ring}`;
 }
 
 /**
@@ -279,10 +292,4 @@ export function useFocused(): boolean {
   return React.useContext(FocusedContext);
 }
 
-const styles = StyleSheet.create({
-  ring: {
-    ...StyleSheet.absoluteFill,
-    borderWidth: 4,
-    borderColor: colors.ring,
-  },
-});
+const styles = StyleSheet.create({});

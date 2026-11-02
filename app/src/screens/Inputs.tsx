@@ -4,6 +4,7 @@ import {useInputs} from '../data/useTelevision';
 import {Button} from '../ui/charcoal/Button';
 import {FONT_FAMILY, colors} from '../ui/charcoal/theme';
 import {dp} from '../ui/stage';
+import {lineBox} from '../ui/typography';
 import type {FocusGrid} from '../ui/useFocusGrid';
 
 /**
@@ -58,6 +59,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
+    gap: dp(64),
   },
   title: {
     fontFamily: FONT_FAMILY,
@@ -70,8 +72,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(30),
-    lineHeight: dp(30),
-    marginBottom: dp(6),
+    lineHeight: lineBox(30),
     color: colors.mutedForeground,
   },
   list: {
@@ -84,6 +85,7 @@ const styles = StyleSheet.create({
     gap: dp(24),
     paddingHorizontal: dp(20),
     paddingVertical: dp(16),
+    borderRadius: dp(21.6),
   },
   focusedRow: {
     backgroundColor: colors.accent,
@@ -91,7 +93,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(34),
-    lineHeight: dp(40),
+    lineHeight: lineBox(34),
     fontWeight: '500',
     color: colors.foreground,
   },
@@ -103,7 +105,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: FONT_FAMILY,
     fontSize: dp(24),
-    lineHeight: dp(30),
+    lineHeight: lineBox(24),
     color: colors.mutedForeground,
   },
 });

@@ -20,11 +20,11 @@ export type RatingProps = {
   value: number;
   /** How many stars there are. */
   max?: number;
-  /** The star's size, in dp. */
+  /** The star's size, in stage pixels. */
   size?: number;
 };
 
-export function Rating({value, max = 5, size = dp(28)}: RatingProps) {
+export function Rating({value, max = 5, size = 28}: RatingProps) {
   return (
     <View
       accessible
@@ -40,16 +40,18 @@ export function Rating({value, max = 5, size = dp(28)}: RatingProps) {
 
 function Star({filled, size}: {filled: boolean; size: number}) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path
-        d={STAR}
-        strokeWidth={1.6}
-        strokeLinejoin="round"
-        fill={filled ? colors.ember : 'transparent'}
-        stroke={filled ? colors.ember : colors.mutedForeground}
-        strokeOpacity={filled ? 1 : 0.5}
-      />
-    </Svg>
+    <View style={styles.star}>
+      <Svg width={dp(size)} height={dp(size)} viewBox="0 0 24 24">
+        <Path
+          d={STAR}
+          strokeWidth={1.6}
+          strokeLinejoin="round"
+          fill={filled ? colors.ember : 'transparent'}
+          stroke={filled ? colors.ember : colors.mutedForeground}
+          strokeOpacity={filled ? 1 : 0.5}
+        />
+      </Svg>
+    </View>
   );
 }
 
@@ -58,5 +60,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: dp(4),
+  },
+  /**
+   * The prototype's stars each carry two pixels of padding (`p-0.5`) and the row a four
+   * pixel gap, so eight pixels of space sit between one star and the next.
+   */
+  star: {
+    padding: dp(2),
   },
 });

@@ -5,7 +5,9 @@ import {AppTile} from '../ui/charcoal/AppTile';
 import {Button} from '../ui/charcoal/Button';
 import {Icon} from '../ui/charcoal/Icon';
 import {FONT_FAMILY, colors} from '../ui/charcoal/theme';
+import {useGridColumns} from '../ui/grid';
 import {dp} from '../ui/stage';
+import {lineBox, lineBoxTight} from '../ui/typography';
 import {useFocused, type FocusGrid} from '../ui/useFocusGrid';
 
 /**
@@ -26,6 +28,7 @@ import {useFocused, type FocusGrid} from '../ui/useFocusGrid';
  * left of both.
  */
 export function Gaming({grid}: {grid: FocusGrid}) {
+  const tiles = useGridColumns(COLUMNS, dp(GRID_GAP));
   const {games} = useApps();
   const inputs = useInputs();
   const consoles = inputs.filter(input => input.isConsole);
@@ -39,7 +42,7 @@ export function Gaming({grid}: {grid: FocusGrid}) {
         </Text>
       </View>
 
-      <Text style={styles.sectionTitle}>Consoles</Text>
+      <Text style={styles.consolesTitle}>Consoles</Text>
       <View style={styles.consoleRow}>
         {consoles.map((input, index) => (
           <ConsoleTile
@@ -53,7 +56,7 @@ export function Gaming({grid}: {grid: FocusGrid}) {
       </View>
 
       <Text style={styles.sectionTitle}>Games</Text>
-      <View style={styles.grid}>
+      <View style={styles.grid} onLayout={tiles.onLayout}>
         {games.map((game, index) => (
           <Button
             key={game.package}
@@ -67,8 +70,8 @@ export function Gaming({grid}: {grid: FocusGrid}) {
             variant="ghost"
             radius={dp(21.6)}
             focusedStyle={styles.focusedTile}
-            style={styles.tile}>
-            <AppTile label={game.label} icon={game.icon} />
+            style={[styles.tile, {width: tiles.columnWidth}]}>
+            <AppTile label={game.label} icon={game.icon} letterSize={42} />
             <Text style={styles.tileLabel} numberOfLines={1}>
               {game.label}
             </Text>
@@ -122,8 +125,9 @@ function ConsoleTile({
   );
 }
 
-/** The games grid's columns. */
+/** The games grid's columns, and the gap between them. */
 const COLUMNS = 6;
+const GRID_GAP = 20;
 
 const styles = StyleSheet.create({
   screen: {
@@ -135,6 +139,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
+    gap: dp(64),
   },
   title: {
     fontFamily: FONT_FAMILY,
@@ -147,17 +152,29 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(30),
-    lineHeight: dp(30),
-    marginBottom: dp(6),
+    lineHeight: lineBox(30),
     color: colors.mutedForeground,
   },
   sectionTitle: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(32),
-    lineHeight: dp(38),
+    lineHeight: lineBox(32),
     fontWeight: '500',
     letterSpacing: dp(-0.8),
     marginTop: dp(32),
+    color: colors.foreground,
+  },
+  /**
+   * The Consoles heading sits lower than the Games one: the prototype's two sections
+   * are separated by different margins, `mt-10` and `mt-8`.
+   */
+  consolesTitle: {
+    fontFamily: FONT_FAMILY,
+    fontSize: dp(32),
+    lineHeight: lineBox(32),
+    fontWeight: '500',
+    letterSpacing: dp(-0.8),
+    marginTop: dp(40),
     color: colors.foreground,
   },
   consoleRow: {
@@ -178,7 +195,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: dp(26),
-    borderWidth: 1,
+    borderWidth: dp(1),
     borderStyle: 'dashed',
     borderColor: colors.border,
   },
@@ -188,14 +205,14 @@ const styles = StyleSheet.create({
   consoleDetail: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(22),
-    lineHeight: dp(26),
+    lineHeight: lineBoxTight(22),
     textAlign: 'center',
     color: colors.foreground,
   },
   consoleLabel: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(18),
-    lineHeight: dp(22),
+    lineHeight: lineBox(18),
     marginTop: dp(-8),
     textAlign: 'center',
     color: colors.mutedForeground,
@@ -204,10 +221,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginTop: dp(16),
-    gap: dp(20),
+    gap: dp(GRID_GAP),
   },
   tile: {
-    width: dp(176),
     flexDirection: 'column',
     alignItems: 'center',
     gap: dp(12),
@@ -220,7 +236,7 @@ const styles = StyleSheet.create({
   tileLabel: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(22),
-    lineHeight: dp(26),
+    lineHeight: lineBoxTight(22),
     textAlign: 'center',
     color: colors.foreground,
   },

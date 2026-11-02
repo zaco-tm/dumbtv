@@ -26,7 +26,10 @@ export type ButtonProps = {
   onPress?: () => void;
   /** The variant: which of the theme's surfaces the button is drawn on. */
   variant?: ButtonVariant;
-  /** The corner radius of the focus ring, in dp. */
+  /**
+   * The button's own corner radius, in stage pixels. The prototype's tiles are
+   * `rounded-2xl`; a few are `rounded-xl`.
+   */
   radius?: number;
   /** What the button looks like with the focus. */
   focusedStyle?: StyleProp<ViewStyle>;
@@ -39,7 +42,7 @@ export function Button({
   target,
   onPress,
   variant = 'default',
-  radius,
+  radius = radii['2xl'],
   focusedStyle,
   children,
   style,
@@ -49,9 +52,9 @@ export function Button({
       grid={grid}
       target={target}
       onPress={onPress}
-      radius={radius ?? dp(9.6)}
+      radius={radius}
       focusedStyle={focusedStyle}
-      style={[styles.base, styles[variant], style]}>
+      style={[styles.base, styles[variant], {borderRadius: radius}, style]}>
       {children}
     </Focusable>
   );
@@ -59,7 +62,6 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -71,7 +73,7 @@ const styles = StyleSheet.create({
   },
   outline: {
     backgroundColor: 'transparent',
-    borderWidth: 1,
+    borderWidth: dp(1),
     borderColor: colors.border,
   },
   ghost: {

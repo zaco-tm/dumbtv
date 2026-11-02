@@ -4,6 +4,7 @@ import {iptv, type TvSource} from '../native';
 import {Button} from '../ui/charcoal/Button';
 import {FONT_FAMILY, colors} from '../ui/charcoal/theme';
 import {dp} from '../ui/stage';
+import {lineBox} from '../ui/typography';
 import {Focusable, type FocusGrid} from '../ui/useFocusGrid';
 
 /**
@@ -93,7 +94,7 @@ export function Settings({grid}: {grid: FocusGrid}) {
         grid={grid}
         target={{id: 'settings:save-provider', row: 4, col: 1, page: 'settings'}}
         variant="ember"
-        radius={dp(12)}
+        radius={dp(16.8)}
         style={styles.button}
         onPress={() => {
           iptv
@@ -106,7 +107,7 @@ export function Settings({grid}: {grid: FocusGrid}) {
             .then(found => setSource(found))
             .catch(() => setSaid('The provider could not be saved.'));
         }}>
-        <Text style={styles.buttonText}>Save the provider</Text>
+        <Text style={styles.emberButtonText}>Save the provider</Text>
       </Button>
 
       {insecure ? (
@@ -128,7 +129,7 @@ export function Settings({grid}: {grid: FocusGrid}) {
         grid={grid}
         target={{id: 'settings:save-playlist', row: 6, col: 1, page: 'settings'}}
         variant="outline"
-        radius={dp(12)}
+        radius={dp(16.8)}
         style={styles.button}
         onPress={() => {
           iptv
@@ -180,7 +181,7 @@ function Field({
       <Focusable
         grid={grid}
         target={target}
-        radius={dp(12)}
+        radius={dp(16.8)}
         focusedStyle={styles.focusedField}
         onPress={() => {
           input.current?.focus();
@@ -220,7 +221,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(32),
-    lineHeight: dp(38),
+    lineHeight: lineBox(32),
     fontWeight: '500',
     letterSpacing: dp(-0.8),
     marginTop: dp(32),
@@ -229,7 +230,7 @@ const styles = StyleSheet.create({
   sectionNote: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(24),
-    lineHeight: dp(30),
+    lineHeight: lineBox(24),
     marginTop: dp(8),
     color: colors.mutedForeground,
   },
@@ -240,7 +241,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(19),
-    lineHeight: dp(24),
+    lineHeight: lineBox(19),
     letterSpacing: dp(0.95),
     textTransform: 'uppercase',
     opacity: 0.7,
@@ -248,8 +249,8 @@ const styles = StyleSheet.create({
   },
   fieldBox: {
     marginTop: dp(8),
-    borderRadius: dp(12),
-    borderWidth: 1,
+    borderRadius: dp(16.8),
+    borderWidth: dp(1),
     borderColor: colors.border,
     backgroundColor: colors.card,
     paddingHorizontal: dp(16),
@@ -275,14 +276,25 @@ const styles = StyleSheet.create({
   buttonText: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(26),
-    lineHeight: dp(32),
+    lineHeight: lineBox(26),
     fontWeight: '500',
     color: colors.foreground,
+  },
+  /**
+   * The ember button's label. The prototype's ember button is `text-ember-foreground`,
+   * which is white; the outline one beside it keeps the ordinary foreground.
+   */
+  emberButtonText: {
+    fontFamily: FONT_FAMILY,
+    fontSize: dp(26),
+    lineHeight: lineBox(26),
+    fontWeight: '500',
+    color: colors.emberForeground,
   },
   warning: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(24),
-    lineHeight: dp(30),
+    lineHeight: lineBox(24),
     marginTop: dp(16),
     maxWidth: dp(900),
     color: colors.ember,
@@ -290,7 +302,7 @@ const styles = StyleSheet.create({
   said: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(24),
-    lineHeight: dp(30),
+    lineHeight: lineBox(24),
     marginTop: dp(24),
     color: colors.mutedForeground,
   },

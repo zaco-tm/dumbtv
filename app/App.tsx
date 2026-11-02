@@ -17,6 +17,8 @@ import {WiringScreen} from './src/screens/WiringScreen';
 import {ALL_ITEMS, Rail} from './src/ui/charcoal/Rail';
 import {FONT_FAMILY, colors} from './src/ui/charcoal/theme';
 import {useFocusGrid} from './src/ui/useFocusGrid';
+import {dp} from './src/ui/stage';
+import {lineBox} from './src/ui/typography';
 
 /**
  * The shell: the rail down the left, and the page beside it.
@@ -110,21 +112,22 @@ const styles = StyleSheet.create({
   },
   coming: {
     flex: 1,
-    paddingHorizontal: 64,
-    paddingTop: 32,
+    paddingHorizontal: dp(64),
+    paddingTop: dp(32),
   },
   comingTitle: {
     fontFamily: FONT_FAMILY,
-    fontSize: 72,
-    lineHeight: 72,
+    fontSize: dp(72),
+    lineHeight: dp(72),
     fontWeight: '600',
+    letterSpacing: dp(-1.8),
     color: colors.foreground,
   },
   comingBody: {
     fontFamily: FONT_FAMILY,
-    fontSize: 30,
-    lineHeight: 30,
-    marginTop: 16,
+    fontSize: dp(30),
+    lineHeight: lineBox(30),
+    marginTop: dp(16),
     color: colors.mutedForeground,
   },
 });

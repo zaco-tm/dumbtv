@@ -14,6 +14,7 @@ import {iptv, type TvChannel, type TvEvent} from '../native';
 import {Button} from '../ui/charcoal/Button';
 import {FONT_FAMILY, colors} from '../ui/charcoal/theme';
 import {dp} from '../ui/stage';
+import {lineBox, lineBoxTight} from '../ui/typography';
 import {useFocused, type FocusGrid} from '../ui/useFocusGrid';
 
 /**
@@ -218,9 +219,8 @@ const styles = StyleSheet.create({
     paddingTop: dp(32),
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
   title: {
     fontFamily: FONT_FAMILY,
@@ -234,13 +234,13 @@ const styles = StyleSheet.create({
     fontFamily: FONT_FAMILY,
     fontSize: dp(30),
     lineHeight: dp(30),
-    marginBottom: dp(6),
+    marginTop: dp(16),
     color: colors.mutedForeground,
   },
   sectionTitle: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(32),
-    lineHeight: dp(38),
+    lineHeight: lineBox(32),
     fontWeight: '500',
     letterSpacing: dp(-0.8),
     marginTop: dp(32),
@@ -248,15 +248,16 @@ const styles = StyleSheet.create({
   },
   channelRow: {
     flexDirection: 'row',
-    gap: dp(24),
+    gap: dp(20),
     marginTop: dp(16),
   },
   channelTile: {
     width: dp(176),
     flexDirection: 'column',
     alignItems: 'center',
-    gap: dp(12),
-    padding: dp(12),
+    gap: dp(8),
+    padding: dp(8),
+    borderRadius: dp(21.6),
   },
   focusedTile: {
     backgroundColor: colors.accent,
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: dp(26),
-    borderWidth: 1,
+    borderWidth: dp(1),
     borderColor: colors.border,
     backgroundColor: colors.card,
   },
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
   channelNumber: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(34),
-    lineHeight: dp(40),
+    lineHeight: lineBox(34),
     fontWeight: '600',
     color: colors.mutedForeground,
   },
@@ -288,20 +289,21 @@ const styles = StyleSheet.create({
   channelName: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(22),
-    lineHeight: dp(26),
+    lineHeight: lineBoxTight(22),
     textAlign: 'center',
     color: colors.foreground,
   },
   channelNow: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(18),
-    lineHeight: dp(22),
+    lineHeight: lineBox(18),
     textAlign: 'center',
     color: colors.mutedForeground,
   },
   progressTrack: {
     height: dp(4),
     width: '100%',
+    marginTop: dp(4),
     borderRadius: dp(2),
     overflow: 'hidden',
     backgroundColor: colors.muted,
@@ -329,7 +331,7 @@ const styles = StyleSheet.create({
     width: dp(72),
     fontFamily: FONT_FAMILY,
     fontSize: dp(26),
-    lineHeight: dp(32),
+    lineHeight: lineBox(26),
     fontVariant: ['tabular-nums'],
     color: colors.mutedForeground,
   },
@@ -337,17 +339,17 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: FONT_FAMILY,
     fontSize: dp(30),
-    lineHeight: dp(36),
+    lineHeight: lineBoxTight(30),
     color: colors.foreground,
   },
   eventChannel: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(22),
-    lineHeight: dp(28),
+    lineHeight: lineBox(22),
     color: colors.mutedForeground,
   },
   badge: {
-    borderRadius: dp(8),
+    borderRadius: dp(9.6),
     paddingHorizontal: dp(12),
     paddingVertical: dp(4),
   },
@@ -355,13 +357,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ember,
   },
   badgeOutline: {
-    borderWidth: 1,
+    borderWidth: dp(1),
     borderColor: colors.border,
   },
   badgeText: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(18),
-    lineHeight: dp(24),
+    lineHeight: lineBox(18),
     fontWeight: '500',
     letterSpacing: dp(0.9),
     textTransform: 'uppercase',

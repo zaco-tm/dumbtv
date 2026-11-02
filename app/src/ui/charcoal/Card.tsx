@@ -28,7 +28,7 @@ export function Card({children, style, radius = radii.xl, padding = dp(24)}: Car
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
-    borderWidth: 1,
+    borderWidth: dp(1),
     borderColor: colors.border,
   },
 });

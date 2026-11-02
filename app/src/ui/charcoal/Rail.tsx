@@ -7,6 +7,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import {dp} from '../stage';
+import {lineBox} from '../typography';
 import {Focusable, type FocusGrid} from '../useFocusGrid';
 import {Icon, type IconName} from './Icon';
 import {FONT_FAMILY, colors} from './theme';
@@ -132,6 +133,7 @@ function RailRow({
           name={item.icon}
           size={dp(26)}
           color={isActive ? colors.ember : colors.mutedForeground}
+          strokeWidth={2}
         />
       </View>
       <Text style={[styles.label, isActive ? styles.labelActive : null]}>{item.label}</Text>
@@ -169,7 +171,7 @@ const styles = StyleSheet.create({
     width: dp(RAIL_W),
     flexDirection: 'column',
     backgroundColor: colors.card,
-    borderRightWidth: 1,
+    borderRightWidth: dp(1),
     borderRightColor: colors.border,
   },
   list: {
@@ -180,7 +182,7 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
     padding: dp(8),
     gap: dp(4),
-    borderTopWidth: 1,
+    borderTopWidth: dp(1),
     borderTopColor: colors.border,
   },
   item: {
@@ -198,6 +200,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(22),
+    lineHeight: lineBox(22),
     color: colors.mutedForeground,
   },
   labelActive: {
@@ -206,7 +209,7 @@ const styles = StyleSheet.create({
   },
   glow: {
     position: 'absolute',
-    left: -dp(13),
+    left: -dp(12),
     top: dp(8),
     bottom: dp(8),
     width: dp(10),

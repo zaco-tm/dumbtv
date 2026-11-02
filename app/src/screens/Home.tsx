@@ -14,6 +14,7 @@ import {Icon} from '../ui/charcoal/Icon';
 import {Rating} from '../ui/charcoal/Rating';
 import {FONT_FAMILY, colors} from '../ui/charcoal/theme';
 import {dp} from '../ui/stage';
+import {lineBox, lineBoxTight} from '../ui/typography';
 import {useFocused, type FocusGrid} from '../ui/useFocusGrid';
 
 /**
@@ -224,7 +225,7 @@ function Trending({grid, items = TRENDING}: {grid: FocusGrid; items?: Trend[]}) 
             <Text style={styles.featureMeta}>{feature.meta}</Text>
             <View style={styles.ratingRow}>
               <Rating value={Math.round(feature.rating / 2)} size={dp(20)} />
-              <Text style={styles.ratingValue}>{feature.rating.toFixed(1)}</Text>
+              <Text style={styles.featureRatingValue}>{feature.rating.toFixed(1)}</Text>
             </View>
           </View>
         </View>
@@ -352,7 +353,7 @@ const styles = StyleSheet.create({
   dayLabel: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(19),
-    lineHeight: dp(24),
+    lineHeight: lineBoxTight(19),
     letterSpacing: dp(0.95),
     textTransform: 'uppercase',
     opacity: 0.7,
@@ -361,7 +362,7 @@ const styles = StyleSheet.create({
   dayValue: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(26),
-    lineHeight: dp(30),
+    lineHeight: lineBoxTight(26),
     color: colors.foreground,
   },
   favorites: {
@@ -371,7 +372,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(32),
-    lineHeight: dp(38),
+    lineHeight: lineBox(32),
     fontWeight: '500',
     letterSpacing: dp(-0.8),
     color: colors.foreground,
@@ -400,7 +401,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: dp(26),
-    borderWidth: 1,
+    borderWidth: dp(1),
     borderStyle: 'dashed',
     borderColor: colors.border,
   },
@@ -410,14 +411,14 @@ const styles = StyleSheet.create({
   favoriteLabel: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(22),
-    lineHeight: dp(26),
+    lineHeight: lineBoxTight(22),
     textAlign: 'center',
     color: colors.foreground,
   },
   favoriteDetail: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(18),
-    lineHeight: dp(22),
+    lineHeight: lineBox(18),
     marginTop: dp(-8),
     textAlign: 'center',
     color: colors.mutedForeground,
@@ -442,6 +443,8 @@ const styles = StyleSheet.create({
   posterLarge: {
     ...StyleSheet.absoluteFill,
     borderRadius: dp(26.4),
+    borderWidth: dp(1),
+    borderColor: colors.border,
   },
   featureScrim: {
     position: 'absolute',
@@ -459,7 +462,7 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(44),
-    lineHeight: dp(48),
+    lineHeight: lineBoxTight(44),
     fontWeight: '600',
     letterSpacing: dp(-1.1),
     color: colors.foreground,
@@ -467,7 +470,7 @@ const styles = StyleSheet.create({
   featureMeta: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(22),
-    lineHeight: dp(28),
+    lineHeight: lineBox(22),
     color: colors.mutedForeground,
   },
   ratingRow: {
@@ -479,7 +482,18 @@ const styles = StyleSheet.create({
   ratingValue: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(24),
-    lineHeight: dp(28),
+    lineHeight: lineBox(24),
+    fontVariant: ['tabular-nums'],
+    color: colors.foreground,
+  },
+  /**
+   * The feature's rating number. The prototype's feature row is 22px, and the list row
+   * beside it is 24px, so they are not the same style.
+   */
+  featureRatingValue: {
+    fontFamily: FONT_FAMILY,
+    fontSize: dp(22),
+    lineHeight: lineBox(22),
     fontVariant: ['tabular-nums'],
     color: colors.foreground,
   },
@@ -504,7 +518,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     fontFamily: FONT_FAMILY,
     fontSize: dp(30),
-    lineHeight: dp(36),
+    lineHeight: lineBox(30),
     fontWeight: '500',
     fontVariant: ['tabular-nums'],
     color: colors.mutedForeground,
@@ -513,7 +527,7 @@ const styles = StyleSheet.create({
     width: dp(92),
     height: dp(92),
     borderRadius: dp(16.8),
-    borderWidth: 1,
+    borderWidth: dp(1),
     borderColor: colors.border,
   },
   trendText: {
@@ -522,7 +536,7 @@ const styles = StyleSheet.create({
   trendTitle: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(32),
-    lineHeight: dp(38),
+    lineHeight: lineBoxTight(32),
     fontWeight: '500',
     letterSpacing: dp(-0.8),
     color: colors.foreground,
@@ -530,7 +544,7 @@ const styles = StyleSheet.create({
   trendMeta: {
     fontFamily: FONT_FAMILY,
     fontSize: dp(22),
-    lineHeight: dp(28),
+    lineHeight: lineBox(22),
     marginTop: dp(4),
     color: colors.mutedForeground,
   },
