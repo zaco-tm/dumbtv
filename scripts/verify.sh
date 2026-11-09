@@ -105,6 +105,11 @@ else
     # product any more, so the check says so and says how to change that.
     printf '%-10s %-38s %s\n' FAIL home "the old launcher (fallback) is in charge; re-run $install_cmd"
     fail=1
+  elif [[ $product == tv.dumbtv.variant ]]; then
+    # AverageTV is in charge, but it is the build from before the rename: its
+    # application id is the old one. It works, and it is worth saying so.
+    printf '%-10s %-38s %s\n' FAIL home "AverageTV (the build before the rename) is in charge; re-run $install_cmd"
+    fail=1
   elif [[ -z $product ]]; then
     if [[ $user_ok == 1 ]]; then
       printf '%-10s %-38s %s\n' FAIL home "no AverageTV is in charge; no AverageTV guard is enabled"; fail=1

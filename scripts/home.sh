@@ -100,9 +100,11 @@ set_futurity() {
 # - The enabled components are the forms the setting may hold: the full class, and the
 #   shorthand with a leading dot.
 #
-# There are two rows. The first is AverageTV itself, tv.averagetv.app. The second
-# is dumbtv home (tv.dumbtv.home), the small launcher this repository used to
-# ship: it is not built here any more, but it stays installed on a television as
+# There are three rows. The first is AverageTV itself, tv.averagetv.app. The
+# second is the build before the rename, tv.dumbtv.variant, which a television
+# may still have installed: its guard holds the HOME key until AverageTV is
+# installed again. The third is dumbtv home (tv.dumbtv.home), the small launcher
+# this repository used to ship: it is not built here any more, but it stays installed on a television as
 # the fallback, and AverageTV's installer hands HOME back to it. Its row below
 # is that fallback: it is here so the scripts can recognise the old guard, say
 # which one is in charge, and say what to do about it — not because this
@@ -114,6 +116,8 @@ dumbtv_home_product() {
   case $1 in
     tv.averagetv.app)
       printf '%s\n' 'tv.averagetv.app|io.freemytv.Guard|AverageTV guard|tv.averagetv.app/io.freemytv.HomeActivity|AverageTV|tv.averagetv.app/io.freemytv.Guard tv.averagetv.app/.io.freemytv.Guard' ;;
+    tv.dumbtv.variant)
+      printf '%s\n' 'tv.dumbtv.variant|io.freemytv.Guard|AverageTV guard|tv.dumbtv.variant/io.freemytv.HomeActivity|AverageTV (the build before the rename)|tv.dumbtv.variant/io.freemytv.Guard tv.dumbtv.variant/.io.freemytv.Guard' ;;
     tv.dumbtv.home)
       printf '%s\n' 'tv.dumbtv.home|tv.dumbtv.home.Guard|dumbtv home button|tv.dumbtv.home/.Home|the old launcher (fallback)|tv.dumbtv.home/tv.dumbtv.home.Guard tv.dumbtv.home/.Guard' ;;
     *) return 1 ;;
@@ -124,7 +128,8 @@ dumbtv_home_product() {
 # Prints its package name; prints nothing when no dumbtv guard is enabled.
 dumbtv_home_product_of() {
   local value=$1 row comps
-  for row in "$(dumbtv_home_product tv.averagetv.app)" "$(dumbtv_home_product tv.dumbtv.home)"; do
+  for row in "$(dumbtv_home_product tv.averagetv.app)" "$(dumbtv_home_product tv.dumbtv.variant)" \
+             "$(dumbtv_home_product tv.dumbtv.home)"; do
     IFS='|' read -r _ _ _ _ _ comps <<< "$row"
     for comp in $comps; do
       case ":$value:" in
