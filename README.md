@@ -18,7 +18,7 @@ Ads, tracking and clutter out of your Fire TV. Your apps and HDMI inputs stay.</
 
 <p align="center">
   <a href="https://github.com/zaco-tm/dumbtv/stargazers"><img src="https://img.shields.io/github/stars/zaco-tm/dumbtv?style=flat&color=4C8DFF" alt="Stars"></a>
-  <a href="https://github.com/zaco-tm/dumbtv/releases/latest"><img src="https://img.shields.io/github/v/release/zaco-tm/dumbtv?label=AverageTV&color=4C8DFF" alt="Latest release"></a>
+  <a href="https://github.com/zaco-tm/AverageTV/releases/latest"><img src="https://img.shields.io/github/v/release/zaco-tm/AverageTV?label=AverageTV&color=4C8DFF" alt="Latest AverageTV release"></a>
   <a href="https://github.com/zaco-tm/dumbtv/actions/workflows/validate.yml"><img src="https://github.com/zaco-tm/dumbtv/actions/workflows/validate.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4C8DFF" alt="MIT licence"></a>
   <a href="#thanks"><img src="https://img.shields.io/github/contributors/zaco-tm/dumbtv?color=4C8DFF" alt="Contributors"></a>
