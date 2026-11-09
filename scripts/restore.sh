@@ -105,12 +105,38 @@ step "on-device hooks"
 # Without this the TV keeps sending DNS through a filter the user just tried to
 # undo, and HOME stays hijacked.
 acmd settings delete secure always_on_vpn_app >/dev/null 2>&1
-if [[ $DRY_RUN == 1 ]]; then
-  note "[dry-run] ADB=$ADB ADB_SERIAL=$SERIAL variant/install.sh --undo-amazon"
+
+# The home screen is AverageTV's now, and so is the guard that holds the HOME key.
+# The undo is one setting: the guard goes out of enabled_accessibility_services, and
+# every other accessibility service on the television stays.
+#
+# It is done here rather than by AverageTV's own installer, so that a television can
+# always be put back without another project and without a network. The three things
+# AverageTV's undo does are these three: the guard out, the app ops back to their
+# default, and the alarm setting put back what it was.
+hooks=$(dev 'settings get secure enabled_accessibility_services' | tr -d '\r')
+[[ $hooks == null ]] && hooks=
+kept=$(printf '%s' "$hooks" | tr ':' '\n' |
+  { grep -vxF -e 'tv.averagetv.app/io.freemytv.Guard' -e 'tv.averagetv.app/.io.freemytv.Guard' \
+                   -e 'tv.dumbtv.home/tv.dumbtv.home.Guard' -e 'tv.dumbtv.home/.Guard' -e '' || true; } |
+  paste -sd: -)
+if [[ -n $kept ]]; then
+  acmd settings put secure enabled_accessibility_services "$kept" >/dev/null
+  acmd settings put secure accessibility_enabled 1 >/dev/null
 else
-  ADB=$ADB ADB_SERIAL=$SERIAL "$ROOT/variant/install.sh" --undo-amazon >/dev/null ||
-    die "could not hand HOME back to Amazon's launcher; run ./variant/install.sh --undo-amazon"
+  acmd settings put secure enabled_accessibility_services '""' >/dev/null
+  acmd settings put secure accessibility_enabled 0 >/dev/null
 fi
+acmd appops set tv.averagetv.app SYSTEM_ALERT_WINDOW default >/dev/null 2>&1 || true
+acmd appops set tv.averagetv.app REQUEST_INSTALL_PACKAGES default >/dev/null 2>&1 || true
+
+# The alarm setting AverageTV's guard needs: min_futurity=0 is ours, and the value
+# the television had before is put back. The helpers live in home.sh.
+sh_() { dev "$@"; }
+dev_sdk=$SDK
+# shellcheck disable=SC1091
+source "$ROOT/scripts/home.sh"
+set_futurity off
 note "always_on_vpn_app cleared, HOME handed back to Amazon's launcher (apps stay installed)"
 
 step "settings"

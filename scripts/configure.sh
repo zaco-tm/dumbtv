@@ -130,7 +130,8 @@ REMOVE_EXTRA="$EXTRA"
 KEEP_APPS="$KEEP"
 PRIME=$PRIME
 ALEXA=$ALEXA
-# LAUNCHER=1: AverageTV is the home screen. It is the fork in variant/; the old
+# LAUNCHER=1: AverageTV is the home screen. It is another project
+# (github.com/zaco-tm/AverageTV), installed by scripts/variant.sh; the old
 # launcher is not installed by this repo any more, only the fallback on the TV.
 LAUNCHER=$LAUNCHER
 DNSFILTER=$DNSFILTER

@@ -32,7 +32,7 @@ Enabled is a setting; bound means the service is actually running. `verify.sh`
 reads `dumpsys accessibility` and only passes when the label of the product that is in
 charge is in the current user's bound services — "dumbtv home button" for the old
 launcher, "AverageTV guard" for the fork. Run the install path of that
-product: `./scripts/variant.sh -y` or `./variant/install.sh`.
+product: `./scripts/variant.sh -y`.
 
 Note that the dump cuts a long label short (at 22 characters on a Fire OS 8 set).
 Both labels are shorter than that, so both print whole: `Service[label=AverageTV guard]`
@@ -223,7 +223,7 @@ level and switch to `data/fireos6/` on their own.
 - **AverageTV will not install.** The old launcher's releases up to 1.1 needed
   Android 9; 1.2 and later install. The fork needs Android 8, and Fire OS 6 is
   Android 7.1, so the fork does not run there: the old launcher stays the home
-  screen. Its release APK is the one `variant/version.env` names.
+  screen. Its release APK is the one AverageTV's `reference/version.env` names.
 - **`monkey` launches nothing** and says `SYS_KEYS has no physical keys` when the
   remote is asleep. Use `am start -n`, or pass `--pct-syskeys 0`.
 

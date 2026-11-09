@@ -1,6 +1,6 @@
 """Regression checks for enabled-but-unbound services, entirely off-device.
 
-There is one product now: the fork, tv.dumbtv.variant. The old launcher is the
+There is one product now: AverageTV, tv.averagetv.app. The old launcher is the
 fallback - it is not built or shipped from this repo any more, but it stays
 installed on a television, so the checks still have to recognise it and say what
 to do when it is in charge.
@@ -19,8 +19,8 @@ LABEL = 'Service[label=dumbtv home button, feedbackType[FEEDBACK_GENERIC]]'
 # The fork's guard has its own label on purpose: the dump names a bound service by
 # its label, never by its component, and the two guards are never bound at once.
 FORK_LABEL = 'Service[label=AverageTV guard, feedbackType[FEEDBACK_GENERIC]]'
-FORK_GUARD = 'tv.dumbtv.variant/io.freemytv.Guard'
-FORK_HOME = 'tv.dumbtv.variant/io.freemytv.HomeActivity'
+FORK_GUARD = 'tv.averagetv.app/io.freemytv.Guard'
+FORK_HOME = 'tv.averagetv.app/io.freemytv.HomeActivity'
 OLD_GUARD = 'tv.dumbtv.home/tv.dumbtv.home.Guard'
 OLD_HOME = 'tv.dumbtv.home/.Home'
 
@@ -159,8 +159,8 @@ class VerifyTests(VerifyHarness):
         # ours is another service, and so is a component that merely looks like
         # ours.
         for dump, component in [(self.modern(FORK_LABEL.replace('guard,', 'guard fake,')),
-                                 'tv.dumbtv.variant/.io.freemytv.Guard'),
-                                (self.modern(FORK_LABEL), 'tv.dumbtv.variant.fake/io.freemytv.Guard')]:
+                                 'tv.averagetv.app/.io.freemytv.Guard'),
+                                (self.modern(FORK_LABEL), 'tv.averagetv.app.fake/io.freemytv.Guard')]:
             with self.subTest(component=component):
                 result, _ = self.run_verify(dump, component=component)
                 self.assertEqual(result.returncode, 1)
@@ -281,7 +281,7 @@ class FallbackTests(VerifyHarness):
         result, _ = self.run_verify(self.modern(LABEL), component=OLD_GUARD, landed=OLD_HOME)
         self.assertEqual(result.returncode, 1, result.stdout)
         self.assertIn('the old launcher (fallback) is in charge', result.stdout)
-        self.assertIn('re-run ./variant/install.sh', result.stdout)
+        self.assertIn('re-run ./scripts/variant.sh', result.stdout)
 
     def test_the_fallback_still_gets_home_working(self):
         # The rollback has to leave a working TV, so HOME still lands on the fallback.
@@ -318,7 +318,7 @@ class FallbackTests(VerifyHarness):
                                     landed=FORK_HOME,
                                     futurity='null', alarms='other=1', sdk='30')
         self.assertEqual(result.returncode, 1)
-        self.assertIn('re-run ./variant/install.sh', result.stdout)
+        self.assertIn('re-run ./scripts/variant.sh', result.stdout)
 
 
 if __name__ == '__main__':

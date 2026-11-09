@@ -6,10 +6,6 @@ dumbtv.conf
 video/
 __pycache__/
 *.pyc
-variant/build/
-variant/*.keystore
-variant/config.properties
-variant/tools/.i18n-cache.json
 .superpowers/
 node_modules/
 dist/

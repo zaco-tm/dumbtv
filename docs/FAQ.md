@@ -111,10 +111,11 @@ permission to install apps. It asked for no permissions at all on Fire OS 7 and 
 Check it yourself: `aapt2 dump permissions dumbtv-home.apk` lists three, each limited
 to Android 8.1 and earlier, which only Fire OS 6's Keeper uses.
 
-AverageTV is now the fork of the free-my-tv app, built from this repository rather
-than downloaded. It takes the internet for its film picks, so it asks for upstream's
-eight permissions and nothing else; `variant/check-apk.sh` checks that list against
-the built APK.
+AverageTV is a project of its own now —
+[github.com/zaco-tm/AverageTV](https://github.com/zaco-tm/AverageTV) — and this
+repository installs it rather than building it. It takes the internet for its film
+picks, so it asks for upstream's eight permissions and nothing else; its own CI
+checks that list against the built APK.
 
 **Who made this?**
 [Muzzammil](https://x.com/DevMuzzammil), with people who ran it on their own TVs

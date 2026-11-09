@@ -25,7 +25,7 @@ OLD_LABEL = 'dumbtv home button'
 def dump_of(body, user=0, form='Bound services'):
     """A dumpsys accessibility dump with one service in the bound section."""
     return (f'User state[\n attributes:{{id={user}, flags=0}}\n'
-            f' {form}:{{{body}}}\n Enabled services:{{tv.dumbtv.variant/io.freemytv.Guard}}\n'
+            f' {form}:{{{body}}}\n Enabled services:{{tv.averagetv.app/io.freemytv.Guard}}\n'
             ' Binding services:{}\n]\n')
 
 

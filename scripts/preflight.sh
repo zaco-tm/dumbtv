@@ -37,7 +37,7 @@ note "third-party   $(dev 'pm list packages -3' | sed 's/package://' | grep -vc 
 note "home screen   $(front_activity | awk -F/ '{print $1}')"
 note "free ram      $(dev 'dumpsys meminfo' | sed -n 's/.*Free RAM: *\([0-9,]*K\).*/\1/p' | head -1)"
 note "dns filter    $(present dnsfilter.android && echo installed || echo 'not installed')"
-note "home app     $(present tv.dumbtv.variant && echo 'AverageTV installed' || echo 'not installed')"
+note "home app     $(present tv.averagetv.app && echo 'AverageTV installed' || echo 'not installed')"
 
 step "the pass would"
 note "disable $(cleanup_list | wc -l | tr -d ' ') Amazon packages, minus anything in never-disable.txt"
@@ -50,12 +50,12 @@ if [[ $DNSFILTER == 1 ]]; then
   note "install a DNS filter that blocks Amazon telemetry$([[ $ALEXA == 0 ]] && printf ', Alexa') and the OTA servers"
 fi
 if [[ $LAUNCHER == 1 ]]; then
-  note "replace the home screen with AverageTV (the free-my-tv fork in variant/, the internet only for the film picks)"
+  note "replace the home screen with AverageTV (another project, github.com/zaco-tm/AverageTV; the internet only for the film picks)"
 fi
 note "reboot twice (about 5 minutes)"
 
 step "not touched, ever"
-note "/system (dm-verity), the bootloader, AverageTV's own package (tv.dumbtv.variant), settings, TV input, device control, Bluetooth pairing"
+note "/system (dm-verity), the bootloader, AverageTV's own package (tv.averagetv.app), settings, TV input, device control, Bluetooth pairing"
 note "see ${DATA#$ROOT/}/$(basename "$(dirname "$(fos never-disable.txt)")")/never-disable.txt"
 
 step "snapshot before anything changes"

@@ -65,14 +65,14 @@ fi
 if [[ $LAUNCHER == 0 ]]; then
   printf '%-10s %-38s %s\n' skip home "LAUNCHER=0, not checked"
 elif [[ $SDK -lt 26 ]]; then
-  # Fire OS 6 is below the fork's floor: it needs Android 8, and the home screen
+  # Fire OS 6 is below AverageTV's floor: it needs Android 8, and the home screen
   # there is the old launcher's. There is nothing of ours to check.
   printf '%-10s %-38s %s\n' skip home "Fire OS 6: AverageTV does not run on this TV; the old launcher is the home screen"
 else
   # An enabled setting can outlive the process/binding. Check the current user's
   # exact component AND the live bound-service section, without sending HOME.
   # Which product is in charge is decided by the enabled guard component, and every
-  # check below is about that product: the fork and the old launcher it falls back
+  # check below is about that product: AverageTV and the old launcher it falls back
   # to are two home screens, and the table has to say which one it is talking about.
   current_user=$(dev 'am get-current-user' | tr -d '\r')
   hook=unknown

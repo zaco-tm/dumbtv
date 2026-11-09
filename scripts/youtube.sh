@@ -103,7 +103,7 @@ else
 fi
 
 step "home screen"
-if present tv.dumbtv.variant; then
+if present tv.averagetv.app; then
   # AverageTV takes its app list from the television, not from a file of its own:
   # the TV's own picker decides which apps are on the home screen, and SmartTube
   # has to be picked there before it shows up on the shelf.

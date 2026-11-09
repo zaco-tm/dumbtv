@@ -1,41 +1,16 @@
 # NOTICE
 
-This project vendors third-party software. See `variant/UPSTREAM.md` for the full list.
+dumbtv bundles no third-party software. It downloads what it runs, from the projects
+that make it, under their own terms:
 
-## free-my-tv
+- personalDNSfilter (GPL-2.0) from F-Droid, the DNS filter that blocks what it
+  cannot disable
+- the HaGeZi blocklists (GPL-3.0), the tracker and update hosts it blocks
+- SmartTube (MIT) from its own releases, if the owner asks for YouTube to be
+  replaced
+- AverageTV (<https://github.com/zaco-tm/AverageTV>, MIT), the home screen, which
+  this repository installs and then checks
 
-`variant/src`, `variant/res` and `variant/assets` are from
-<https://github.com/simbasjungles/free-my-tv>, commit
-`f1830445e6e629a2f1eab19602afef38a1a4f8b8`, MIT licensed. The licence text is in
-`variant/LICENSE.free-my-tv`.
-
-`variant/tools/photos.py` and `variant/tools/translate.py` are upstream's too, with the
-paths and the application id changed for this tree (`variant/UPSTREAM.md` says how).
-
-## My Kids TV
-
-The kids face's catalogue — which title is in which age band, the badges and the four
-judgments (age fit, value, must-watch, fun) — comes from **My Kids TV**
-(<https://github.com/suboss87/my-kids-tv>), and is licensed under the Creative Commons
-Attribution 4.0 International License (CC BY 4.0):
-<https://creativecommons.org/licenses/by/4.0/>.
-
-Credit **"My Kids TV"**, link to the licence, and note that changes were made. We made
-changes: the dataset is shipped in `variant/catalog-data/` and the three band files the
-app reads are in `variant/assets/catalog/`, both with the dataset's own `LICENSE` next to
-them, and the app's own copy of the titles is adapted to what it can show.
-
-The title metadata (TMDB ids, titles, years, genres and age ratings) comes from TMDB and
-is subject to TMDB's terms of use: <https://www.themoviedb.org/api-terms-of-use>. This
-product uses the TMDB API but is not endorsed or certified by TMDB.
-
-## Fonts and symbols
-
-- Inter — SIL Open Font License 1.1 — `variant/assets/fonts/`
-- Material Symbols — Apache License 2.0 — `variant/assets/symbols/`
-
-## Logos
-
-- cryptocurrency-icons — CC0 1.0 — the coin logos in `variant/res/drawable/coin_*.xml`
-- Simple Icons — CC0 1.0 — upstream's Samsung app logos, in upstream's `web/icons/`;
-  that app is not vendored here
+The launcher that was in this repository until it became the AverageTV project
+vendored free-my-tv (MIT) and carried the My Kids TV catalogue (CC BY 4.0). Those
+credits live with it now, in the AverageTV project's NOTICE.

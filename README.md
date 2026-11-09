@@ -66,9 +66,9 @@ no root:
 - **Blocks what cannot be disabled.** A small open-source DNS filter on the TV
   stops Amazon's telemetry and automatic updates from reaching their servers.
   Everything else, including your streaming apps, works as before.
-- **Replaces the home screen** with [AverageTV](variant/README.md): your apps,
-  your inputs, film picks and a clock. Open source. It takes over from the old
-  launcher, which stays installed on the television as the fallback.
+- **Replaces the home screen** with [AverageTV](https://github.com/zaco-tm/AverageTV):
+  your apps, your inputs, film picks and a clock. Open source. It takes over from the
+  old launcher, which stays installed on the television as the fallback.
 - **Leaves your apps alone.** Nothing you watch is removed unless you name it.
 - **Can all be undone** with one command.
 
@@ -137,20 +137,25 @@ and what you lose without it.
 
 ## AverageTV
 
-AverageTV is the fork of the free-my-tv app, in [variant/](variant/): your apps,
-your HDMI inputs and film picks, and a kids face behind a parent's PIN. It has our
-own application id (`tv.dumbtv.variant`) and our own sign key, so it installs beside
-the old launcher instead of replacing it. HOME lands on it in a fraction of a second.
+**AverageTV is a project of its own now:
+[github.com/zaco-tm/AverageTV](https://github.com/zaco-tm/AverageTV).** It is the
+home screen: your apps, your HDMI inputs and film picks, and a kids face behind a
+parent's PIN. It has its own application id (`tv.averagetv.app`) and its own sign
+key, so it installs beside the old launcher instead of replacing it. HOME lands on
+it in a fraction of a second.
 
 It works on its own, without the rest of dumbtv:
 
 ```sh
 adb connect <tv-ip>:5555
-./variant/install.sh
+./scripts/variant.sh
 ```
 
-[variant/README.md](variant/README.md) covers the settings, the kids face and how it
-takes over the HOME button.
+That script finds the AverageTV checkout — next to this repository, or wherever
+`AVERAGETV_DIR` points — and runs its installer, which does the whole job: installs
+the app, grants the two app ops, and takes the HOME key. [AverageTV's
+README](https://github.com/zaco-tm/AverageTV) covers the settings, the kids face and
+how it takes over the HOME button.
 
 The old launcher, `tv.dumbtv.home`, was 54 KB of plain Java with no internet access
 and no permissions at all. It showed your apps and your HDMI inputs and nothing else,
@@ -162,7 +167,7 @@ renaming and hiding, all from the remote.
 | ![Rows layout](docs/assets/screens/home.png) | ![Grid layout](docs/assets/screens/grid.png) | ![Options](docs/assets/screens/options.png) |
 
 It is not built from this repository any more. It stays installed on a television as
-the fallback, and `./variant/install.sh --undo` gives HOME back to it.
+the fallback, and `./scripts/variant.sh --undo` gives HOME back to it.
 
 ## Tested on
 
@@ -250,7 +255,7 @@ back from the Appstore.
 | [Other TVs](docs/OTHER-TVS.md) | Android TV, Samsung, LG, Roku and the rest |
 | [YouTube](docs/YOUTUBE.md) | why its ads cannot be blocked, and SmartTube |
 | [Why not replace the OS](docs/WHY-NOT-REPLACE-OS.md) | the locked boot chain |
-| [AverageTV](variant/README.md) | the home screen app |
+| [AverageTV](https://github.com/zaco-tm/AverageTV) | the home screen app |
 | [Device catalog](catalog/README.md) | per-model notes |
 | [AGENTS.md](AGENTS.md) | instructions for coding agents |
 | [Press](docs/PRESS.md) | coverage |

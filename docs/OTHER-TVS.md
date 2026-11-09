@@ -56,9 +56,9 @@ Same shell, same `pm disable-user`, different targets.
   working sequence is: install the new launcher first, then
   `pm disable-user` the stock one (`com.google.android.tvlauncher` on older
   builds, `com.google.android.apps.tv.launcherx` on newer ones).
-  `variant/install.sh` is not the tool here: its Guard watches for Amazon's
-  launcher. Build the fork's APK (`variant/build.sh`), check its version against
-  `variant/version.env`, `adb install` it, then disable the stock launcher.
+  AverageTV's installer is not the tool here: its Guard watches for Amazon's
+  launcher. Build its APK (in the [AverageTV](https://github.com/zaco-tm/AverageTV)
+  project), `adb install` it, then disable the stock launcher.
 - **Play Protect holds `adb install`.** The TV asks whether to install an app
   "built for an older version of Android" and the command waits until someone
   answers on the remote. Press Install anyway. The old launcher targeted sdk 28 on

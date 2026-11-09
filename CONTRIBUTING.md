@@ -51,9 +51,10 @@ What makes a good report:
 
 ## 2. Fix something
 
-Scripts are bash, written to run on the bash 3.2 that ships with macOS. The app is
-Java, vendored from free-my-tv; [variant/README.md](variant/README.md) explains how
-it is built.
+Scripts are bash, written to run on the bash 3.2 that ships with macOS. The launcher
+is another project now — [AverageTV](https://github.com/zaco-tm/AverageTV) — and this
+repository installs it and checks that it took the HOME key; the app itself is not
+built here any more.
 
 The rules the code keeps, and that a change must keep too:
 
@@ -62,8 +63,8 @@ The rules the code keeps, and that a change must keep too:
 - Amazon packages are disabled, never uninstalled.
 - No app a person uses is removed unless they named it.
 - The old launcher asked for no permissions on Fire OS 7 and 8 and had no internet
-  access. The fork asks for upstream's eight permissions and nothing else, and CI
-  checks that list against the built APK.
+  access. AverageTV asks for upstream's eight permissions and nothing else, and its
+  own CI checks that list against the built APK.
 - Every step can be undone with `scripts/restore.sh`.
 
 Test on a real TV, say which one and which build in the pull request, and run the
@@ -87,13 +88,10 @@ CI runs these on every pull request. Run them before you push:
 ```sh
 python3 catalog/validate.py                 # catalog files
 python3 -m unittest discover -s tests -v    # scripts, against a pretend TV
-for f in scripts/*.sh variant/*.sh; do bash -n "$f"; done
-./variant/release-check.sh --manifest
+for f in scripts/*.sh; do bash -n "$f"; done
 ```
 
-The fork's version lives in `variant/version.env`, next to the manifest and the built
-APK. `variant/release-check.sh` says out loud when the three disagree, and `--remote`
-checks the fallback launcher's upstream release as well.
+The launcher lives in the AverageTV project, and its own checks run there.
 
 The tests never touch a real TV: `tests/fake_tv.py` answers adb commands from a
 small state file and records every command a script sends, so a test can check

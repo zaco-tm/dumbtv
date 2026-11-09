@@ -156,7 +156,7 @@ elif command == 'dumpsys accessibility':
     print('User state[\n attributes:{id=0, flags=0}\n Bound services:{'
           + ', '.join(bound) + '}\n Enabled services:{' + enabled + '}\n Binding services:{}\n]')
 elif command == 'dumpsys window':
-    print(state.get('window', '  Window{80fe56a u0 tv.dumbtv.variant/io.freemytv.HomeActivity}'))
+    print(state.get('window', '  Window{80fe56a u0 tv.averagetv.app/io.freemytv.HomeActivity}'))
 elif command == 'am get-current-user':
     print(state.get('user', 0))
 elif command == 'ps -A -o NAME':

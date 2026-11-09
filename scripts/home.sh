@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # The HOME takeover helpers of the install paths. They use the caller's sh_ (adb shell),
 # and set_futurity also its dev_sdk.
-# The product table at the end is shared: scripts/verify.sh and variant/install.sh both
-# need to know which dumbtv product owns HOME, and what tells the two apart.
+# The product table at the end is shared: scripts/verify.sh and the AverageTV
+# project's own install path both need to know which home screen owns HOME, and
+# what tells the two apart.
 
 # Starts AverageTV at the end of the install.
 #
@@ -99,16 +100,20 @@ set_futurity() {
 # - The enabled components are the forms the setting may hold: the full class, and the
 #   shorthand with a leading dot.
 #
-# There is one product: the fork, tv.dumbtv.variant. The old launcher
-# (tv.dumbtv.home) is not built or shipped from this repo any more, but it stays
-# installed on a television as the fallback, and ./variant/install.sh --undo hands
-# HOME back to it. Its row below is that fallback: it is here so the scripts can
-# recognise the old guard, say which one is in charge, and say what to do about it —
-# not because the repo builds it.
+# There are two rows. The first is AverageTV itself, tv.averagetv.app. The second
+# is dumbtv home (tv.dumbtv.home), the small launcher this repository used to
+# ship: it is not built here any more, but it stays installed on a television as
+# the fallback, and AverageTV's installer hands HOME back to it. Its row below
+# is that fallback: it is here so the scripts can recognise the old guard, say
+# which one is in charge, and say what to do about it — not because this
+# repository builds it.
+#
+# The AverageTV project keeps a copy of this table for its own scripts, and the
+# two have to say the same thing about the application id.
 dumbtv_home_product() {
   case $1 in
-    tv.dumbtv.variant)
-      printf '%s\n' 'tv.dumbtv.variant|io.freemytv.Guard|AverageTV guard|tv.dumbtv.variant/io.freemytv.HomeActivity|AverageTV|tv.dumbtv.variant/io.freemytv.Guard tv.dumbtv.variant/.io.freemytv.Guard' ;;
+    tv.averagetv.app)
+      printf '%s\n' 'tv.averagetv.app|io.freemytv.Guard|AverageTV guard|tv.averagetv.app/io.freemytv.HomeActivity|AverageTV|tv.averagetv.app/io.freemytv.Guard tv.averagetv.app/.io.freemytv.Guard' ;;
     tv.dumbtv.home)
       printf '%s\n' 'tv.dumbtv.home|tv.dumbtv.home.Guard|dumbtv home button|tv.dumbtv.home/.Home|the old launcher (fallback)|tv.dumbtv.home/tv.dumbtv.home.Guard tv.dumbtv.home/.Guard' ;;
     *) return 1 ;;
@@ -119,7 +124,7 @@ dumbtv_home_product() {
 # Prints its package name; prints nothing when no dumbtv guard is enabled.
 dumbtv_home_product_of() {
   local value=$1 row comps
-  for row in "$(dumbtv_home_product tv.dumbtv.variant)" "$(dumbtv_home_product tv.dumbtv.home)"; do
+  for row in "$(dumbtv_home_product tv.averagetv.app)" "$(dumbtv_home_product tv.dumbtv.home)"; do
     IFS='|' read -r _ _ _ _ _ comps <<< "$row"
     for comp in $comps; do
       case ":$value:" in
@@ -140,11 +145,11 @@ home_activity_is() {
   return 0
 }
 
-# The command that puts this repo's product in front of the TV. There is one
-# product now, so both rows name the same script: for the fork it installs it,
-# and for the fallback it takes HOME back from the fallback.
+# The command that puts this repo's product in front of the TV. AverageTV is
+# another project now: this repository's script finds its checkout and runs its
+# installer.
 dumbtv_home_install_cmd() {
   case $1 in
-    tv.dumbtv.variant|tv.dumbtv.home) printf '%s\n' './variant/install.sh' ;;
+    tv.averagetv.app|tv.dumbtv.home) printf '%s\n' './scripts/variant.sh' ;;
   esac
 }
